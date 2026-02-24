@@ -1,0 +1,171 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   전체 화면 고정 레이아웃 (Viewport-Fixed Layout)
+   ============================================ */
+
+/* HTML과 Body를 뷰포트에 고정 - 전체 스크롤 제거 */
+html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+    background-attachment: fixed;
+    color: #f8fafc;
+}
+
+/* ============================================
+   최상단 래퍼 (Wrapper) - Flex column으로 세로 배치
+   ============================================ */
+.app-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100%;
+}
+
+/* ============================================
+   상단 헤더 (Navigation) - 고정 높이
+   ============================================ */
+.app-header {
+    height: 60px;
+    flex-shrink: 0;
+}
+
+/* ============================================
+   하단 메인 래퍼 (사이드바 + 우측 콘텐츠)
+   ============================================ */
+.main-wrapper {
+    flex: 1;
+    display: flex;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* ============================================
+   왼쪽 사이드바 - 고정 너비 + 전체 높이 차지
+   ============================================ */
+.sidebar {
+    width: 380px;
+    height: 100%;
+    flex-shrink: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* ============================================
+   오른쪽 메인 콘텐츠 - 남은 공간 모두 차지
+   ============================================ */
+.main-content {
+    flex: 1;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(30, 41, 59, 0.5);
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #475569 0%, #334155 100%);
+    border-radius: 5px;
+    border: 2px solid rgba(30, 41, 59, 0.5);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #64748b 0%, #475569 100%);
+}
+
+::-webkit-scrollbar-corner {
+    background: rgba(30, 41, 59, 0.5);
+}
+
+.data-grid-cell {
+    outline: none;
+    transition: background 0.1s;
+}
+
+.data-grid-cell:focus {
+    background: rgba(56, 189, 248, 0.1);
+    box-shadow: inset 0 0 0 1px #38bdf8;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.cmd-palette {
+    animation: fadeIn 0.1s ease-out forwards;
+}
+
+.feature-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 110px;
+    overflow: hidden;
+    position: relative;
+}
+
+.feature-card:hover {
+    height: auto;
+    min-height: 110px;
+    z-index: 50;
+    transform: translateY(-4px);
+}
+
+.resizer {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 4px;
+    cursor: col-resize;
+    user-select: none;
+    touch-action: none;
+    z-index: 10;
+}
+
+.resizer:hover {
+    background-color: #0ea5e9;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #475569 0%, #334155 100%);
+    border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #64748b 0%, #475569 100%);
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(30, 41, 59, 0.3);
+    border-radius: 4px;
+}
