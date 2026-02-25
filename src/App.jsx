@@ -69,7 +69,7 @@ function App() {
                 
                 // 🆕 DB 준비 완료 후 자동으로 샘플 데이터 로드
                 if (database) {
-                    const parsed = Papa.parse(SAMPLE_DATA, { header: true, dynamicTyping: true });
+                    const parsed = Papa.parse(SAMPLE_DATA, { header: true, dynamicTyping: false });
                     if (parsed.data && parsed.data.length > 0) {
                         setOriginalData(parsed.data);
                         const cols = Object.keys(parsed.data[0]);
