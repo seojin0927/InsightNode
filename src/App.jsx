@@ -976,9 +976,9 @@ function App() {
                     onClose={() => setCmdOpen(false)} 
                     actions={actions} 
                     isDataReady={isDataReady}
-                    columns={allColumns}
+                    columns={columns}
                     colTypes={colTypes}
-		    previewData={data.slice(0, 5)}
+                    previewData={data.slice(0, 5)}
                 />
             </div>
         </div>
