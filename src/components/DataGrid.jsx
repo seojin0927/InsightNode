@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 
 const DataGrid = ({ data, columns, onUpdate, readOnly = false, watermarkEnabled = false, watermarkText = 'CONFIDENTIAL', watermarkDesign = 'single' }) => {
     const [scroll, setScroll] = useState({ top: 0, left: 0 });
@@ -9,6 +9,36 @@ const DataGrid = ({ data, columns, onUpdate, readOnly = false, watermarkEnabled 
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedRow, setSelectedRow] = useState(null);
     const [copyNotification, setCopyNotification] = useState(false);
+    const [isZoomed, setIsZoomed] = useState(false);
+    const gridContainerRef = useRef(null);
+
+    const toggleZoom = () => {
+        if (!gridContainerRef.current) return;
+        if (!isZoomed) {
+            // 확대: 현재 div 박스를 확장 (화면 전체 100%)
+            gridContainerRef.current.style.position = 'fixed';
+            gridContainerRef.current.style.top = '0';
+            gridContainerRef.current.style.left = '0';
+            gridContainerRef.current.style.right = '0';
+            gridContainerRef.current.style.bottom = '0';
+            gridContainerRef.current.style.width = '100%';
+            gridContainerRef.current.style.height = '100%';
+            gridContainerRef.current.style.zIndex = '9999';
+            gridContainerRef.current.style.background = '#0f172a';
+        } else {
+            // 축소: 원래 상태로 복원
+            gridContainerRef.current.style.position = '';
+            gridContainerRef.current.style.top = '';
+            gridContainerRef.current.style.left = '';
+            gridContainerRef.current.style.right = '';
+            gridContainerRef.current.style.bottom = '';
+            gridContainerRef.current.style.width = '';
+            gridContainerRef.current.style.height = '';
+            gridContainerRef.current.style.zIndex = '';
+            gridContainerRef.current.style.background = '';
+        }
+        setIsZoomed(!isZoomed);
+    };
 
     const rowH = 42;
     const rowNumW = 60;
@@ -96,7 +126,6 @@ const DataGrid = ({ data, columns, onUpdate, readOnly = false, watermarkEnabled 
     };
 
     const exportAsExcel = () => {
-        // Simple Excel XML format
         const xmlContent = `<?xml version="1.0"?>
 <?mso-application progid="Excel.Sheet"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
@@ -208,7 +237,7 @@ ${columns.map(c => `<Cell><Data ss:Type="String">${String(row[c] ?? '').replace(
     const totalWidth = rowNumW + columns.reduce((acc, c) => acc + (colWidths[c] || 150), 0);
 
     return (
-        <div className="flex-1 flex flex-col bg-slate-900/50 border border-slate-800 rounded-lg overflow-hidden h-full">
+        <div ref={gridContainerRef} className="flex-1 flex flex-col bg-slate-900/50 border border-slate-800 rounded-lg overflow-hidden h-full">
             {/* Toolbar */}
             <div className="flex items-center gap-3 p-3 bg-slate-800/50 border-b border-slate-700 shrink-0 flex-wrap">
                 <div className="relative flex-1 max-w-xs">
@@ -279,6 +308,27 @@ ${columns.map(c => `<Cell><Data ss:Type="String">${String(row[c] ?? '').replace(
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                         Excel
+                    </button>
+                    {/* 🆕 확대/축소 버튼 */}
+                    <button
+                        onClick={toggleZoom}
+                        className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs rounded-lg font-medium transition-colors flex items-center gap-1"
+                    >
+                        {isZoomed ? (
+                            <>
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                                닫기
+                            </>
+                        ) : (
+                            <>
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                                </svg>
+                                확대
+                            </>
+                        )}
                     </button>
                 </div>
             </div>

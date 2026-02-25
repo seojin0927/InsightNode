@@ -12,13 +12,15 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
     const [localWatermarkEnabled, setLocalWatermarkEnabled] = useState(false);
     const [localWatermarkText, setLocalWatermarkText] = useState('CONFIDENTIAL');
     const [localWatermarkDesign, setLocalWatermarkDesign] = useState('single');
-    const [watermarkGridSize, setWatermarkGridSize] = useState(2); // 2x2, 3x3, 4x4... 최대 16x16
+    const [localWatermarkColor, setLocalWatermarkColor] = useState('#dc2626'); // 워터마크 색상
+    const [watermarkGridSize, setWatermarkGridSize] = useState(8); // 2x2, 3x3, 4x4... 최대 16x16
     
     // props가 제공되면 이를 사용, 그렇지 않으면 로컬 상태 사용
     // 디자인 선택은 local 상태를 우선 사용 (사용자 선택 적용)
     const watermarkEnabled = propWatermarkEnabled || localWatermarkEnabled;
     const watermarkText = propWatermarkEnabled ? propWatermarkText : localWatermarkText;
     const watermarkDesign = localWatermarkDesign; // 로컬 상태를 우선 사용
+    const watermarkColor = localWatermarkColor; // 워터마크 색상
     
     // 로컬 상태를 업데이트하는 함수 (App에서 props를 전달하지 않은 경우 사용)
     const updateLocalWatermark = (setter) => (value) => {
@@ -89,12 +91,28 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
     // 추가된 상태 변수
     const [xAxisLabel, setXAxisLabel] = useState('');
     const [yAxisLabel, setYAxisLabel] = useState('');
-    const [gridColor, setGridColor] = useState('#1e293b');
+    const [gridColor, setGridColor] = useState('#334155');
     const [labelColor, setLabelColor] = useState('#94a3b8');
     const [titleColor, setTitleColor] = useState('#e2e8f0');
     const [showTargetLine, setShowTargetLine] = useState(false);
     const [targetValue, setTargetValue] = useState('');
-    const [activeDesignTab, setActiveDesignTab] = useState('theme');
+    const [activeDesignTab, setActiveDesignTab] = useState('data');
+    const [showDataSettings, setShowDataSettings] = useState(false);
+
+    // 배경색 변경 시 격자 그물색상 자동 조정
+    useEffect(() => {
+        if (backgroundColor === '#1e293b') {
+            setGridColor('#475569'); // 슬레이트 배경에 더 밝은 격자
+        } else if (backgroundColor === '#0f172a') {
+            setGridColor('#334155'); // 다크 배경에 밝은 격자
+        } else if (backgroundColor === '#000000') {
+            setGridColor('#374151'); // 블랙 배경에 밝은 격자
+        } else if (backgroundColor === '#ffffff' || backgroundColor === '#f8fafc') {
+            setGridColor('#f1f5f9'); // 화이트/라이트 배경에 어두운 격자
+        } else {
+            setGridColor('#334155'); // 기본값
+        }
+    }, [backgroundColor]);
 
     // ================= 텍스트/오버레이 관리 =================
     const [textOverlays, setTextOverlays] = useState([]);
@@ -104,6 +122,9 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
     const [newTextColor, setNewTextColor] = useState('#ffffff');
     const [newTextSize, setNewTextSize] = useState(14);
     const [draggingText, setDraggingText] = useState(null);
+    
+    // AI Insight 및 Text Add를 위한 탭 활성화 상태
+    const [activeToolbarTab, setActiveToolbarTab] = useState(null); // 'ai' | 'text' | null
 
     const colorThemes = {
         corporate: { bg: ['rgba(59, 130, 246, 0.85)', 'rgba(16, 185, 129, 0.85)', 'rgba(245, 158, 11, 0.85)', 'rgba(239, 68, 68, 0.85)', 'rgba(139, 92, 246, 0.85)', 'rgba(99, 102, 241, 0.85)', 'rgba(236, 72, 153, 0.85)'], border: ['#2563eb', '#059669', '#d97706', '#dc2626', '#7c3aed', '#4f46e5', '#db2777'] },
@@ -233,10 +254,17 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
         }
     };
 
-    // ================= 🤖 컨설팅 수준 AI 경영진 요약 생성 =================
+    // ================= 🤖 획기적 AI 경영진 브리핑 생성 =================
     const generateSmartInsight = () => {
         const { labels, vals, average, growthRate } = chartDataObj;
         if (!vals.length) return;
+        
+        // 이미 인사이트가 있으면 추가하지 않음
+        const existingInsight = textOverlays.find(t => t.type === 'ai-insight');
+        if (existingInsight) {
+            alert('이미 AI 인사이트가 추가되어 있습니다. 삭제 후 다시 시도해주세요.');
+            return;
+        }
         
         const sum = vals.reduce((a, b) => a + b, 0);
         const maxVal = Math.max(...vals);
@@ -244,39 +272,134 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
         const maxLabel = labels[vals.indexOf(maxVal)];
         const minLabel = labels[vals.indexOf(minVal)];
         const maxPercent = ((maxVal / sum) * 100).toFixed(1);
+        
+        // 추가 통계 계산
+        const sortedVals = [...vals].sort((a, b) => a - b);
+        const median = sortedVals.length % 2 === 0 
+            ? (sortedVals[sortedVals.length/2 - 1] + sortedVals[sortedVals.length/2]) / 2 
+            : sortedVals[Math.floor(sortedVals.length/2)];
+        const variance = vals.reduce((acc, val) => acc + Math.pow(val - average, 2), 0) / vals.length;
+        const stdDev = Math.sqrt(variance);
+        const cv = (stdDev / average * 100).toFixed(1);
+        
+        // 상위 3개 항목
+        const top3 = [...vals].map((v, i) => ({ val: v, label: labels[i] }))
+            .sort((a, b) => b.val - a.val).slice(0, 3);
+        
+        // 집중도 분석
+        const concentration = vals.filter(v => v >= average).length;
+        const concentrationPercent = ((concentration / vals.length) * 100).toFixed(0);
+
+        // 배경색에 따른 텍스트 색상 결정
+        const isLightBg = backgroundColor === '#ffffff' || backgroundColor === '#f8fafc' || backgroundColor === 'transparent';
+        const textColor = isLightBg ? '#1e293b' : '#f8fafc';
+        const accentColor = isLightBg ? '#0ea5e9' : '#38bdf8';
+        const boxBg = isLightBg ? 'rgba(255,255,255,0.95)' : 'rgba(15,23,42,0.92)';
+        const borderColor = isLightBg ? '#e2e8f0' : '#334155';
 
         let lines = [];
-        lines.push(`📊 [경영진 브리핑 요약]`);
+        
+        // 🎯 핵심 한줄 요약
+        let summary = '';
+        if (chartType === 'pie' || chartType === 'doughnut') {
+            summary = maxPercent > 50 
+                ? `⚠️ '${maxLabel}' 항목이 시장 점유율 ${maxPercent}%로 지배적 위치입니다.` 
+                : `📊 '${maxLabel}'(${maxPercent}%) 외 ${labels.length - 1}개 항목이 균형 있게 분포`;
+        } else if (growthRate !== 0 && sortData === 'none') {
+            summary = growthRate > 0 
+                ? `🚀 전 기간 대비 +${growthRate.toFixed(1)}% 성장세, '${maxLabel}' 핵심 성장 동력` 
+                : `📉 전 기간 대비 ${growthRate.toFixed(1)}% 감소, '${minLabel}' 개선 필요`;
+        } else {
+            const deviation = ((maxVal - average) / average * 100).toFixed(0);
+            summary = deviation > 50 
+                ? `⭐ '${maxLabel}' 평균 대비 ${deviation}% 초과, '${minLabel}' 주의 필요` 
+                : `📈 전체 ${labels.length}개 항목 총합 ${formatValue(sum)}, 평균 ${formatValue(average)}`;
+        }
+        lines.push(`💡 ${summary}`);
+        
+        // 📊 핵심 지표
+        lines.push('');
+        lines.push(`┌─ 📈 핵심 성과 지표 ─`);
+        lines.push(`│ ★ 1위: ${maxLabel} (${formatValue(maxVal)}, ${maxPercent}%)`);
+        if (chartType !== 'pie' && chartType !== 'doughnut') {
+            lines.push(`│ • 평균: ${formatValue(average)} | 중앙값: ${formatValue(median)}`);
+            lines.push(`│ • 표준편차: ${formatValue(stdDev)} (변동계수: ${cv}%)`);
+            lines.push(`│ • 평균 이상: ${concentration}개 (${concentrationPercent}%)`);
+        }
+        lines.push(`│ • 합계: ${formatValue(sum)}`);
+        lines.push(`└`);
+        
+        // 🏆 TOP 3
+        if (top3.length >= 2) {
+            lines.push('');
+            lines.push(`🏆 TOP 3 ${chartType === 'pie' || chartType === 'doughnut' ? '시장 점유' : '성과'}`);
+            top3.forEach((item, idx) => {
+                const rank = idx + 1;
+                const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉';
+                const percent = ((item.val / sum) * 100).toFixed(1);
+                lines.push(`   ${medal} ${item.label}: ${formatValue(item.val)} (${percent}%)`);
+            });
+        }
+        
+        // ⚡ 권고안
+        lines.push('');
+        lines.push(`⚡ 【경영진 브리핑】`);
         
         if (chartType === 'pie' || chartType === 'doughnut') {
-            lines.push(`• 집중도: '${maxLabel}' 항목이 전체의 ${maxPercent}%를 점유하여 핵심 동인으로 작용 중입니다.`);
-            lines.push(`• 파레토: 1위 항목과 최하위('${minLabel}') 간의 편차가 매우 큽니다.`);
-        } else {
-            lines.push(`• 핵심 성과: '${maxLabel}' 항목이 ${formatValue(maxVal)}로 가장 높으며, 평균치(${formatValue(average)}) 대비 우수합니다.`);
-            if (labels.length > 2 && sortData === 'none') { // 시간 흐름으로 간주
-                const trendIcon = growthRate > 0 ? '📈 상승' : '📉 하락';
-                lines.push(`• 추세 분석: 초기 대비 현재 ${trendIcon} 국면이며, 약 ${Math.abs(growthRate).toFixed(1)}%의 증감이 발생했습니다.`);
+            if (Number(maxPercent) > 70) {
+                lines.push(`   → '${maxLabel}' 의존도 높음, 다변화 전략 필요`);
+                lines.push(`   → 시장 이탈 위험 대비 필요`);
+            } else if (Number(maxPercent) < 30) {
+                lines.push(`   → 항목별 고른 분포, 건강한 포트폴리오`);
+                lines.push(`   → 기존 전략 유지 권고`);
             } else {
-                lines.push(`• 위험 요인: '${minLabel}' 항목이 ${formatValue(minVal)}로 가장 저조하여 개선이 요구됩니다.`);
+                lines.push(`   → 2-3개 항목이 핵심 수익원`);
+                lines.push(`   → 이들 성장 전략 집중 필요`);
+            }
+        } else {
+            if (Number(cv) > 50) {
+                lines.push(`   → 항목 간 편차 큼, 표준화 필요`);
+                lines.push(`   → '${minLabel}' 개선 시급`);
+            } else {
+                lines.push(`   → 전체 항목 균등 수준`);
+                lines.push(`   → '${maxLabel}' 모델 케이스 분석 권고`);
+            }
+            
+            if (growthRate !== 0 && sortData === 'none') {
+                if (growthRate > 10) {
+                    lines.push(`   → 성장 모멘텀 +${growthRate.toFixed(1)}% 지속`);
+                    lines.push(`   → 추가 투자 가속화 권고`);
+                } else if (growthRate < -10) {
+                    lines.push(`   → 성장률 -${Math.abs(growthRate).toFixed(1)}% 감소`);
+                    lines.push(`   → 원인 분석 및 대응 필요`);
+                }
             }
         }
         
         const fullText = lines.join('\n');
         setTextOverlays(prev => [...prev, {
             id: Date.now(), text: fullText, x: 30, y: 30,
-            color: backgroundColor === '#ffffff' ? '#1e293b' : '#f8fafc', 
-            size: 14, fontFamily: fontFamily, type: 'exec-summary'
+            color: textColor, size: 12, fontFamily: fontFamily, type: 'ai-insight',
+            boxBg, borderColor, accentColor
         }]);
     };
 
     // 워터마크 캔버스에 그리기
-    const drawWatermark = (ctx, width, height, design, text, gridSize = 2) => {
+    const drawWatermark = (ctx, width, height, design, text, gridSize = 2, color = '#dc2626') => {
+        // 색상에서 rgb 추출하여 투명도 적용
+        const hexToRgba = (hex, alpha) => {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        };
+        
         if (design === 'single') {
             ctx.save();
             ctx.translate(width / 2, height / 2);
             ctx.rotate(-Math.PI / 4);
             ctx.font = 'bold 100px sans-serif';
-            ctx.fillStyle = 'rgba(200, 0, 0, 0.08)';
+            ctx.fillStyle = hexToRgba(color, 0.08);
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(text, 0, 0);
@@ -284,7 +407,7 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
         } else if (design === 'multiple') {
             const fontSize = Math.max(12, 60 - gridSize * 3);
             ctx.font = `bold ${fontSize}px sans-serif`;
-            ctx.fillStyle = 'rgba(200, 0, 0, 0.06)';
+            ctx.fillStyle = hexToRgba(color, 0.06);
             for (let i = 0; i < gridSize; i++) {
                 for (let j = 0; j < gridSize; j++) {
                     ctx.save();
@@ -299,7 +422,7 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
         } else if (design === 'corner') {
             // 4코너 배치
             ctx.font = 'bold 32px sans-serif';
-            ctx.fillStyle = 'rgba(200, 0, 0, 0.12)';
+            ctx.fillStyle = hexToRgba(color, 0.12);
             // 우상단
             ctx.textAlign = 'right';
             ctx.fillText(text, width - 30, 50);
@@ -542,7 +665,7 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
                 const ctx = chart.ctx;
                 const width = chart.width;
                 const height = chart.height;
-                drawWatermark(ctx, width, height, watermarkDesign, watermarkText, watermarkGridSize);
+                drawWatermark(ctx, width, height, watermarkDesign, watermarkText, watermarkGridSize, watermarkColor);
             }
         };
 
@@ -617,79 +740,7 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
     return (
         <div className="flex flex-col h-full bg-slate-900/50 border border-slate-800 rounded-lg overflow-hidden font-sans" ref={containerRef}>
             
-            {/* 1층 툴바: 데이터 및 피벗(집계) 설정 - 개선된 디자인 */}
-            <div className="flex flex-wrap items-center gap-3 p-4 bg-gradient-to-r from-slate-800/90 to-slate-800/50 border-b border-slate-700/50 shrink-0 z-20 backdrop-blur-sm">
-                {/* 데이터 선택 카드 */}
-                <div className="flex items-center bg-slate-900/80 rounded-xl border border-slate-700/50 p-2 shadow-lg shadow-black/20">
-                    <div className="flex flex-col gap-1.5 pr-3 border-r border-slate-700/50">
-                        <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-blue-400 font-bold w-5 text-center">X</span>
-                            <div className="relative">
-                                <select className="bg-slate-800/80 text-slate-200 px-2 py-1.5 text-xs w-36 outline-none border border-slate-600/50 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all appearance-none cursor-pointer" value={xAxis} onChange={e => setXAxis(e.target.value)}>
-                                    {columns.map(c => <option className="bg-slate-900" key={c} value={c}>{c}</option>)}
-                                </select>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-emerald-400 font-bold w-5 text-center">Y</span>
-                            <div className="relative">
-                                <select className="bg-slate-800/80 text-slate-200 px-2 py-1.5 text-xs w-36 outline-none border border-slate-600/50 rounded-lg focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition-all appearance-none cursor-pointer" value={yAxis} onChange={e => setYAxis(e.target.value)}>
-                                    {numericColumns.map(c => <option className="bg-slate-900" key={c} value={c}>{c}</option>)}
-                                    {!numericColumns.length && columns.map(c => <option className="bg-slate-900" key={c} value={c}>{c}</option>)}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <button onClick={swapAxes} className="p-2 ml-2 bg-slate-700/50 text-slate-400 hover:text-white hover:bg-brand-600 rounded-lg transition-all shadow-md" title="X/Y축 스왑">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
-                    </button>
-                </div>
-
-                {/* 집계 선택 */}
-                <div className="flex items-center bg-gradient-to-r from-purple-900/30 to-purple-800/20 rounded-xl border border-purple-500/30 p-2 shadow-lg">
-                    <div className="flex flex-col gap-1">
-                        <span className="text-[9px] text-purple-400 font-bold uppercase tracking-wider px-1">집계방식</span>
-                        <select className="bg-slate-800/80 text-purple-400 font-bold px-2 py-1.5 text-xs rounded-lg border border-purple-500/30 outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400/30 transition-all" value={aggregationType} onChange={e => setAggregationType(e.target.value)}>
-                            <option value="sum">∑ 합계</option>
-                            <option value="avg">ø 평균</option>
-                            <option value="count"># 개수</option>
-                            <option value="max">↑ 최대</option>
-                            <option value="min">↓ 최소</option>
-                        </select>
-                    </div>
-                </div>
-
-                {/* 보조 Y축 (Combo일 때) */}
-                {chartType === 'combo' && (
-                    <div className="flex items-center bg-gradient-to-r from-indigo-900/30 to-indigo-800/20 rounded-xl border border-indigo-500/30 p-2 shadow-lg">
-                        <div className="flex flex-col gap-1">
-                            <span className="text-[9px] text-indigo-400 font-bold uppercase tracking-wider px-1">보조 Y축</span>
-                            <select className="bg-slate-800/80 text-indigo-300 px-2 py-1.5 text-xs rounded-lg border border-indigo-500/30 outline-none focus:border-indigo-400 w-32" value={yAxis2} onChange={e => setYAxis2(e.target.value)}>
-                                {numericColumns.map(c => <option className="bg-slate-900" key={c} value={c}>{c}</option>)}
-                            </select>
-                        </div>
-                    </div>
-                )}
-                
-                <div className="w-px h-10 bg-slate-700/50 mx-1"></div>
-
-                {/* 차트 유형 및 제목 */}
-                <div className="flex flex-col gap-2 flex-1 min-w-[250px]">
-                    <div className="relative">
-                        <select className="w-full bg-slate-800/80 text-slate-200 px-4 py-2.5 text-sm font-bold rounded-xl border border-slate-600/50 outline-none hover:border-brand-500 hover:shadow-lg hover:shadow-brand-500/10 transition-all appearance-none cursor-pointer bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgMS41TDYgNi41TDExIDEuNSIgc3Ryb2tlPSIjOTRhM2I4IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')] bg-[length:12px] bg-[right_12px_center] bg-no-repeat" value={chartType} onChange={e => setChartType(e.target.value)}>
-                            <option value="bar">📊 막대 차트</option>
-                            <option value="line">📈 꺾은선</option>
-                            <option value="area">📉 영역 차트</option>
-                            <option value="combo">🔀 복합 차트</option>
-                            <option value="pie">🥧 파이 차트</option>
-                            <option value="doughnut">🍩 도넛 차트</option>
-                        </select>
-                    </div>
-                    <input type="text" placeholder="차트 제목을 입력하세요..." value={title} onChange={e => setTitle(e.target.value)} className="bg-slate-800/60 text-slate-200 px-4 py-2 text-sm rounded-xl border border-slate-700/50 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all placeholder:text-slate-500" />
-                </div>
-            </div>
-
-            {/* 2층 툴바: 템플릿, AI, 내보내기 */}
+            {/* 2층 툴바: 데이터 설정, 템플릿, AI, 내보내기 */}
             <div className="flex flex-wrap items-center gap-2 p-2.5 bg-slate-900 border-b border-slate-800 shrink-0 z-10">
                 <div className="flex items-center gap-1.5 bg-slate-800/50 p-1.5 rounded-lg border border-slate-700">
                     <span className="text-[10px] text-slate-400 font-bold ml-1">🪄 퀵 템플릿:</span>
@@ -698,11 +749,32 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
                 </div>
 
                 <div className="flex items-center gap-2 ml-auto">
-                    <button onClick={generateSmartInsight} className="px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs rounded font-bold transition-all shadow-md flex items-center gap-1">
-                        🤖 AI 경영진 요약
-                    </button>
+                    {/* 데이터 설정 버튼 - 별도 패널 */}
+                <button 
+                    onClick={() => {
+                        document.getElementById('data-settings-panel').classList.toggle('hidden');
+                    }} 
+                    className={`px-3 py-1.5 text-xs rounded font-bold transition-all flex items-center gap-1 ${showDataSettings ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'}`}
+                >
+                    📊 데이터 설정
+                </button>
+
+                {/* 세부 디자인 버튼 - 색상/조건부서식 탭이 기본, 토글 가능 */}
+                <button 
+                    onClick={() => {
+                        const panel = document.getElementById('chart-design-panel');
+                        if (panel.classList.contains('hidden')) {
+                            panel.classList.remove('hidden');
+                            setActiveDesignTab('theme'); // 색상/조건부서식을 기본으로
+                        } else {
+                            panel.classList.add('hidden');
+                        }
+                    }} 
+                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded font-bold transition-colors flex items-center gap-1"
+                >
+                    🎨 세부 디자인
+                </button>
                     <button onClick={() => {setIsAddingText(!isAddingText); setOverlayType('text');}} className={`px-3 py-1.5 text-xs rounded font-bold transition-all ${isAddingText ? 'bg-amber-600 text-white shadow-lg' : 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'}`}>T 텍스트 추가</button>
-                    <button onClick={() => document.getElementById('chart-design-panel').classList.toggle('hidden')} className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded font-bold transition-colors flex items-center gap-1">🎨 세부 디자인</button>
                     <div className="w-px h-5 bg-slate-700 mx-1"></div>
                     <button onClick={copyToClipboard} disabled={!chartDataObj.labels.length} className="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 disabled:bg-slate-800 text-white text-xs rounded font-bold transition-colors">복사 (클립보드)</button>
                     <button onClick={exportAsPNG} disabled={!chartDataObj.labels.length} className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 text-white text-xs rounded font-bold transition-colors">PNG 저장</button>
@@ -729,21 +801,151 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
                     >
                         📊 CSV 내보내기
                     </button>
-                    {/* 🆕 전체화면 버튼 */}
+                    {/* 🆕 확대/축소 버튼 */}
                     <button 
                         onClick={() => {
-                            if (!document.fullscreenElement) {
-                                containerRef.current?.requestFullscreen();
-                                setIsFullscreen(true);
+                            if (!containerRef.current) return;
+                            if (!isFullscreen) {
+                                // 확대: 현재 div 박스를 확장 (화면 전체 100%)
+                                containerRef.current.style.position = 'fixed';
+                                containerRef.current.style.top = '0';
+                                containerRef.current.style.left = '0';
+                                containerRef.current.style.right = '0';
+                                containerRef.current.style.bottom = '0';
+                                containerRef.current.style.width = '100%';
+                                containerRef.current.style.height = '100%';
+                                containerRef.current.style.zIndex = '9999';
+                                containerRef.current.style.background = '#0f172a';
                             } else {
-                                document.exitFullscreen();
-                                setIsFullscreen(false);
+                                // 축소: 원래 상태로 복원
+                                containerRef.current.style.position = '';
+                                containerRef.current.style.top = '';
+                                containerRef.current.style.left = '';
+                                containerRef.current.style.right = '';
+                                containerRef.current.style.bottom = '';
+                                containerRef.current.style.width = '';
+                                containerRef.current.style.height = '';
+                                containerRef.current.style.zIndex = '';
+                                containerRef.current.style.background = '';
                             }
+                            setIsFullscreen(!isFullscreen);
                         }}
                         className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs rounded font-bold transition-colors flex items-center gap-1"
                     >
-                        ⛶ 전체화면
+                        {isFullscreen ? (
+                            <>
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                                닫기
+                            </>
+                        ) : (
+                            <>
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                                </svg>
+                                확대
+                            </>
+                        )}
                     </button>
+                </div>
+            </div>
+
+            {/* 데이터 설정 패널 - 별도 */}
+            <div id="data-settings-panel" className="hidden border-b border-slate-700 p-4 bg-slate-900 shrink-0">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                    {/* X/Y축 선택 */}
+                    <div className="bg-blue-500/10 p-4 rounded-xl border border-blue-500/30">
+                        <label className="text-sm text-blue-400 font-bold flex items-center gap-2 mb-3">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                            데이터 선택 (X/Y축)
+                        </label>
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="flex-1">
+                                <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider block mb-1">X축 (그룹)</span>
+                                <select className="w-full bg-slate-900 text-slate-200 px-2 py-2 text-xs rounded-lg border border-blue-500/30 outline-none focus:border-blue-500" value={xAxis} onChange={e => setXAxis(e.target.value)}>
+                                    {columns.map(c => <option className="bg-slate-900" key={c} value={c}>{c}</option>)}
+                                </select>
+                            </div>
+                            <button onClick={swapAxes} className="mt-4 p-1.5 bg-blue-600/20 text-blue-400 hover:text-white hover:bg-blue-600 rounded-lg transition-all" title="X/Y축 스왑">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                            </button>
+                            <div className="flex-1">
+                                <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block mb-1">Y축 (수치)</span>
+                                <select className="w-full bg-slate-900 text-slate-200 px-2 py-2 text-xs rounded-lg border border-emerald-500/30 outline-none focus:border-emerald-500" value={yAxis} onChange={e => setYAxis(e.target.value)}>
+                                    {numericColumns.map(c => <option className="bg-slate-900" key={c} value={c}>{c}</option>)}
+                                    {!numericColumns.length && columns.map(c => <option className="bg-slate-900" key={c} value={c}>{c}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 차트 유형 및 제목 */}
+                    <div className="bg-purple-500/10 p-4 rounded-xl border border-purple-500/30">
+                        <label className="text-sm text-purple-400 font-bold flex items-center gap-2 mb-3">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                            </svg>
+                            차트 유형
+                        </label>
+                        <select className="w-full bg-slate-900 text-slate-200 px-3 py-2 text-sm font-bold rounded-lg border border-purple-500/30 outline-none focus:border-purple-500 mb-2" value={chartType} onChange={e => setChartType(e.target.value)}>
+                            <option value="bar">📊 막대 차트</option>
+                            <option value="line">📈 꺾은선</option>
+                            <option value="area">📉 영역 차트</option>
+                            <option value="combo">🔀 복합 차트</option>
+                            <option value="pie">🥧 파이 차트</option>
+                            <option value="doughnut">🍩 도넛 차트</option>
+                        </select>
+                        <input type="text" placeholder="차트 제목..." value={title} onChange={e => setTitle(e.target.value)} className="w-full bg-slate-900 text-slate-200 px-3 py-2 text-xs rounded-lg border border-slate-700 outline-none focus:border-purple-500" />
+                    </div>
+
+                    {/* 집계 방식 */}
+                    <div className="bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/30">
+                        <label className="text-sm text-emerald-400 font-bold flex items-center gap-2 mb-3">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                            집계 방식
+                        </label>
+                        <div className="grid grid-cols-3 gap-1">
+                            {[
+                                { value: 'sum', label: '∑ 합계' },
+                                { value: 'avg', label: 'ø 평균' },
+                                { value: 'count', label: '# 개수' },
+                                { value: 'max', label: '↑ 최대' },
+                                { value: 'min', label: '↓ 최소' }
+                            ].map(opt => (
+                                <button 
+                                    key={opt.value}
+                                    onClick={() => setAggregationType(opt.value)}
+                                    className={`px-2 py-1.5 text-xs font-bold rounded transition-all ${aggregationType === opt.value ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-400 hover:bg-slate-800 border border-slate-700'}`}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 보조 Y축 (Combo일 때만) */}
+                    <div className="bg-indigo-500/10 p-4 rounded-xl border border-indigo-500/30">
+                        {chartType === 'combo' ? (
+                            <>
+                                <label className="text-sm text-indigo-400 font-bold flex items-center gap-2 mb-3">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                    </svg>
+                                    보조 Y축 (라인)
+                                </label>
+                                <select className="w-full bg-slate-900 text-indigo-300 px-3 py-2 text-sm rounded-lg border border-indigo-500/30 outline-none focus:border-indigo-500" value={yAxis2} onChange={e => setYAxis2(e.target.value)}>
+                                    {numericColumns.map(c => <option className="bg-slate-900" key={c} value={c}>{c}</option>)}
+                                </select>
+                            </>
+                        ) : (
+                            <div className="flex items-center justify-center h-full text-slate-500 text-xs">복합 차트 선택 시<br/>보조 Y축 표시</div>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -772,97 +974,140 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
             {/* Design Panel (Tabbed UI) */}
             <div id="chart-design-panel" className="hidden flex-col border-b border-slate-700 shrink-0 shadow-2xl z-10">
                 <div className="flex bg-slate-900 border-b border-slate-700">
-                    <button onClick={() => setActiveDesignTab('theme')} className={activeDesignTab === 'theme' ? activeTabClass : inactiveTabClass}>🎨 색상/조건부서식</button>
-                    <button onClick={() => setActiveDesignTab('axis')} className={activeDesignTab === 'axis' ? activeTabClass : inactiveTabClass}>📏 데이터포맷/축/기타묶기</button>
-                    <button onClick={() => setActiveDesignTab('text')} className={activeDesignTab === 'text' ? activeTabClass : inactiveTabClass}>🔤 라벨/폰트크기</button>
-                    <button onClick={() => setActiveDesignTab('options')} className={activeDesignTab === 'options' ? activeTabClass : inactiveTabClass}>⚙️ 차트 형태/옵션</button>
-                    <button onClick={() => setActiveDesignTab('watermark')} className={activeDesignTab === 'watermark' ? activeTabClass : inactiveTabClass}>🔒 대외비</button>
+                    <button onClick={() => {setActiveDesignTab('theme'); document.getElementById('chart-design-panel').classList.remove('hidden');}} className={activeDesignTab === 'theme' ? activeTabClass : inactiveTabClass}>🎨 색상/조건부서식</button>
+                    <button onClick={() => {setActiveDesignTab('axis'); document.getElementById('chart-design-panel').classList.remove('hidden');}} className={activeDesignTab === 'axis' ? activeTabClass : inactiveTabClass}>📏 데이터포맷/축/기타묶기</button>
+                    <button onClick={() => {setActiveDesignTab('text'); document.getElementById('chart-design-panel').classList.remove('hidden');}} className={activeDesignTab === 'text' ? activeTabClass : inactiveTabClass}>🔤 라벨/폰트크기</button>
+                    <button onClick={() => {setActiveDesignTab('options'); document.getElementById('chart-design-panel').classList.remove('hidden');}} className={activeDesignTab === 'options' ? activeTabClass : inactiveTabClass}>⚙️ 차트 형태/옵션</button>
+                    <button onClick={() => {setActiveDesignTab('watermark'); document.getElementById('chart-design-panel').classList.remove('hidden');}} className={activeDesignTab === 'watermark' ? activeTabClass : inactiveTabClass}>🔒 대외비</button>
                 </div>
                 
                 <div className="bg-slate-900 p-6 max-h-[380px] overflow-y-auto custom-scrollbar">
-                    
+
                     {/* 탭 1: 테마 및 서식 */}
                     {activeDesignTab === 'theme' && (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            <div className="flex flex-col gap-6">
-                                <div>
-                                    <label className="text-sm text-slate-300 block mb-2 font-bold">보고서 맞춤형 색상 팔레트</label>
-                                    <div className="flex gap-2 flex-wrap">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* 좌측: 색상 팔레트 + 조건부 */}
+                            <div className="space-y-4">
+                                <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-4 rounded-xl border border-slate-700/50">
+                                    <h3 className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500"></span>
+                                        색상 테마
+                                    </h3>
+                                    <div className="grid grid-cols-2 gap-2">
                                         {Object.keys(colorThemes).map(theme => (
-                                            <button key={theme} onClick={() => {setColorTheme(theme); setAutoHighlight(false); setHighlightNegative(false); setCustomColors({});}} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${colorTheme === theme && !autoHighlight && !highlightNegative ? 'bg-slate-800 text-white ring-2 ring-brand-500 shadow-lg' : 'bg-slate-950 text-slate-400 hover:bg-slate-800 border border-slate-700'}`}>
+                                            <button 
+                                                key={theme} 
+                                                onClick={() => {setColorTheme(theme); setAutoHighlight(false); setHighlightNegative(false); setCustomColors({});}} 
+                                                className={`px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-2 ${colorTheme === theme && !autoHighlight && !highlightNegative ? 'bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/50 text-white' : 'bg-slate-950/50 text-slate-400 hover:bg-slate-800 border border-slate-700/50'}`}
+                                            >
                                                 <div className="flex gap-0.5">
-                                                    <div className="w-3 h-3 rounded-full" style={{backgroundColor: colorThemes[theme].bg[0]}}></div>
-                                                    <div className="w-3 h-3 rounded-full" style={{backgroundColor: colorThemes[theme].bg[1]}}></div>
+                                                    <div className="w-3 h-3 rounded-full ring-1 ring-white/20" style={{backgroundColor: colorThemes[theme].bg[0]}}></div>
+                                                    <div className="w-3 h-3 rounded-full ring-1 ring-white/20" style={{backgroundColor: colorThemes[theme].bg[1]}}></div>
                                                 </div>
-                                                {theme === 'corporate' ? '신뢰도(기본)' : theme === 'mckinsey' ? '컨설팅(단정)' : theme === 'pastel' ? '파스텔(부드러움)' : '무채색(모던)'}
+                                                <span>{theme === 'corporate' ? '신뢰도' : theme === 'mckinsey' ? '컨설팅' : theme === 'pastel' ? '파스텔' : '무채색'}</span>
                                             </button>
                                         ))}
                                     </div>
                                 </div>
-                                
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className={`border p-4 rounded-xl flex items-start gap-3 cursor-pointer transition-colors ${autoHighlight ? 'bg-blue-500/10 border-blue-500/50' : 'bg-slate-950 border-slate-800 hover:border-slate-600'}`} onClick={() => {setAutoHighlight(!autoHighlight); if(!autoHighlight) {setHighlightNegative(false); setCustomColors({});}}}>
-                                        <input type="checkbox" className="mt-1 w-4 h-4 accent-blue-500 pointer-events-none" checked={autoHighlight} readOnly />
-                                        <div>
-                                            <label className="text-sm font-bold text-blue-400 cursor-pointer block">스마트 강조 (최대/최소)</label>
-                                            <p className="text-[10px] text-slate-400 mt-1">최대값(파랑)과 최소값(빨강) 자동 탐색.</p>
+
+                                <div className="space-y-2">
+                                    <button 
+                                        onClick={() => {setAutoHighlight(!autoHighlight); if(!autoHighlight) {setHighlightNegative(false); setCustomColors({});}}}
+                                        className={`w-full p-3 rounded-xl flex items-center gap-3 transition-all ${autoHighlight ? 'bg-gradient-to-r from-blue-600/20 to-cyan-600/20 border border-blue-500/50' : 'bg-slate-800/50 border border-slate-700/30 hover:border-slate-600'}`}
+                                    >
+                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${autoHighlight ? 'bg-blue-500/20' : 'bg-slate-700/50'}`}>
+                                            <svg className={`w-5 h-5 ${autoHighlight ? 'text-blue-400' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                                         </div>
-                                    </div>
+                                        <div className="text-left">
+                                            <div className="text-sm font-bold text-slate-200">스마트 강조</div>
+                                            <div className="text-[10px] text-slate-500">최대/최소값 자동 진開</div>
+                                        </div>
+                                        <div className={`ml-auto w-5 h-5 rounded-full border-2 flex items-center justify-center ${autoHighlight ? 'border-blue-500 bg-blue-500' : 'border-slate-600'}`}>
+                                            {autoHighlight && <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
+                                        </div>
+                                    </button>
                                     
-                                    <div className={`border p-4 rounded-xl flex items-start gap-3 cursor-pointer transition-colors ${highlightNegative ? 'bg-red-500/10 border-red-500/50' : 'bg-slate-950 border-slate-800 hover:border-slate-600'}`} onClick={() => {setHighlightNegative(!highlightNegative); if(!highlightNegative) {setAutoHighlight(false); setCustomColors({});}}}>
-                                        <input type="checkbox" className="mt-1 w-4 h-4 accent-red-500 pointer-events-none" checked={highlightNegative} readOnly />
-                                        <div>
-                                            <label className="text-sm font-bold text-red-400 cursor-pointer block">조건부 서식 (음수 빨강)</label>
-                                            <p className="text-[10px] text-slate-400 mt-1">0보다 작은 적자/손실 데이터를 강조.</p>
+                                    <button 
+                                        onClick={() => {setHighlightNegative(!highlightNegative); if(!highlightNegative) {setAutoHighlight(false); setCustomColors({});}}}
+                                        className={`w-full p-3 rounded-xl flex items-center gap-3 transition-all ${highlightNegative ? 'bg-gradient-to-r from-red-600/20 to-orange-600/20 border border-red-500/50' : 'bg-slate-800/50 border border-slate-700/30 hover:border-slate-600'}`}
+                                    >
+                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${highlightNegative ? 'bg-red-500/20' : 'bg-slate-700/50'}`}>
+                                            <svg className={`w-5 h-5 ${highlightNegative ? 'text-red-400' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                         </div>
+                                        <div className="text-left">
+                                            <div className="text-sm font-bold text-slate-200">음수 강조</div>
+                                            <div className="text-[10px] text-slate-500">적자 데이터 강조</div>
+                                        </div>
+                                        <div className={`ml-auto w-5 h-5 rounded-full border-2 flex items-center justify-center ${highlightNegative ? 'border-red-500 bg-red-500' : 'border-slate-600'}`}>
+                                            {highlightNegative && <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* 우측: 배경색 + 항목별 */}
+                            <div className="md:col-span-2 space-y-4">
+                                <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-4 rounded-xl border border-slate-700/50">
+                                    <h3 className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-slate-500"></span>
+                                        차트 배경
+                                    </h3>
+                                    <div className="flex gap-2 flex-wrap">
+                                        {[
+                                            { color: 'transparent', label: '투명' },
+                                            { color: '#0f172a', label: '다크' },
+                                            { color: '#1e293b', label: '슬레이트' },
+                                            { color: '#000000', label: '블랙' },
+                                            { color: '#ffffff', label: '화이트' },
+                                            { color: '#f8fafc', label: '라이트' }
+                                        ].map(({ color, label }) => (
+                                            <button 
+                                                key={color} 
+                                                onClick={() => setBackgroundColor(color)}
+                                                className={`group relative px-3 py-2 rounded-lg text-xs font-medium transition-all ${backgroundColor === color ? 'bg-brand-500/20 border border-brand-500 text-brand-400' : 'bg-slate-950/50 border border-slate-700/50 text-slate-400 hover:border-slate-600'}`}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`w-4 h-4 rounded border ${color === 'transparent' ? 'border-slate-600 bg-[url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAABZJREFUeNpi2rV7928GIEAEEAAEGADmIwQgf+mXpAAAAABJRU5ErkJggg==")]' : 'border-slate-500'}`} style={{ backgroundColor: color !== 'transparent' ? color : undefined }}></div>
+                                                    {label}
+                                                </div>
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label className="text-sm text-slate-300 block mb-2 font-bold">차트 배경 (PPT 삽입 시 투명화 필수)</label>
-                                    <div className="flex gap-2 flex-wrap items-center">
-                                        {['transparent', '#0f172a', '#1e293b', '#000000', '#ffffff', '#f8fafc'].map(color => (
-                                            <button key={color} onClick={() => setBackgroundColor(color)} className={`w-8 h-8 rounded-lg border-2 transition-transform hover:scale-110 ${backgroundColor === color ? 'border-brand-500 scale-110' : 'border-slate-600'} ${color === 'transparent' ? 'bg-[url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAABZJREFUeNpi2rV7928GIEAEEAAEGADmIwQgf+mXpAAAAABJRU5ErkJggg==")]' : ''}`} style={{ backgroundColor: color !== 'transparent' ? color : undefined }} title={color === 'transparent' ? '투명 배경' : color} />
-                                        ))}
-                                        <div className="flex items-center gap-2 ml-2 pl-3 border-l border-slate-700">
-                                            <label className="text-xs text-slate-400 font-medium">커스텀:</label>
-                                            <input 
-                                                type="color" 
-                                                value={backgroundColor === 'transparent' ? '#0f172a' : backgroundColor} 
-                                                onChange={(e) => setBackgroundColor(e.target.value)} 
-                                                className="w-8 h-8 rounded-lg border-2 border-slate-600 cursor-pointer p-0.5 bg-transparent"
-                                                title="사용자 정의 색상"
-                                            />
-                                        </div>
+                                <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-4 rounded-xl border border-slate-700/50">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
+                                            <span className="w-2 h-2 rounded-full bg-gradient-to-r from-green-500 to-emerald-500"></span>
+                                            항목별 색상 지정
+                                        </h3>
+                                        <button 
+                                            onClick={() => setCustomColors({})} 
+                                            className="text-xs text-slate-500 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2 py-1 rounded transition-colors"
+                                        >
+                                            초기화
+                                        </button>
                                     </div>
-                                    {backgroundColor !== 'transparent' && (
-                                        <div className="mt-2 flex items-center gap-2">
-                                            <span className="text-xs text-slate-500">선택된 색상:</span>
-                                            <code className="text-xs bg-slate-800 px-2 py-1 rounded text-slate-300">{backgroundColor}</code>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                            
-                            <div className="bg-slate-800/50 p-5 rounded-xl border border-slate-700 h-full flex flex-col">
-                                <div className="flex justify-between items-center mb-4 shrink-0">
-                                    <label className="text-sm text-brand-400 font-bold flex items-center gap-2">개별 항목 색상 강제 덮어쓰기</label>
-                                    <button onClick={() => setCustomColors({})} className="text-xs font-bold text-slate-300 bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded transition-colors">초기화</button>
-                                </div>
-                                <div className="overflow-y-auto custom-scrollbar pr-2 grid grid-cols-2 gap-3 flex-1">
-                                    {chartDataObj.labels.map((label, idx) => {
-                                        const defaultCol = colors.bg[idx % colors.bg.length];
-                                        const currentVal = customColors[label] || (autoHighlight || highlightNegative ? undefined : defaultCol);
-                                        return (
-                                            <div key={label} className="flex items-center justify-between bg-slate-950 px-3 py-2.5 rounded-lg border border-slate-700">
-                                                <span className="text-xs text-slate-300 truncate font-medium flex-1 mr-2" title={label}>{label}</span>
-                                                <input type="color" className="w-6 h-6 bg-transparent border-0 cursor-pointer p-0 rounded shrink-0" 
-                                                    value={currentVal && currentVal.startsWith('#') ? currentVal : '#475569'} 
-                                                    onChange={(e) => {setCustomColors(prev => ({...prev, [label]: e.target.value})); setAutoHighlight(false); setHighlightNegative(false);}} 
-                                                />
-                                            </div>
-                                        )
-                                    })}
+                                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1">
+                                        {chartDataObj.labels.map((label, idx) => {
+                                            const defaultCol = colors.bg[idx % colors.bg.length];
+                                            const currentVal = customColors[label] || (autoHighlight || highlightNegative ? undefined : defaultCol);
+                                            return (
+                                                <div 
+                                                    key={label} 
+                                                    className="flex items-center gap-1.5 bg-slate-950/80 px-2 py-1.5 rounded-lg border border-slate-700/50 hover:border-slate-500 transition-colors group"
+                                                >
+                                                    <input 
+                                                        type="color" 
+                                                        className="w-5 h-5 bg-transparent border-0 cursor-pointer p-0 rounded ring-1 ring-slate-600 group-hover:ring-slate-500" 
+                                                        value={currentVal && currentVal.startsWith('#') ? currentVal : '#475569'} 
+                                                        onChange={(e) => {setCustomColors(prev => ({...prev, [label]: e.target.value})); setAutoHighlight(false); setHighlightNegative(false);}} 
+                                                    />
+                                                    <span className="text-[10px] text-slate-400 truncate max-w-[70px]" title={label}>{label}</span>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -870,50 +1115,66 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
 
                     {/* 탭 2: 축, 데이터 포맷 및 기타 묶기 */}
                     {activeDesignTab === 'axis' && (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="bg-emerald-500/10 p-5 rounded-xl border border-emerald-500/30 flex flex-col gap-4">
-                                <label className="text-sm text-emerald-400 font-bold flex items-center gap-2">💰 숫자 단위 포맷팅</label>
-                                <select className="bg-slate-900 text-slate-200 px-3 py-2.5 text-sm font-medium rounded-lg border border-slate-700 w-full focus:border-emerald-500 outline-none" value={valueFormat} onChange={e => setValueFormat(e.target.value)}>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* 카드 1: 숫자 포맷 */}
+                            <div className="bg-gradient-to-br from-emerald-900/30 to-slate-900 p-4 rounded-xl border border-emerald-500/30">
+                                <h3 className="text-sm font-bold text-emerald-400 mb-3 flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                    💰 숫자 단위 포맷팅
+                                </h3>
+                                <select className="w-full bg-slate-950/80 text-slate-200 px-3 py-2.5 text-sm font-medium rounded-lg border border-slate-700/50 focus:border-emerald-500 outline-none mb-3" value={valueFormat} onChange={e => setValueFormat(e.target.value)}>
                                     <option value="none">원본 수치 (예: 12000)</option>
                                     <option value="comma">천단위 콤마 (예: 12,000)</option>
-                                    <option value="krw">원화 기호 ₩ (예: ₩12,000)</option>
-                                    <option value="usd">달러 기호 $ (예: $12,000)</option>
+                                    <option value="krw">원화 ₩ (예: ₩12,000)</option>
+                                    <option value="usd">달러 $ (예: $12,000)</option>
                                     <option value="percent">퍼센트 % (예: 12.0%)</option>
-                                    <option value="compact">요약 단위 (예: 1.2만)</option>
+                                    <option value="compact">요약 (예: 1.2만)</option>
                                 </select>
-                                <label className="flex items-center gap-2 text-sm text-slate-200 font-bold mt-2 bg-slate-900 px-4 py-3 rounded-lg border border-slate-700 cursor-pointer">
-                                    <input type="checkbox" className="w-5 h-5 accent-emerald-500" checked={showDataLabels} onChange={e => setShowDataLabels(e.target.checked)} /> 차트 안에 실제 수치 라벨 표시
+                                <label className="flex items-center gap-3 text-sm text-slate-300 bg-slate-950/50 px-3 py-2.5 rounded-lg border border-slate-700/30 cursor-pointer hover:border-emerald-500/50 transition-colors">
+                                    <input type="checkbox" className="w-4 h-4 accent-emerald-500" checked={showDataLabels} onChange={e => setShowDataLabels(e.target.checked)} /> 
+                                    <span className="font-medium">데이터 라벨 표시</span>
                                 </label>
                             </div>
 
-                            <div className="flex flex-col gap-4">
-                                <div className="bg-slate-950 p-5 rounded-xl border border-slate-800 flex flex-col gap-4">
-                                    <label className="text-sm text-slate-300 font-bold">정렬 및 상위 항목 묶기 (롱테일)</label>
-                                    <select className="bg-slate-900 text-slate-200 px-3 py-2 text-sm rounded-lg border border-slate-700 w-full outline-none" value={sortData} onChange={e => setSortData(e.target.value)}>
-                                        <option value="desc">큰 값부터 (내림차순 정렬)</option>
-                                        <option value="asc">작은 값부터 (오름차순 정렬)</option>
-                                        <option value="none">데이터 원본 순서 유지</option>
-                                    </select>
-                                    <label className="flex items-center gap-2 text-sm text-brand-400 font-bold cursor-pointer mt-1">
-                                        <input type="checkbox" className="w-4 h-4 accent-brand-500" checked={groupOthers} onChange={e => setGroupOthers(e.target.checked)} />
-                                        상위 N개 제외 '기타'로 합치기
-                                    </label>
-                                    {groupOthers && (
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs text-slate-400">표시할 상위 개수:</span>
-                                            <input type="number" value={topNCount} onChange={e => setTopNCount(Number(e.target.value))} className="bg-slate-900 text-slate-200 px-2 py-1 text-sm rounded border border-slate-700 w-16 text-center" min="1" />
-                                        </div>
-                                    )}
-                                </div>
+                            {/* 카드 2: 정렬 및 묶기 */}
+                            <div className="bg-gradient-to-br from-purple-900/30 to-slate-900 p-4 rounded-xl border border-purple-500/30">
+                                <h3 className="text-sm font-bold text-purple-400 mb-3 flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                                    📊 정렬 및 상위 묶기
+                                </h3>
+                                <select className="w-full bg-slate-950/80 text-slate-200 px-3 py-2 text-sm rounded-lg border border-slate-700/50 focus:border-purple-500 outline-none mb-3" value={sortData} onChange={e => setSortData(e.target.value)}>
+                                    <option value="desc">큰 값부터 (내림차순)</option>
+                                    <option value="asc">작은 값부터 (오름차순)</option>
+                                    <option value="none">원본 순서 유지</option>
+                                </select>
+                                <label className="flex items-center gap-3 text-sm text-purple-300 bg-slate-950/50 px-3 py-2.5 rounded-lg border border-slate-700/30 cursor-pointer hover:border-purple-500/50 transition-colors">
+                                    <input type="checkbox" className="w-4 h-4 accent-purple-500" checked={groupOthers} onChange={e => setGroupOthers(e.target.checked)} />
+                                    <span className="font-medium">상위 N개 → '기타'</span>
+                                </label>
+                                {groupOthers && (
+                                    <div className="mt-3 flex items-center gap-2 bg-purple-500/10 px-3 py-2 rounded-lg border border-purple-500/20">
+                                        <span className="text-xs text-purple-300">상위:</span>
+                                        <input type="number" value={topNCount} onChange={e => setTopNCount(Number(e.target.value))} className="bg-slate-950 text-purple-200 px-2 py-1 text-sm rounded border border-purple-500/30 w-16 text-center" min="1" />
+                                        <span className="text-xs text-purple-300">개</span>
+                                    </div>
+                                )}
                             </div>
 
-                            <div className="flex flex-col gap-4">
-                                <div className="bg-slate-950 p-5 rounded-xl border border-slate-800 flex flex-col gap-3 h-full">
-                                    <label className="text-sm text-slate-300 font-bold">Y축 범위 수동 설정 (차이 극대화)</label>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <input type="number" placeholder="최소값(Min)" value={yMin} onChange={e => setYMin(e.target.value)} className="bg-slate-900 text-slate-200 px-3 py-2 text-sm font-bold rounded-lg border border-slate-700 w-full outline-none focus:border-brand-500" />
-                                        <span className="text-slate-500 font-bold">~</span>
-                                        <input type="number" placeholder="최대값(Max)" value={yMax} onChange={e => setYMax(e.target.value)} className="bg-slate-900 text-slate-200 px-3 py-2 text-sm font-bold rounded-lg border border-slate-700 w-full outline-none focus:border-brand-500" />
+                            {/* 카드 3: Y축 범위 */}
+                            <div className="bg-gradient-to-br from-orange-900/30 to-slate-900 p-4 rounded-xl border border-orange-500/30">
+                                <h3 className="text-sm font-bold text-orange-400 mb-3 flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                                    📏 Y축 범위 설정
+                                </h3>
+                                <div className="flex items-center gap-2">
+                                    <div className="flex-1">
+                                        <span className="text-[10px] text-orange-400 font-bold uppercase block mb-1">최소값</span>
+                                        <input type="number" placeholder="Min" value={yMin} onChange={e => setYMin(e.target.value)} className="w-full bg-slate-950/80 text-slate-200 px-3 py-2 text-sm font-bold rounded-lg border border-slate-700/50 focus:border-orange-500 outline-none" />
+                                    </div>
+                                    <span className="text-orange-400 font-bold mt-4">~</span>
+                                    <div className="flex-1">
+                                        <span className="text-[10px] text-orange-400 font-bold uppercase block mb-1">최대값</span>
+                                        <input type="number" placeholder="Max" value={yMax} onChange={e => setYMax(e.target.value)} className="w-full bg-slate-950/80 text-slate-200 px-3 py-2 text-sm font-bold rounded-lg border border-slate-700/50 focus:border-orange-500 outline-none" />
                                     </div>
                                 </div>
                             </div>
@@ -922,164 +1183,185 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
 
                     {/* 탭 3: 폰트 및 라벨 */}
                     {activeDesignTab === 'text' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            <div className="col-span-1 md:col-span-2 lg:col-span-4 border-b border-slate-800 pb-6 flex flex-wrap gap-8 items-end">
-                                <div>
-                                    <label className="text-sm text-slate-300 block mb-2 font-bold">차트 기본 글꼴</label>
-                                    <select className="bg-slate-950 text-slate-200 px-4 py-2.5 text-sm font-medium rounded-lg border border-slate-700 w-64 outline-none focus:border-brand-500" value={fontFamily} onChange={e => setFontFamily(e.target.value)}>
+                        <div className="space-y-4">
+                            {/* 상단: 글꼴 선택 */}
+                            <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-4 rounded-xl border border-slate-700/50">
+                                <h3 className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500"></span>
+                                    🔤 차트 기본 글꼴
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <select className="bg-slate-950/80 text-slate-200 px-4 py-2.5 text-sm font-medium rounded-lg border border-slate-700/50 focus:border-brand-500 outline-none" value={fontFamily} onChange={e => setFontFamily(e.target.value)}>
                                         <option value="'Pretendard', sans-serif">Pretendard (가독성 최상)</option>
                                         <option value="'Noto Sans KR', sans-serif">Noto Sans KR (본고딕)</option>
                                         <option value="'Malgun Gothic', sans-serif">맑은 고딕 (무난함)</option>
                                         <option value="Inter">Inter (영문 전용)</option>
                                     </select>
-                                </div>
-                                <div className="flex flex-col gap-2 bg-slate-800/40 p-3 rounded-xl border border-slate-700 flex-1 min-w-[300px]">
-                                    <label className="text-xs text-slate-300 font-bold">막대 차트 - 데이터 라벨 위치 조절</label>
-                                    <div className="flex gap-2">
-                                        <button onClick={() => setDataLabelPosition('top')} className={`px-4 py-2 text-xs font-bold rounded flex-1 transition-colors ${dataLabelPosition === 'top' ? 'bg-brand-600 text-white' : 'bg-slate-900 text-slate-400 hover:bg-slate-800'}`}>막대 위쪽 (기본)</button>
-                                        <button onClick={() => setDataLabelPosition('center')} className={`px-4 py-2 text-xs font-bold rounded flex-1 transition-colors ${dataLabelPosition === 'center' ? 'bg-brand-600 text-white' : 'bg-slate-900 text-slate-400 hover:bg-slate-800'}`}>막대 정중앙</button>
+                                    <div className="flex items-center gap-3 bg-slate-950/50 px-4 py-2 rounded-lg border border-slate-700/30">
+                                        <span className="text-sm text-slate-300 font-medium">데이터 라벨 위치:</span>
+                                        <button onClick={() => setDataLabelPosition('top')} className={`px-3 py-1.5 text-xs font-bold rounded transition-colors ${dataLabelPosition === 'top' ? 'bg-brand-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>위쪽</button>
+                                        <button onClick={() => setDataLabelPosition('center')} className={`px-3 py-1.5 text-xs font-bold rounded transition-colors ${dataLabelPosition === 'center' ? 'bg-brand-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>중앙</button>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <div className="flex flex-col gap-3 bg-slate-950 p-5 rounded-xl border border-slate-800">
-                                <label className="text-sm text-slate-300 font-bold flex justify-between">타이틀 크기 <span className="text-brand-400 bg-brand-900/30 px-2 rounded">{fonts.title}px</span></label>
-                                <input type="range" min="12" max="40" value={fonts.title} onChange={e => updateFont('title', e.target.value)} className="accent-brand-500" />
-                            </div>
-                            <div className="flex flex-col gap-3 bg-slate-950 p-5 rounded-xl border border-slate-800">
-                                <label className="text-sm text-slate-300 font-bold flex justify-between">축(X/Y) 라벨 크기 <span className="text-brand-400 bg-brand-900/30 px-2 rounded">{fonts.axis}px</span></label>
-                                <input type="range" min="8" max="24" value={fonts.axis} onChange={e => updateFont('axis', e.target.value)} className="accent-brand-500" />
-                            </div>
-                            <div className="flex flex-col gap-3 bg-slate-950 p-5 rounded-xl border border-slate-800">
-                                <label className="text-sm text-slate-300 font-bold flex justify-between">범례 글자 크기 <span className="text-brand-400 bg-brand-900/30 px-2 rounded">{fonts.legend}px</span></label>
-                                <input type="range" min="8" max="24" value={fonts.legend} onChange={e => updateFont('legend', e.target.value)} className="accent-brand-500" />
-                            </div>
-                            <div className="flex flex-col gap-3 bg-slate-950 p-5 rounded-xl border border-slate-800">
-                                <label className="text-sm text-slate-300 font-bold flex justify-between">데이터 수치 크기 <span className="text-brand-400 bg-brand-900/30 px-2 rounded">{fonts.dataLabel}px</span></label>
-                                <input type="range" min="8" max="30" value={fonts.dataLabel} onChange={e => updateFont('dataLabel', e.target.value)} className="accent-brand-500" />
+
+                            {/* 하단: 폰트 크기 슬라이더 4개 */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="bg-gradient-to-br from-blue-900/30 to-slate-900 p-4 rounded-xl border border-blue-500/30">
+                                    <label className="text-xs text-blue-400 font-bold flex justify-between mb-2">타이틀 <span className="bg-blue-500/20 px-2 py-0.5 rounded text-[10px]">{fonts.title}px</span></label>
+                                    <input type="range" min="12" max="40" value={fonts.title} onChange={e => updateFont('title', e.target.value)} className="w-full accent-blue-500" />
+                                </div>
+                                <div className="bg-gradient-to-br from-green-900/30 to-slate-900 p-4 rounded-xl border border-green-500/30">
+                                    <label className="text-xs text-green-400 font-bold flex justify-between mb-2">축 라벨 <span className="bg-green-500/20 px-2 py-0.5 rounded text-[10px]">{fonts.axis}px</span></label>
+                                    <input type="range" min="8" max="24" value={fonts.axis} onChange={e => updateFont('axis', e.target.value)} className="w-full accent-green-500" />
+                                </div>
+                                <div className="bg-gradient-to-br from-purple-900/30 to-slate-900 p-4 rounded-xl border border-purple-500/30">
+                                    <label className="text-xs text-purple-400 font-bold flex justify-between mb-2">범례 <span className="bg-purple-500/20 px-2 py-0.5 rounded text-[10px]">{fonts.legend}px</span></label>
+                                    <input type="range" min="8" max="24" value={fonts.legend} onChange={e => updateFont('legend', e.target.value)} className="w-full accent-purple-500" />
+                                </div>
+                                <div className="bg-gradient-to-br from-orange-900/30 to-slate-900 p-4 rounded-xl border border-orange-500/30">
+                                    <label className="text-xs text-orange-400 font-bold flex justify-between mb-2">데이터 수치 <span className="bg-orange-500/20 px-2 py-0.5 rounded text-[10px]">{fonts.dataLabel}px</span></label>
+                                    <input type="range" min="8" max="30" value={fonts.dataLabel} onChange={e => updateFont('dataLabel', e.target.value)} className="w-full accent-orange-500" />
+                                </div>
                             </div>
                         </div>
                     )}
 
                     {/* 탭 4: 고급 옵션 */}
                     {activeDesignTab === 'options' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            <div className="bg-slate-950 border border-slate-800 p-5 rounded-xl flex flex-col gap-4">
-                                <label className="text-sm text-amber-400 font-bold flex items-center gap-2">선 및 가이드라인</label>
-                                <label className="flex items-center gap-3 text-sm text-slate-300 font-medium cursor-pointer">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {/* 카드 1: 가이드라인 */}
+                            <div className="bg-gradient-to-br from-amber-900/30 to-slate-900 p-4 rounded-xl border border-amber-500/30">
+                                <h3 className="text-sm font-bold text-amber-400 mb-3 flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                                    📈 가이드라인
+                                </h3>
+                                <label className="flex items-center gap-3 text-sm text-slate-300 bg-slate-950/50 px-3 py-2 rounded-lg border border-slate-700/30 cursor-pointer hover:border-amber-500/50 mb-2">
                                     <input type="checkbox" checked={showAverageLine} onChange={e => setShowAverageLine(e.target.checked)} className="w-4 h-4 accent-amber-500" disabled={chartType === 'pie' || chartType === 'doughnut'} /> 
-                                    전체 평균선(점선) 표시
+                                    평균선 (점선)
                                 </label>
-                                <div className="flex flex-col gap-2 bg-slate-900 p-3 rounded-lg border border-slate-800">
-                                    <label className="flex items-center gap-2 text-sm text-emerald-300 cursor-pointer font-bold">
+                                <div className={`bg-slate-950/50 p-3 rounded-lg border border-slate-700/30 ${showTargetLine ? 'border-emerald-500/50' : ''}`}>
+                                    <label className="flex items-center gap-2 text-sm text-emerald-300 cursor-pointer font-bold mb-2">
                                         <input type="checkbox" checked={showTargetLine} onChange={e => setShowTargetLine(e.target.checked)} className="w-4 h-4 accent-emerald-500" disabled={chartType === 'pie' || chartType === 'doughnut'} /> 
-                                        목표선(Target)
+                                        목표선
                                     </label>
-                                    <input type="number" placeholder="목표 수치 (예: 10000)" value={targetValue} onChange={e => setTargetValue(e.target.value)} disabled={!showTargetLine} className="bg-slate-950 text-emerald-400 font-bold px-3 py-2 text-sm rounded border border-emerald-500/30 outline-none w-full disabled:opacity-50" />
+                                    <input type="number" placeholder="목표 수치" value={targetValue} onChange={e => setTargetValue(e.target.value)} disabled={!showTargetLine} className="w-full bg-slate-900 text-emerald-400 font-bold px-3 py-2 text-sm rounded border border-emerald-500/30 outline-none disabled:opacity-50" />
                                 </div>
                             </div>
 
-                            <div className="flex flex-col gap-4 bg-slate-950 p-5 rounded-xl border border-slate-800">
-                                <label className="text-sm text-brand-400 font-bold">도형 외곽선 및 시각효과</label>
-                                <label className="flex items-center gap-3 text-sm text-purple-300 cursor-pointer font-bold">
+                            {/* 카드 2: 시각효과 */}
+                            <div className="bg-gradient-to-br from-purple-900/30 to-slate-900 p-4 rounded-xl border border-purple-500/30">
+                                <h3 className="text-sm font-bold text-purple-400 mb-3 flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                                    ✨ 시각효과
+                                </h3>
+                                <label className="flex items-center gap-3 text-sm text-purple-300 bg-slate-950/50 px-3 py-2 rounded-lg border border-slate-700/30 cursor-pointer hover:border-purple-500/50 mb-3">
                                     <input type="checkbox" checked={enableGradient} onChange={e => setEnableGradient(e.target.checked)} className="w-4 h-4 accent-purple-500" disabled={chartType === 'pie' || chartType === 'doughnut'} /> 
-                                    세로 그라데이션 적용
+                                    세로 그라데이션
                                 </label>
                                 {(chartType === 'bar' || chartType === 'combo') && (
-                                    <div className="flex flex-col gap-2 mt-1">
-                                        <span className="text-xs text-slate-400">막대 두께 ({barThickness}px)</span>
-                                        <input type="range" min="5" max="80" value={barThickness} onChange={e => setBarThickness(Number(e.target.value))} className="accent-brand-500" />
-                                        <span className="text-xs text-slate-400 mt-1">막대 모서리 둥글기 ({borderRadius}px)</span>
-                                        <input type="range" min="0" max="30" value={borderRadius} onChange={e => setBorderRadius(Number(e.target.value))} className="accent-brand-500" />
+                                    <div className="space-y-3">
+                                        <div>
+                                            <div className="flex justify-between text-[10px] text-purple-300 mb-1">
+                                                <span>막대 두께</span>
+                                                <span className="font-bold">{barThickness}px</span>
+                                            </div>
+                                            <input type="range" min="5" max="80" value={barThickness} onChange={e => setBarThickness(Number(e.target.value))} className="w-full accent-purple-500" />
+                                        </div>
+                                        <div>
+                                            <div className="flex justify-between text-[10px] text-purple-300 mb-1">
+                                                <span>모서리 둥글기</span>
+                                                <span className="font-bold">{borderRadius}px</span>
+                                            </div>
+                                            <input type="range" min="0" max="30" value={borderRadius} onChange={e => setBorderRadius(Number(e.target.value))} className="w-full accent-purple-500" />
+                                        </div>
                                     </div>
                                 )}
                                 {(chartType === 'line' || chartType === 'area' || chartType === 'combo') && (
-                                    <div className="flex flex-col gap-3 mt-1">
-                                        <select className="bg-slate-900 text-slate-200 px-3 py-2 text-xs rounded border border-slate-700 w-full" value={lineStyle} onChange={e => setLineStyle(e.target.value)}>
-                                            <option value="smooth">곡선형 (부드럽게)</option>
-                                            <option value="straight">직선형 (꺾이게)</option>
-                                        </select>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="flex flex-col gap-3 bg-slate-950 p-5 rounded-xl border border-slate-800">
-                                <label className="text-sm text-slate-300 font-bold mb-1">차트 레이아웃 설정</label>
-                                <label className="flex items-center gap-3 text-sm text-slate-300 cursor-pointer"><input type="checkbox" checked={showGrid} onChange={e => setShowGrid(e.target.checked)} className="w-4 h-4" /> 배경 눈금선(Grid) 켜기</label>
-                                <label className="flex items-center gap-3 text-sm text-slate-300 cursor-pointer"><input type="checkbox" checked={beginAtZero} onChange={e => setBeginAtZero(e.target.checked)} className="w-4 h-4" /> Y축 강제로 0부터 시작</label>
-                                <label className="flex items-center gap-3 text-sm text-slate-300 cursor-pointer"><input type="checkbox" checked={showHorizontal} onChange={e => setShowHorizontal(e.target.checked)} disabled={chartType === 'pie' || chartType === 'doughnut'} className="w-4 h-4" /> 누워있는 가로막대 전환</label>
-                                <label className="flex items-center gap-3 text-sm text-slate-300 cursor-pointer"><input type="checkbox" checked={stacked} onChange={e => setStacked(e.target.checked)} disabled={chartType !== 'bar' && chartType !== 'area'} className="w-4 h-4" /> 누적 막대 (Stacked)</label>
-                                {/* 🆕 차트 주변 여백 (Clipping 방지) */}
-                                <div className="pt-2 border-t border-slate-700 mt-2">
-                                    <label className="text-xs text-orange-400 font-bold block mb-2">📐 차트 여백 (Clipping 방지)</label>
-                                    <div className="flex items-center gap-2">
-                                        <input 
-                                            type="range" 
-                                            min="0" 
-                                            max="80" 
-                                            value={chartPadding} 
-                                            onChange={e => setChartPadding(Number(e.target.value))}
-                                            className="flex-1 accent-orange-500"
-                                        />
-                                        <span className="text-xs font-bold text-orange-400 w-10">{chartPadding}px</span>
-                                    </div>
-                                    <p className="text-[10px] text-slate-500 mt-1">차트가 잘릴 때 여백을 늘리세요</p>
-                                </div>
-                                {/* 🆕 파이/도넛 차트 퍼센트 표시 */}
-                                {(chartType === 'pie' || chartType === 'doughnut') && (
-                                    <label className="flex items-center gap-3 text-sm text-cyan-300 cursor-pointer pt-2 border-t border-slate-800 mt-2">
-                                        <input type="checkbox" checked={showPiePercent} onChange={e => setShowPiePercent(e.target.checked)} className="w-4 h-4 accent-cyan-500" /> 
-                                        퍼센트 표시 (%)
-                                    </label>
-                                )}
-                            </div>
-
-                            <div className="flex flex-col gap-4 bg-slate-950 p-5 rounded-xl border border-slate-800">
-                                <label className="text-sm text-slate-300 font-bold">기타 고급 옵션</label>
-                                <div className="flex flex-col gap-2">
-                                    <label className="flex items-center gap-3 text-sm text-slate-300 cursor-pointer">
-                                        <input type="checkbox" checked={showLegend} onChange={e => setShowLegend(e.target.checked)} className="w-4 h-4 accent-brand-500" /> 범례 표시
-                                    </label>
-                                    <select className="bg-slate-900 text-slate-200 px-3 py-2 text-sm rounded border border-slate-700 w-full disabled:opacity-50" value={legendPosition} onChange={e => setLegendPosition(e.target.value)} disabled={!showLegend}>
-                                        <option value="bottom">차트 아래쪽</option>
-                                        <option value="top">차트 위쪽</option>
-                                        <option value="right">오른쪽</option>
+                                    <select className="w-full bg-slate-950/80 text-slate-200 px-3 py-2 text-xs rounded-lg border border-slate-700/50 outline-none" value={lineStyle} onChange={e => setLineStyle(e.target.value)}>
+                                        <option value="smooth">🎢 곡선형</option>
+                                        <option value="straight">📐 직선형</option>
                                     </select>
+                                )}
+                            </div>
+
+                            {/* 카드 3: 레이아웃 */}
+                            <div className="bg-gradient-to-br from-cyan-900/30 to-slate-900 p-4 rounded-xl border border-cyan-500/30">
+                                <h3 className="text-sm font-bold text-cyan-400 mb-3 flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-cyan-500"></span>
+                                    📐 레이아웃
+                                </h3>
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-3 text-sm text-slate-300 bg-slate-950/50 px-3 py-2 rounded-lg border border-slate-700/30 cursor-pointer hover:border-cyan-500/50">
+                                        <input type="checkbox" checked={showGrid} onChange={e => setShowGrid(e.target.checked)} className="w-4 h-4 accent-cyan-500" /> 격자선
+                                    </label>
+                                    <label className="flex items-center gap-3 text-sm text-slate-300 bg-slate-950/50 px-3 py-2 rounded-lg border border-slate-700/30 cursor-pointer hover:border-cyan-500/50">
+                                        <input type="checkbox" checked={beginAtZero} onChange={e => setBeginAtZero(e.target.checked)} className="w-4 h-4 accent-cyan-500" /> 0부터 시작
+                                    </label>
+                                    <label className="flex items-center gap-3 text-sm text-slate-300 bg-slate-950/50 px-3 py-2 rounded-lg border border-slate-700/30 cursor-pointer hover:border-cyan-500/50">
+                                        <input type="checkbox" checked={showHorizontal} onChange={e => setShowHorizontal(e.target.checked)} disabled={chartType === 'pie' || chartType === 'doughnut'} className="w-4 h-4 accent-cyan-500" /> 가로막대
+                                    </label>
+                                    <label className="flex items-center gap-3 text-sm text-slate-300 bg-slate-950/50 px-3 py-2 rounded-lg border border-slate-700/30 cursor-pointer hover:border-cyan-500/50">
+                                        <input type="checkbox" checked={stacked} onChange={e => setStacked(e.target.checked)} disabled={chartType !== 'bar' && chartType !== 'area'} className="w-4 h-4 accent-cyan-500" /> 누적 막대
+                                    </label>
                                 </div>
+                                {/* 여백 */}
+                                <div className="mt-3 pt-3 border-t border-slate-700/50">
+                                    <div className="flex justify-between text-[10px] text-orange-300 mb-1">
+                                        <span>차트 여백</span>
+                                        <span className="font-bold">{chartPadding}px</span>
+                                    </div>
+                                    <input type="range" min="0" max="80" value={chartPadding} onChange={e => setChartPadding(Number(e.target.value))} className="w-full accent-orange-500" />
+                                </div>
+                                {(chartType === 'pie' || chartType === 'doughnut') && (
+                                    <label className="flex items-center gap-2 text-sm text-cyan-300 mt-3 pt-3 border-t border-slate-700/50">
+                                        <input type="checkbox" checked={showPiePercent} onChange={e => setShowPiePercent(e.target.checked)} className="w-4 h-4 accent-cyan-500" /> 퍼센트 표시
+                                    </label>
+                                )}
+                            </div>
+
+                            {/* 카드 4: 범례 */}
+                            <div className="bg-gradient-to-br from-pink-900/30 to-slate-900 p-4 rounded-xl border border-pink-500/30">
+                                <h3 className="text-sm font-bold text-pink-400 mb-3 flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-pink-500"></span>
+                                    🏷️ 범례
+                                </h3>
+                                <label className="flex items-center gap-3 text-sm text-slate-300 bg-slate-950/50 px-3 py-2 rounded-lg border border-slate-700/30 cursor-pointer hover:border-pink-500/50 mb-3">
+                                    <input type="checkbox" checked={showLegend} onChange={e => setShowLegend(e.target.checked)} className="w-4 h-4 accent-pink-500" /> 범례 표시
+                                </label>
+                                <select className="w-full bg-slate-950/80 text-slate-200 px-3 py-2 text-sm rounded-lg border border-slate-700/50 outline-none disabled:opacity-50" value={legendPosition} onChange={e => setLegendPosition(e.target.value)} disabled={!showLegend}>
+                                    <option value="bottom">⬇️ 아래쪽</option>
+                                    <option value="top">⬆️ 위쪽</option>
+                                    <option value="right">➡️ 오른쪽</option>
+                                </select>
                             </div>
                         </div>
                     )}
 
                     {/* 탭 5: 대외비 (워터마크) */}
                     {activeDesignTab === 'watermark' && (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            <div className="flex flex-col gap-6">
-                                <div className="bg-red-500/10 p-5 rounded-xl border border-red-500/30">
-                                    <label className="flex items-center gap-3 text-lg font-bold text-red-400 mb-4">
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                        </svg>
-                                        워터마크 설정
-                                    </label>
-                                    
-                                    <label className={`flex items-center gap-3 text-base font-medium mb-4 cursor-pointer ${!watermarkEnabled ? 'opacity-50' : ''}`}>
-                                        <input 
-                                            type="checkbox" 
-                                            checked={watermarkEnabled} 
-                                            onChange={(e) => {
-                                                if (!propWatermarkEnabled) {
-                                                    setLocalWatermarkEnabled(e.target.checked);
-                                                }
-                                            }}
-                                            className="w-5 h-5 accent-red-500"
-                                            disabled={propWatermarkEnabled}
-                                        />
-                                        워터마크 활성화
-                                        {propWatermarkEnabled && <span className="text-xs text-amber-400 ml-2">(문서/보고서용 템플릿에서만 사용)</span>}
-                                    </label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* 왼쪽: 워터마크 설정 */}
+                            <div className="bg-gradient-to-br from-red-900/40 to-slate-900 p-4 rounded-xl border border-red-500/30 shadow-lg shadow-red-500/5">
+                                <h3 className="text-sm font-bold text-red-400 mb-4 flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-red-500 shadow-lg shadow-red-500/50"></span>
+                                    🔒 워터마크 설정
+                                </h3>
+                                
+                                <label className={`flex items-center gap-3 text-sm font-bold mb-4 bg-slate-950/60 px-4 py-3 rounded-xl border border-slate-700/50 cursor-pointer hover:border-red-500/50 hover:bg-red-500/5 transition-all ${!watermarkEnabled ? 'opacity-50' : ''}`}>
+                                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${watermarkEnabled ? 'bg-red-500 shadow-lg shadow-red-500/50' : 'bg-slate-700'}`}>
+                                        {watermarkEnabled ? (
+                                            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                                        ) : (
+                                            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg>
+                                        )}
+                                    </div>
+                                    <span className="text-slate-200">워터마크 활성화</span>
+                                </label>
 
-                                    <div className="mb-4">
-                                        <label className="text-sm text-slate-400 block mb-2 font-bold">워터마크 텍스트</label>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-2">워터마크 텍스트</label>
                                         <input 
                                             type="text" 
                                             value={watermarkText}
@@ -1088,87 +1370,128 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
                                                     setLocalWatermarkText(e.target.value);
                                                 }
                                             }}
-                                            placeholder="예: CONFIDENTIAL, 대외비, 비밀"
-                                            className="w-full bg-slate-900 text-slate-200 px-4 py-3 text-sm rounded-lg border border-slate-700 outline-none focus:border-red-500"
+                                            placeholder="예: CONFIDENTIAL"
+                                            className="w-full bg-slate-950/80 text-slate-200 px-4 py-2.5 text-sm font-medium rounded-xl border border-slate-700/50 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all"
                                             disabled={!watermarkEnabled}
                                         />
                                     </div>
-
+                                    
+                                    {/* 자주 쓰이는 워터마크 색상 */}
                                     <div>
-                                        <label className="text-sm text-slate-400 block mb-3 font-bold">디자인 선택</label>
-                                        <div className="grid grid-cols-3 gap-3">
-                                            <button 
-                                                onClick={() => setLocalWatermarkDesign('single')}
-                                                disabled={!watermarkEnabled}
-                                                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${watermarkDesign === 'single' ? 'border-red-500 bg-red-500/10' : 'border-slate-700 hover:border-slate-500 disabled:opacity-50'}`}
-                                            >
-                                                <div className="w-12 h-8 bg-slate-800 rounded flex items-center justify-center">
-                                                    <span className="text-[8px] text-red-500 -rotate-45 font-bold">텍스트</span>
-                                                </div>
-                                                <span className="text-xs font-bold text-slate-300">크게 하나</span>
-                                            </button>
-                                            <button 
-                                                onClick={() => setLocalWatermarkDesign('multiple')}
-                                                disabled={!watermarkEnabled}
-                                                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${watermarkDesign === 'multiple' ? 'border-red-500 bg-red-500/10' : 'border-slate-700 hover:border-slate-500 disabled:opacity-50'}`}
-                                            >
-                                                <div className="w-12 h-8 bg-slate-800 rounded grid grid-cols-2 gap-0.5 p-0.5">
-                                                    <span className="text-[6px] text-red-500 -rotate-45 font-bold flex items-center justify-center">텍</span>
-                                                    <span className="text-[6px] text-red-500 -rotate-45 font-bold flex items-center justify-center">텍</span>
-                                                    <span className="text-[6px] text-red-500 -rotate-45 font-bold flex items-center justify-center">텍</span>
-                                                    <span className="text-[6px] text-red-500 -rotate-45 font-bold flex items-center justify-center">텍</span>
-                                                </div>
-                                                <span className="text-xs font-bold text-slate-300">다수 배치</span>
-                                            </button>
-                                            <button 
-                                                onClick={() => setLocalWatermarkDesign('corner')}
-                                                disabled={!watermarkEnabled}
-                                                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${watermarkDesign === 'corner' ? 'border-red-500 bg-red-500/10' : 'border-slate-700 hover:border-slate-500 disabled:opacity-50'}`}
-                                            >
-                                                <div className="w-12 h-8 bg-slate-800 rounded relative">
-                                                    <span className="text-[8px] text-red-500 absolute top-0.5 right-1 font-bold">텍</span>
-                                                    <span className="text-[8px] text-red-500 absolute bottom-0.5 left-1 font-bold">텍</span>
-                                                </div>
-                                                <span className="text-xs font-bold text-slate-300">코너 배치</span>
-                                            </button>
+                                        <label className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-2">워터마크 색상</label>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {[
+                                                { color: '#dc2626', name: '빨강' },
+                                                { color: '#ea580c', name: '주황' },
+                                                { color: '#ca8a04', name: '노랑' },
+                                                { color: '#16a34a', name: '초록' },
+                                                { color: '#0891b2', name: '청록' },
+                                                { color: '#2563eb', name: '파랑' },
+                                                { color: '#7c3aed', name: '보라' },
+                                                { color: '#4b5563', name: '회색' }
+                                            ].map(({ color, name }) => (
+                                                <button 
+                                                    key={color}
+                                                    onClick={() => {
+                                                        if (!propWatermarkEnabled) {
+                                                            setLocalWatermarkColor(color);
+                                                        }
+                                                    }}
+                                                    disabled={!watermarkEnabled}
+                                                    className={`w-6 h-6 rounded-full border-2 hover:border-white transition-all disabled:opacity-50 ${localWatermarkColor === color ? 'border-white scale-110 shadow-lg' : 'border-slate-600'}`}
+                                                    style={{ backgroundColor: color }}
+                                                    title={name}
+                                                />
+                                            ))}
                                         </div>
                                     </div>
-
-                                    {/* 다수 배치 그리드 크기 조절 슬라이더 */}
-                                    {watermarkDesign === 'multiple' && (
-                                        <div className="mt-4 bg-slate-800/50 p-4 rounded-lg border border-slate-700">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <label className="text-sm text-slate-300 font-bold">그리드 크기</label>
-                                                <span className="text-lg font-bold text-red-400">{watermarkGridSize}x{watermarkGridSize}</span>
-                                            </div>
-                                            <input 
-                                                type="range" 
-                                                min="2" 
-                                                max="16" 
-                                                value={watermarkGridSize}
-                                                onChange={(e) => {
-                                                    setWatermarkGridSize(Number(e.target.value));
-                                                }}
-                                                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-red-500"
-                                                disabled={!watermarkEnabled}
-                                            />
-                                            <div className="flex justify-between text-xs text-slate-500 mt-1">
-                                                <span>2x2</span>
-                                                <span>16x16</span>
-                                            </div>
-                                        </div>
-                                    )}
+                                    
+                                    {/* 도움말 */}
+                                    <div className="bg-red-500/10 p-3 rounded-lg border border-red-500/10">
+                                        <p className="text-xs text-slate-400 leading-relaxed">
+                                            • "문서/보고서용" 템플릿 선택 시 워터마크 자동 적용<br/>
+                                            • PNG 저장 시 워터마크가 이미지에 포함
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="bg-blue-500/10 p-4 rounded-xl border border-blue-500/30">
-                                <h4 className="text-sm font-bold text-blue-400 mb-2">💡 정보</h4>
-                                <ul className="text-xs text-slate-400 space-y-1">
-                                    <li>• "문서/보고서용" 템플릿을 선택하면 워터마크가 자동 적용됩니다</li>
-                                    <li>• 디자인 선택 시 즉시 차트에 적용됩니다</li>
-                                    <li>• PNG 저장 시 워터마크가 이미지에 포함됩니다</li>
-                                    <li>• 클립보드 복사 시 워터마크가 포함됩니다</li>
-                                </ul>
+                            {/* 오른쪽: 디자인 선택 */}
+                            <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-5 rounded-2xl border border-slate-700/50 shadow-xl relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-red-500/10 to-transparent rounded-full blur-2xl"></div>
+                                <h3 className="text-sm font-bold text-slate-200 mb-4 flex items-center gap-2 relative z-10">
+                                    <span className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 shadow-lg"></span>
+                                    🎨 디자인 선택
+                                </h3>
+                                <div className="grid grid-cols-3 gap-3 relative z-10">
+                                    <button 
+                                        onClick={() => setLocalWatermarkDesign('single')}
+                                        disabled={!watermarkEnabled}
+                                        className={`group p-4 rounded-2xl border-2 transition-all duration-300 flex flex-col items-center gap-3 ${watermarkDesign === 'single' ? 'border-red-500 bg-gradient-to-br from-red-500/20 to-red-500/5 shadow-lg shadow-red-500/20' : 'border-slate-600/50 hover:border-slate-400 hover:bg-slate-700/30 disabled:opacity-40'}`}
+                                    >
+                                        <div className="w-14 h-10 bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg flex items-center justify-center shadow-inner border border-slate-600/30 group-hover:border-slate-500/50 transition-colors">
+                                            <span className="text-[9px] text-red-500 -rotate-45 font-black tracking-wider">CONFIDENTIAL</span>
+                                        </div>
+                                        <div className="text-center">
+                                            <span className="text-xs font-bold text-slate-200 block">크게 하나</span>
+                                            <span className="text-[10px] text-slate-500">중앙 배치</span>
+                                        </div>
+                                    </button>
+                                    <button 
+                                        onClick={() => setLocalWatermarkDesign('multiple')}
+                                        disabled={!watermarkEnabled}
+                                        className={`group p-4 rounded-2xl border-2 transition-all duration-300 flex flex-col items-center gap-3 ${watermarkDesign === 'multiple' ? 'border-red-500 bg-gradient-to-br from-red-500/20 to-red-500/5 shadow-lg shadow-red-500/20' : 'border-slate-600/50 hover:border-slate-400 hover:bg-slate-700/30 disabled:opacity-40'}`}
+                                    >
+                                        <div className="w-14 h-10 bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg grid grid-cols-3 gap-0.5 p-1.5 shadow-inner border border-slate-600/30 group-hover:border-slate-500/50 transition-colors">
+                                            {[...Array(9)].map((_, i) => (
+                                                <span key={i} className="text-[4px] text-red-500 -rotate-45 font-bold flex items-center justify-center">C</span>
+                                            ))}
+                                        </div>
+                                        <div className="text-center">
+                                            <span className="text-xs font-bold text-slate-200 block">다수 배치</span>
+                                            <span className="text-[10px] text-slate-500">그리드 반복</span>
+                                        </div>
+                                    </button>
+                                    <button 
+                                        onClick={() => setLocalWatermarkDesign('corner')}
+                                        disabled={!watermarkEnabled}
+                                        className={`group p-4 rounded-2xl border-2 transition-all duration-300 flex flex-col items-center gap-3 ${watermarkDesign === 'corner' ? 'border-red-500 bg-gradient-to-br from-red-500/20 to-red-500/5 shadow-lg shadow-red-500/20' : 'border-slate-600/50 hover:border-slate-400 hover:bg-slate-700/30 disabled:opacity-40'}`}
+                                    >
+                                        <div className="w-14 h-10 bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg relative shadow-inner border border-slate-600/30 group-hover:border-slate-500/50 transition-colors">
+                                            <span className="text-[5px] text-red-500 absolute top-1 right-1 font-bold">C</span>
+                                            <span className="text-[5px] text-red-500 absolute bottom-1 left-1 font-bold">C</span>
+                                            <span className="text-[5px] text-red-500 absolute top-1 left-1 font-bold">C</span>
+                                            <span className="text-[5px] text-red-500 absolute bottom-1 right-1 font-bold">C</span>
+                                        </div>
+                                        <div className="text-center">
+                                            <span className="text-xs font-bold text-slate-200 block">코너 배치</span>
+                                            <span className="text-[10px] text-slate-500">4방향</span>
+                                        </div>
+                                    </button>
+                                </div>
+                                
+                                {/* 그리드 크기 조절 - 다수 배치 선택 시에만 표시 */}
+                                {watermarkDesign === 'multiple' && (
+                                    <div className="mt-4 bg-red-500/10 p-3 rounded-xl border border-red-500/20">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-xs text-red-300 font-bold">그리드 크기</span>
+                                            <span className="text-sm font-bold text-red-400 bg-red-500/20 px-2 py-0.5 rounded-lg">{watermarkGridSize}×{watermarkGridSize}</span>
+                                        </div>
+                                        <input 
+                                            type="range" 
+                                            min="2" 
+                                            max="16" 
+                                            value={watermarkGridSize}
+                                            onChange={(e) => setWatermarkGridSize(Number(e.target.value))}
+                                            className="w-full accent-red-500 h-2 cursor-pointer"
+                                            disabled={!watermarkEnabled}
+                                        />
+                                        <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+                                            <span>2×2</span>
+                                            <span>16×16</span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -1211,7 +1534,7 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
                             <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
                                 {watermarkDesign === 'single' && (
                                     <div className="absolute inset-0 flex items-center justify-center">
-                                        <span className="text-[100px] font-black text-red-600 -rotate-45 whitespace-nowrap select-none opacity-10">{watermarkText}</span>
+                                        <span className="text-[100px] font-black -rotate-45 whitespace-nowrap select-none opacity-10" style={{ color: watermarkColor }}>{watermarkText}</span>
                                     </div>
                                 )}
                                 {watermarkDesign === 'multiple' && (
@@ -1228,8 +1551,8 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
                                             return (
                                                 <div key={i} className="flex items-center justify-center">
                                                     <span 
-                                                        className="font-black text-red-600 -rotate-45 select-none whitespace-nowrap"
-                                                        style={{ fontSize: `${fontSize}px` }}
+                                                        className="font-black -rotate-45 select-none whitespace-nowrap"
+                                                        style={{ fontSize: `${fontSize}px`, color: watermarkColor }}
                                                     >
                                                         {watermarkText}
                                                     </span>
@@ -1240,10 +1563,10 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
                                 )}
                                 {watermarkDesign === 'corner' && (
                                     <>
-                                        <span className="absolute top-8 right-8 text-[32px] font-black text-red-600 select-none opacity-15">{watermarkText}</span>
-                                        <span className="absolute bottom-8 left-8 text-[32px] font-black text-red-600 select-none opacity-15">{watermarkText}</span>
-                                        <span className="absolute top-8 left-8 text-[32px] font-black text-red-600 select-none opacity-15">{watermarkText}</span>
-                                        <span className="absolute bottom-8 right-8 text-[32px] font-black text-red-600 select-none opacity-15">{watermarkText}</span>
+                                        <span className="absolute top-8 right-8 text-[32px] font-black select-none opacity-15" style={{ color: watermarkColor }}>{watermarkText}</span>
+                                        <span className="absolute bottom-8 left-8 text-[32px] font-black select-none opacity-15" style={{ color: watermarkColor }}>{watermarkText}</span>
+                                        <span className="absolute top-8 left-8 text-[32px] font-black select-none opacity-15" style={{ color: watermarkColor }}>{watermarkText}</span>
+                                        <span className="absolute bottom-8 right-8 text-[32px] font-black select-none opacity-15" style={{ color: watermarkColor }}>{watermarkText}</span>
                                     </>
                                 )}
                             </div>
@@ -1261,21 +1584,48 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
 
                         <canvas ref={canvasRef} className="pointer-events-auto z-10 relative"></canvas>
                         
-                        {/* 사용자 텍스트 오버레이 (일반 / 요약 박스) */}
-                        {textOverlays.map(text => (
+                        {/* 사용자 텍스트 오버레이 (일반 / 요약 박스 / AI 인사이트) */}
+                        {textOverlays.map(text => {
+                            // AI 인사이트 타입인 경우 배경색에 따른 스타일 적용
+                            const isAIInsight = text.type === 'ai-insight';
+                            const isLight = !text.color || text.color === '#1e293b';
+                            
+                            return (
                             <div
                                 key={text.id}
-                                className={`absolute cursor-move transition-colors z-20 ${
-                                    text.type === 'exec-summary' || text.type === 'box'
-                                    ? `bg-slate-800/90 border-l-4 border-amber-500 p-4 rounded shadow-2xl backdrop-blur-sm` 
+                                className={`absolute cursor-move transition-all z-20 ${
+                                    isAIInsight 
+                                    ? 'p-0 rounded-xl shadow-2xl overflow-hidden' 
+                                    : text.type === 'exec-summary' || text.type === 'box'
+                                    ? 'bg-slate-800/90 border-l-4 border-amber-500 p-4 rounded shadow-2xl backdrop-blur-sm' 
                                     : 'px-2 py-1 border border-transparent hover:border-amber-500/50 hover:bg-slate-900/30 rounded-lg'
                                 } ${draggingText?.id === text.id ? 'opacity-70 scale-105' : ''}`}
-                                style={{ left: text.x, top: text.y, color: text.color, fontSize: `${text.size}px`, fontFamily: text.fontFamily || fontFamily, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}
+                                style={{ 
+                                    left: text.x, 
+                                    top: text.y, 
+                                    color: text.color, 
+                                    fontSize: `${text.size}px`, 
+                                    fontFamily: text.fontFamily || fontFamily, 
+                                    lineHeight: 1.5, 
+                                    whiteSpace: 'pre-wrap',
+                                    backgroundColor: isAIInsight ? (text.boxBg || 'rgba(15,23,42,0.92)') : undefined,
+                                    border: isAIInsight ? `1px solid ${text.borderColor || '#334155'}` : undefined,
+                                    borderLeft: isAIInsight ? `4px solid ${text.accentColor || '#38bdf8'}` : undefined,
+                                }}
                                 onMouseDown={(e) => handleTextMouseDown(e, text.id)}
                             >
-                                {text.text}
+                                {isAIInsight && (
+                                    <div className="px-4 py-3 border-b" style={{ borderColor: text.borderColor }}>
+                                        <span className="text-xs font-bold tracking-wider uppercase" style={{ color: text.accentColor }}>
+                                            🤖 AI 경영진 브리핑
+                                        </span>
+                                    </div>
+                                )}
+                                <div className={isAIInsight ? 'px-4 py-3' : ''}>
+                                    {text.text}
+                                </div>
                             </div>
-                        ))}
+                        )})}
                     </>
                 )}
             </div>

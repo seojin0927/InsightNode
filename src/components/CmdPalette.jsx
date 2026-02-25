@@ -23,9 +23,41 @@ const CommandPalette = ({ isOpen, onClose, actions, isDataReady, columns = [], c
         return columns; // 일반 select는 모든 컬럼
     };
 
+    // 액션이 사용 가능한지 확인 (조건 + 선택 가능한 옵션 여부)
+    // isDataReady가 true일 때만 의미있음
+    const isActionAvailable = (action) => {
+        if (!isDataReady) return false;
+        
+        // condition()이 false를 반환하면 사용 불가
+        if (!action.condition()) return false;
+        
+        // 인풋이 있는 경우, 각 인풋의 선택 가능한 옵션이 있는지 확인
+        if (action.inputs && action.inputs.length > 0) {
+            for (const inp of action.inputs) {
+                const isSelect = inp.type.startsWith('select');
+                if (isSelect) {
+                    const options = getOptionsForType(inp.type);
+                    if (options.length === 0) return false;
+                }
+            }
+        }
+        return true;
+    };
+
     // 액션 클릭 시 실행 (인풋이 필요하면 모달 띄우기, 아니면 즉시 실행)
     const handleActionClick = (action) => {
         if (!action.condition()) return; // 조건 미충족 시 실행 차단
+
+        // 각 인풋의 선택 가능한 옵션이 있는지 확인
+        if (action.inputs && action.inputs.length > 0) {
+            for (const inp of action.inputs) {
+                const isSelect = inp.type.startsWith('select');
+                if (isSelect) {
+                    const options = getOptionsForType(inp.type);
+                    if (options.length === 0) return; // 선택 가능한 컬럼이 없으면 실행 차단
+                }
+            }
+        }
 
         if (action.inputs && action.inputs.length > 0) {
             // 인풋이 필요한 경우 초기값 세팅 후 모달 열기
@@ -245,8 +277,21 @@ const CommandPalette = ({ isOpen, onClose, actions, isDataReady, columns = [], c
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                 {categoryActions.map((a, i) => {
-                                    // 조건 검사 (데이터가 없거나, 조건에 맞는 컬럼이 없으면 false)
-                                    const isAvailable = isDataReady && a.condition();
+                                    // isDataReady가 true면 모든 기능이 표시됨 (조건 만족 여부와 무관하게)
+                                    // 조건 만족 여부는 isAvailable로 확인하고, 클릭 차단과 스타일에만 사용
+                                    const isAvailable = isDataReady && a.condition() && (a.inputs && a.inputs.length > 0 ? a.inputs.every(inp => {
+                                        if (inp.type.startsWith('select')) {
+                                            return getOptionsForType(inp.type).length > 0;
+                                        }
+                                        return true;
+                                    }) : true);
+                                    
+                                    // 사용 불가 이유 결정 (데이터가 없을 때만 표시)
+                                    const getDisabledReason = () => {
+                                        if (!isDataReady) return '데이터 없음';
+                                        return null;
+                                    };
+                                    const disabledReason = getDisabledReason();
                                     
                                     return (
                                         <div
@@ -256,17 +301,17 @@ const CommandPalette = ({ isOpen, onClose, actions, isDataReady, columns = [], c
                                             className={`flex flex-col p-5 rounded-2xl border transition-colors duration-200 ${
                                                 isAvailable 
                                                     ? 'bg-slate-900 border-slate-800 hover:bg-slate-800 hover:border-brand-500/50 cursor-pointer shadow-sm'
-                                                    : 'bg-slate-900/30 border-slate-800/50 opacity-50 cursor-not-allowed'
+                                                    : 'bg-slate-900 border-slate-800/50 opacity-60 cursor-not-allowed'
                                             }`}
                                         >
                                             <div className="flex justify-between items-start mb-2 gap-2">
-                                                <span className={`text-base font-bold leading-tight ${isAvailable ? 'text-slate-200' : 'text-slate-500'}`}>
+                                                <span className={`text-base font-bold leading-tight ${isAvailable ? 'text-slate-200' : 'text-slate-400'}`}>
                                                     {a.name}
                                                 </span>
-                                                {/* 사용 가능 여부 뱃지 추가 */}
-                                                {!isAvailable && (
+                                                {/* 데이터 없을 때만 사용 불가 뱃지 표시 */}
+                                                {!isAvailable && disabledReason && (
                                                     <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-500 flex items-center gap-1">
-                                                        <Icons.Lock /> 조건 미달
+                                                        <Icons.Lock /> {disabledReason}
                                                     </span>
                                                 )}
                                             </div>

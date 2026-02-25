@@ -3,56 +3,55 @@
 @tailwind utilities;
 
 /* ============================================
-   전체 화면 고정 레이아웃 (Viewport-Fixed Layout)
+   전체 화면 고정 레이아웃
    ============================================ */
-
-/* HTML과 Body를 뷰포트에 고정 - 전체 스크롤 제거 */
 html, body {
     margin: 0;
     padding: 0;
     overflow: hidden;
     height: 100vh;
     width: 100vw;
-}
-
-body {
-    font-family: 'Inter', sans-serif;
+    /* 뒷배경이 잘리지 않도록 body에 전체 배경색 적용 */
     background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
-    background-attachment: fixed;
     color: #f8fafc;
+    font-family: 'Inter', sans-serif;
 }
 
 /* ============================================
-   최상단 래퍼 (Wrapper) - Flex column으로 세로 배치
+   최상단 래퍼 (Wrapper) - 🔥 80% 축소 매직
    ============================================ */
 .app-wrapper {
+    /* 1. 화면을 실제 모니터보다 125% 크게 만듦 (공간 확보) */
+    width: 125vw;
+    height: 125vh;
+    
+    /* 2. 125%로 커진 화면을 0.8(80%) 비율로 축소 (1.25 * 0.8 = 100%) */
+    transform: scale(0.8);
+    transform-origin: top left;
+    
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    width: 100%;
+    padding-top: 20px;
+    
 }
 
 /* ============================================
-   상단 헤더 (Navigation) - 고정 높이
+   아래부터는 원래 가지고 계시던 설정 그대로 사용 (px 수정 필요 없음)
    ============================================ */
 .app-header {
     height: 60px;
     flex-shrink: 0;
 }
 
-/* ============================================
-   하단 메인 래퍼 (사이드바 + 우측 콘텐츠)
-   ============================================ */
 .main-wrapper {
     flex: 1;
     display: flex;
     height: 100%;
     overflow: hidden;
+    padding-top: 20px;
+    padding-bottom: 80px; 
 }
 
-/* ============================================
-   왼쪽 사이드바 - 고정 너비 + 전체 높이 차지
-   ============================================ */
 .sidebar {
     width: 380px;
     height: 100%;
@@ -61,9 +60,6 @@ body {
     overflow-x: hidden;
 }
 
-/* ============================================
-   오른쪽 메인 콘텐츠 - 남은 공간 모두 차지
-   ============================================ */
 .main-content {
     flex: 1;
     height: 100%;
@@ -72,19 +68,22 @@ body {
     flex-direction: column;
 }
 
+/* ============================================
+   스크롤바 및 디테일 요소 (px -> rem 변환)
+   ============================================ */
 ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 0.625rem; /* 10px */
+    height: 0.625rem;
 }
 
 ::-webkit-scrollbar-track {
     background: rgba(30, 41, 59, 0.5);
-    border-radius: 5px;
+    border-radius: 0.3125rem; /* 5px */
 }
 
 ::-webkit-scrollbar-thumb {
     background: linear-gradient(180deg, #475569 0%, #334155 100%);
-    border-radius: 5px;
+    border-radius: 0.3125rem;
     border: 2px solid rgba(30, 41, 59, 0.5);
 }
 
@@ -107,14 +106,8 @@ body {
 }
 
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: scale(0.98);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
 }
 
 .cmd-palette {
@@ -123,14 +116,14 @@ body {
 
 .feature-card {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    height: 110px;
+    height: 6.875rem; /* 110px */
     overflow: hidden;
     position: relative;
 }
 
 .feature-card:hover {
     height: auto;
-    min-height: 110px;
+    min-height: 6.875rem;
     z-index: 50;
     transform: translateY(-4px);
 }
@@ -140,7 +133,7 @@ body {
     right: 0;
     top: 0;
     height: 100%;
-    width: 4px;
+    width: 0.25rem; /* 4px */
     cursor: col-resize;
     user-select: none;
     touch-action: none;
@@ -152,13 +145,13 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 0.5rem; /* 8px */
+    height: 0.5rem;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
     background: linear-gradient(180deg, #475569 0%, #334155 100%);
-    border-radius: 4px;
+    border-radius: 0.25rem; /* 4px */
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
@@ -167,5 +160,31 @@ body {
 
 .custom-scrollbar::-webkit-scrollbar-track {
     background: rgba(30, 41, 59, 0.3);
-    border-radius: 4px;
+    border-radius: 0.25rem;
+}
+
+/* ============================================
+   에드센스 광고 영역
+   ============================================ */
+.adsense-container {
+    min-height: 5.625rem; /* 90px */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.3) 0%, rgba(15, 23, 42, 0.5) 100%);
+    border-top: 1px solid rgba(71, 85, 105, 0.3);
+}
+
+.adsense-placeholder {
+    width: 100%;
+    max-width: 45.5rem; /* 728px */
+    height: 3.75rem; /* 60px */
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px dashed rgba(100, 116, 139, 0.5);
+    border-radius: 0.5rem; /* 8px */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(148, 163, 184, 0.6);
+    font-size: 0.75rem; /* 12px */
 }
