@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useRef } from 'react';
 
-const DataGrid = ({ data, columns, onUpdate, readOnly = false, watermarkEnabled = false, watermarkText = 'CONFIDENTIAL', watermarkDesign = 'single' }) => {
+const DataGrid = ({ data, columns, onUpdate, readOnly = false, watermarkEnabled = false, watermarkText = 'CONFIDENTIAL', watermarkDesign = 'single', onZoomChange }) => {
     const [scroll, setScroll] = useState({ top: 0, left: 0 });
     const [edit, setEdit] = useState(null);
     const [colWidths, setColWidths] = useState({});
@@ -38,6 +38,7 @@ const DataGrid = ({ data, columns, onUpdate, readOnly = false, watermarkEnabled 
             gridContainerRef.current.style.background = '';
         }
         setIsZoomed(!isZoomed);
+        if (onZoomChange) onZoomChange(!isZoomed);
     };
 
     const rowH = 42;

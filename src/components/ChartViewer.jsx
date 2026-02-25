@@ -6,7 +6,7 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 // Chart.js v3+에서 datalabels 플러그인 등록
 Chart.register(ChartDataLabels);
 
-const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = false, watermarkText: propWatermarkText = 'CONFIDENTIAL', watermarkDesign: propWatermarkDesign = 'single' }) => {
+const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = false, watermarkText: propWatermarkText = 'CONFIDENTIAL', watermarkDesign: propWatermarkDesign = 'single', onZoomChange }) => {
     
     // 로컬 상태 (App에서 전달된 props가 없거나 활성화된 경우 사용)
     const [localWatermarkEnabled, setLocalWatermarkEnabled] = useState(false);
@@ -829,6 +829,7 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
                                 containerRef.current.style.background = '';
                             }
                             setIsFullscreen(!isFullscreen);
+                            if (onZoomChange) onZoomChange(!isFullscreen);
                         }}
                         className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs rounded font-bold transition-colors flex items-center gap-1"
                     >

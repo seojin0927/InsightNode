@@ -56,6 +56,9 @@ function App() {
     const [watermarkEnabled, setWatermarkEnabled] = useState(false);
     const [watermarkText, setWatermarkText] = useState('CONFIDENTIAL');
     const [watermarkDesign, setWatermarkDesign] = useState('single'); // single, multiple, corner
+    
+    // 🆕 확대/전체화면 모드 상태 (좌측 사이드바 숨김용)
+    const [isZoomed, setIsZoomed] = useState(false);
 
     // 결과 기록 관리 (이전 결과로 되돌리기 기능)
     const [resultHistory, setResultHistory] = useState([]);
@@ -619,7 +622,7 @@ function App() {
                 </div>
 
                 <div className="main-wrapper">
-                    <div className="sidebar bg-slate-900/80 backdrop-blur-sm border border-slate-700/50 rounded-2xl flex flex-col z-10 shadow-xl overflow-hidden">
+                    <div className={`sidebar bg-slate-900/80 backdrop-blur-sm border border-slate-700/50 rounded-2xl flex flex-col z-10 shadow-xl overflow-hidden transition-all duration-300 ${isZoomed ? 'hidden' : ''}`}>
                         <div className="flex text-sm font-semibold border-b border-slate-800 bg-slate-950">
                             <button
                                 onClick={() => setLeftTab('nocode')}
@@ -962,9 +965,9 @@ function App() {
                                 </div>
 
                                 <div className="flex-1 overflow-hidden relative">
-                                    {viewMode === 'raw' && <DataGrid data={originalData} columns={Object.keys(originalData[0] || {})} readOnly={true} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} />}
-                                    {viewMode === 'grid' && <DataGrid data={data} columns={columns} onUpdate={handleCellUpdate} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} />}
-                                    {viewMode === 'chart' && <ChartViewer data={data} columns={columns} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} />}
+                                    {viewMode === 'raw' && <DataGrid data={originalData} columns={Object.keys(originalData[0] || {})} readOnly={true} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} />}
+                                    {viewMode === 'grid' && <DataGrid data={data} columns={columns} onUpdate={handleCellUpdate} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} />}
+                                    {viewMode === 'chart' && <ChartViewer data={data} columns={columns} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} />}
                                 </div>
                             </div>
                         )}
