@@ -537,7 +537,7 @@ function App() {
             <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col">
                 <header className="app-header border border-slate-700/50 bg-slate-900/80 backdrop-blur-md rounded-2xl flex items-center justify-between px-6 shadow-2xl">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg text-lg">VS</div>
+                        <img src="/logo.svg" alt="VaultSheet" className="w-10 h-10 rounded-lg shadow-lg" />
                         <div>
                             <h1 className="text-lg font-bold text-slate-100 tracking-tight">VaultSheet (볼트시트) - 직장인을 위한 마법의 금고</h1>
                             <div className="flex items-center gap-4">
