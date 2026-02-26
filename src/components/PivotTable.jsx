@@ -494,152 +494,168 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
 
     // PNG 이미지로 저장 (테이블 그대로 캡처)
     const exportAsPNG = async () => {
-        if (!pivotData || !containerRef) return;
-        
-        const tableEl = containerRef.querySelector('table');
-        if (!tableEl) return;
-        
-        try {
-            // html2canvas가 전역에 있는지 확인
-            if (typeof html2canvas === 'undefined') {
-                // html2canvas를 동적으로 로드 시도
-                await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
-            }
-            
-            if (typeof html2canvas === 'undefined') {
-                // 그래도 없으면 수동 캔버스 방식 사용
-                await manualCanvasExport(tableEl);
-                return;
-            }
-            
-            // 테이블의 실제 크기 계산
-            const tableRect = tableEl.getBoundingClientRect();
-            const scrollWidth = tableEl.scrollWidth;
-            const scrollHeight = tableEl.scrollHeight;
-            
-            // 래퍼 div 생성하여 테이블을 정확한 크기로 렌더링
-            const wrapper = document.createElement('div');
-            wrapper.style.position = 'absolute';
-            wrapper.style.left = '-99999px';
-            wrapper.style.top = '0';
-            wrapper.style.width = Math.max(scrollWidth, tableRect.width) + 'px';
-            wrapper.style.height = Math.max(scrollHeight, tableRect.height) + 'px';
-            wrapper.style.backgroundColor = tableBgColor;
-            wrapper.style.padding = '20px';
-            wrapper.style.boxSizing = 'border-box';
-            wrapper.style.overflow = 'visible';
-            
-            // 테이블 클론 생성 (깊은 복사)
-            const tableClone = tableEl.cloneNode(true);
-            
-            // 테이블 스타일 복사 - 화면에 보이는 그대로
-            tableClone.style.backgroundColor = tableBgColor;
-            tableClone.style.color = textColor;
-            tableClone.style.fontSize = `${compactMode ? fontSize - 2 : fontSize}px`;
-            tableClone.style.fontFamily = fontFamily;
-            tableClone.style.width = scrollWidth + 'px';
-            tableClone.style.minWidth = scrollWidth + 'px';
-            tableClone.style.margin = '0';
-            tableClone.style.borderCollapse = 'collapse';
-            tableClone.style.tableLayout = 'auto';
-            
-            // 모든 행과 셀을 순회하며 스타일 복사
-            const cloneRows = tableClone.querySelectorAll('tr');
-            const originalRows = tableEl.querySelectorAll('tr');
-            
-            cloneRows.forEach((cloneRow, rowIdx) => {
-                const originalRow = originalRows[rowIdx];
-                if (!originalRow) return;
-                
-                // 행 스타일 복사
-                const originalRowStyle = window.getComputedStyle(originalRow);
-                cloneRow.style.backgroundColor = originalRowStyle.backgroundColor;
-                
-                const cloneCells = cloneRow.querySelectorAll('th, td');
-                const originalCells = originalRow.querySelectorAll('th, td');
-                
-                cloneCells.forEach((cloneCell, cellIdx) => {
-                    const originalCell = originalCells[cellIdx];
-                    if (!originalCell) return;
-                    
-                    // 스타일 복사
-                    const computedStyle = window.getComputedStyle(originalCell);
-                    
-                    // 셀의 실제 크기 유지
-                    const cellWidth = originalCell.offsetWidth;
-                    const cellHeight = originalCell.offsetHeight;
-                    
-                    cloneCell.style.width = cellWidth + 'px';
-                    cloneCell.style.minWidth = cellWidth + 'px';
-                    cloneCell.style.height = cellHeight + 'px';
-                    cloneCell.style.minHeight = cellHeight + 'px';
-                    cloneCell.style.maxWidth = cellWidth + 'px';
-                    cloneCell.style.backgroundColor = computedStyle.backgroundColor;
-                    cloneCell.style.color = computedStyle.color;
-                    cloneCell.style.borderColor = borderColor;
-                    cloneCell.style.borderWidth = `${borderWidth}px`;
-                    cloneCell.style.borderStyle = borderStyle;
-                    cloneCell.style.padding = `${compactMode ? cellPadding / 2 : cellPadding}px`;
-                    cloneCell.style.textAlign = computedStyle.textAlign || textAlign;
-                    cloneCell.style.fontWeight = computedStyle.fontWeight;
-                    cloneCell.style.fontFamily = computedStyle.fontFamily;
-                    cloneCell.style.fontSize = computedStyle.fontSize;
-                    cloneCell.style.whiteSpace = 'nowrap';
-                    cloneCell.style.overflow = 'visible';
-                    cloneCell.style.boxSizing = 'border-box';
-                    
-                    // sticky 속성 제거 (캡처 시 문제가 됨)
-                    cloneCell.style.position = 'static';
-                    cloneCell.style.left = 'auto';
-                    cloneCell.style.top = 'auto';
-                    cloneCell.style.zIndex = 'auto';
-                });
-            });
-            
-            // thead 스타일 복사
-            const cloneThead = tableClone.querySelector('thead');
-            const originalThead = tableEl.querySelector('thead');
-            if (cloneThead && originalThead) {
-                cloneThead.style.backgroundColor = headerBgColor;
-            }
-            
-            wrapper.appendChild(tableClone);
-            document.body.appendChild(wrapper);
-            
-            // 테이블 영역만 캡처 (고화질)
-            const canvas = await html2canvas(tableClone, {
-                backgroundColor: tableBgColor,
-                scale: 3, // 더 높은 해상도
-                useCORS: true,
-                logging: false,
-                allowTaint: true,
-                windowWidth: scrollWidth + 40,
-                windowHeight: scrollHeight + 40,
-                onclone: (clonedDoc, clonedElement) => {
-                    // 클론된 문서에서 추가 조정
-                    clonedElement.style.width = scrollWidth + 'px';
-                }
-            });
-            
-            // 래퍼 제거
-            document.body.removeChild(wrapper);
-            
-            // 다운로드
-            const link = document.createElement('a');
-            link.download = `pivot_${Date.now()}.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-            
-        } catch (err) {
-            console.error('PNG export error:', err);
-            // 폴백: 수동 캔버스 방식
-            try {
-                await manualCanvasExport(tableEl);
-            } catch (fallbackErr) {
-                alert('PNG 내보내기에 실패했습니다: ' + fallbackErr.message);
-            }
+    if (!pivotData || !containerRef) return;
+    
+    const tableEl = containerRef.querySelector('table');
+    if (!tableEl) return;
+    
+    try {
+        // html2canvas가 전역에 있는지 확인
+        if (typeof html2canvas === 'undefined') {
+            // html2canvas를 동적으로 로드 시도
+            await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
         }
-    };
+        
+        if (typeof html2canvas === 'undefined') {
+            // 그래도 없으면 수동 캔버스 방식 사용
+            await manualCanvasExport(tableEl);
+            return;
+        }
+        
+        // 테이블의 실제 크기 계산
+        const tableRect = tableEl.getBoundingClientRect();
+        const scrollWidth = tableEl.scrollWidth;
+        const scrollHeight = tableEl.scrollHeight;
+        
+        // 래퍼 div 생성하여 테이블을 정확한 크기로 렌더링
+        const wrapper = document.createElement('div');
+        wrapper.style.position = 'absolute';
+        wrapper.style.left = '-99999px';
+        wrapper.style.top = '0';
+        wrapper.style.width = Math.max(scrollWidth, tableRect.width) + 'px';
+        wrapper.style.height = Math.max(scrollHeight, tableRect.height) + 'px';
+        wrapper.style.backgroundColor = tableBgColor;
+        wrapper.style.padding = '20px';
+        wrapper.style.boxSizing = 'border-box';
+        wrapper.style.overflow = 'visible';
+        
+        // 테이블 클론 생성 (깊은 복사)
+        const tableClone = tableEl.cloneNode(true);
+        
+        // 테이블 스타일 복사 - 화면에 보이는 그대로
+        tableClone.style.backgroundColor = tableBgColor;
+        tableClone.style.color = textColor;
+        tableClone.style.fontSize = `${compactMode ? fontSize - 2 : fontSize}px`;
+        tableClone.style.fontFamily = fontFamily;
+        tableClone.style.width = scrollWidth + 'px';
+        tableClone.style.minWidth = scrollWidth + 'px';
+        tableClone.style.margin = '0';
+        tableClone.style.borderCollapse = 'collapse';
+        tableClone.style.tableLayout = 'auto';
+        
+        // 모든 행과 셀을 순회하며 스타일 복사
+        const cloneRows = tableClone.querySelectorAll('tr');
+        const originalRows = tableEl.querySelectorAll('tr');
+        
+        cloneRows.forEach((cloneRow, rowIdx) => {
+            const originalRow = originalRows[rowIdx];
+            if (!originalRow) return;
+            
+            // 행 스타일 복사
+            const originalRowStyle = window.getComputedStyle(originalRow);
+            cloneRow.style.backgroundColor = originalRowStyle.backgroundColor;
+            
+            const cloneCells = cloneRow.querySelectorAll('th, td');
+            const originalCells = originalRow.querySelectorAll('th, td');
+            
+            cloneCells.forEach((cloneCell, cellIdx) => {
+                const originalCell = originalCells[cellIdx];
+                if (!originalCell) return;
+                
+                // 스타일 복사
+                const computedStyle = window.getComputedStyle(originalCell);
+                
+                // 셀의 실제 크기 유지
+                const cellWidth = originalCell.offsetWidth;
+                const cellHeight = originalCell.offsetHeight;
+                
+                cloneCell.style.width = cellWidth + 'px';
+                cloneCell.style.minWidth = cellWidth + 'px';
+                cloneCell.style.height = cellHeight + 'px';
+                cloneCell.style.minHeight = cellHeight + 'px';
+                cloneCell.style.maxWidth = cellWidth + 'px';
+                cloneCell.style.backgroundColor = computedStyle.backgroundColor;
+                cloneCell.style.color = computedStyle.color;
+                cloneCell.style.borderColor = borderColor;
+                cloneCell.style.borderWidth = `${borderWidth}px`;
+                cloneCell.style.borderStyle = borderStyle;
+
+                const basePadding = compactMode ? cellPadding / 2 : cellPadding;
+                cloneCell.style.paddingTop = `${Math.max(0, basePadding - 8)}px`; // 위쪽 1px 축소
+                cloneCell.style.paddingBottom = `${basePadding + 8}px`;        // 아래쪽 1px 확대
+                cloneCell.style.paddingLeft = `${basePadding}px`;
+                cloneCell.style.paddingRight = `${basePadding}px`;
+                
+                // PNG 저장 시 사용자가 설정한 텍스트 정렬 적용
+                cloneCell.style.textAlign = originalCell.tagName === 'TH' ? headerTextAlign : textAlign;
+                cloneCell.style.fontWeight = computedStyle.fontWeight;
+                cloneCell.style.fontFamily = computedStyle.fontFamily;
+                cloneCell.style.fontSize = computedStyle.fontSize;
+                cloneCell.style.whiteSpace = 'nowrap';
+                cloneCell.style.overflow = 'visible';
+                cloneCell.style.boxSizing = 'border-box';
+                
+                // 글자 중앙 정렬 (수직)
+                cloneCell.style.verticalAlign = 'middle';
+                cloneCell.style.display = 'table-cell';
+                
+                // sticky 속성 제거 (캡처 시 문제가 됨)
+                cloneCell.style.position = 'static';
+                cloneCell.style.left = 'auto';
+                cloneCell.style.top = 'auto';
+                cloneCell.style.zIndex = 'auto';
+            });
+        });
+        
+        // thead 스타일 복사
+        const cloneThead = tableClone.querySelector('thead');
+        const originalThead = tableEl.querySelector('thead');
+        if (cloneThead && originalThead) {
+            cloneThead.style.backgroundColor = headerBgColor;
+        }
+        
+        wrapper.appendChild(tableClone);
+        document.body.appendChild(wrapper);
+        
+        // 테이블 영역만 캡처 (고화질)
+        const canvas = await html2canvas(tableClone, {
+            backgroundColor: tableBgColor,
+            scale: 3, // 더 높은 해상도
+            useCORS: true,
+            logging: false,
+            allowTaint: true,
+            windowWidth: scrollWidth + 40,
+            windowHeight: scrollHeight + 40,
+            onclone: (clonedDoc, clonedElement) => {
+                // 클론된 문서에서 추가 조정
+                clonedElement.style.width = scrollWidth + 'px';
+                const cells = clonedElement.querySelectorAll('th, td');
+                cells.forEach(cell => {
+                    cell.style.lineHeight = 'normal'; // 오류를 일으키던 수식 대신 normal 적용
+                    cell.style.display = 'table-cell';
+                });
+            }
+        });
+        
+        // 래퍼 제거
+        document.body.removeChild(wrapper);
+        
+        // 다운로드
+        const link = document.createElement('a');
+        link.download = `pivot_${Date.now()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        
+    } catch (err) {
+        console.error('PNG export error:', err);
+        // 폴백: 수동 캔버스 방식
+        try {
+            await manualCanvasExport(tableEl);
+        } catch (fallbackErr) {
+            alert('PNG 내보내기에 실패했습니다: ' + fallbackErr.message);
+        }
+    }
+};
     
     // 스크립트 동적 로드
     const loadScript = (src) => {
@@ -672,7 +688,8 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
         
         // 캡처 시작
         ctx.scale(scale, scale);
-        ctx.textBaseline = 'middle';
+        // 텍스트 수직 정렬 - central이 더 정확하게 중앙 정렬
+        ctx.textBaseline = 'central';
         
         const rows = tableEl.querySelectorAll('tr');
         let y = 0;
@@ -706,18 +723,19 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
                     ctx.strokeRect(x, y, cellWidth, cellHeight);
                 }
                 
-                // 텍스트
+                // 텍스트 - PNG 저장 시 사용자가 설정한 텍스트 정렬 적용
                 const color = style.color;
                 const fontSize = parseInt(style.fontSize) || 14;
                 const fontWeight = style.fontWeight || 'normal';
-                const textAlign = style.textAlign || 'left';
                 
                 ctx.fillStyle = color;
                 ctx.font = `${fontWeight} ${fontSize}px ${style.fontFamily || 'sans-serif'}`;
                 
                 const text = cell.textContent.trim();
-                const textX = textAlign === 'center' ? x + cellWidth / 2 :
-                              textAlign === 'right' ? x + cellWidth - 8 : x + 8;
+                // 헤더는 headerTextAlign, 데이터 셀은 textAlign 적용
+                const cellTextAlign = cell.tagName === 'TH' ? headerTextAlign : textAlign;
+                const textX = cellTextAlign === 'center' ? x + cellWidth / 2 :
+                              cellTextAlign === 'right' ? x + cellWidth - 8 : x + 8;
                 
                 ctx.fillText(text, textX, y + cellHeight / 2);
                 

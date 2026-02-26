@@ -4,6 +4,11 @@ import DataGrid from './components/DataGrid';
 import ChartViewer from './components/ChartViewer';
 import PivotTable from './components/PivotTable';
 import CmdPalette from './components/CmdPalette';
+import JsonToCsvConverter from './components/JsonToCsvConverter';
+import EncodingConverter from './components/EncodingConverter';
+import HtmlTableExtractor from './components/HtmlTableExtractor';
+import TextExtractor from './components/TextExtractor';
+import ListToCommaConverter from './components/ListToCommaConverter';
 import Icons from './utils/Icons';
 import { initSqlEngine, runQuery, createTableFromData, updateCell, detectColumnTypes, exportToCSV, exportToJSON } from './utils/sqlEngine';
 
@@ -26,6 +31,29 @@ function App() {
     const [loading, setLoading] = useState('엔진 초기화 중...');
     const [leftTab, setLeftTab] = useState('nocode');
     const [viewMode, setViewMode] = useState('grid');
+    // URL 해시를 사용하여 페이지 라우팅 (새 페이지로 연결되는 효과)
+    const getInitialPage = () => {
+        const hash = window.location.hash.replace('#', '');
+        const validPages = ['main', 'jsonToCsv', 'encoding', 'htmlTable', 'textExtractor', 'listToComma'];
+        return validPages.includes(hash) ? hash : 'main';
+    };
+    const [currentPage, setCurrentPage] = useState(getInitialPage);
+    
+    // 해시 변경 시 페이지 업데이트
+    useEffect(() => {
+        const handleHashChange = () => {
+            const hash = window.location.hash.replace('#', '');
+            const validPages = ['main', 'jsonToCsv', 'encoding', 'htmlTable', 'textExtractor', 'listToComma'];
+            setCurrentPage(validPages.includes(hash) ? hash : 'main');
+        };
+        window.addEventListener('hashchange', handleHashChange);
+        return () => window.removeEventListener('hashchange', handleHashChange);
+    }, []);
+    
+    // 페이지 변경 시 해시 업데이트
+    const navigateTo = (page) => {
+        window.location.hash = page;
+    };
     const [originalData, setOriginalData] = useState([]);
     const [columns, setColumns] = useState([]);
     const [allColumns, setAllColumns] = useState([]);
@@ -52,6 +80,35 @@ function App() {
     const [ncAutoBucket, setNcAutoBucket] = useState(''); // 자동 구간화
     const [ncIgnoreNull, setNcIgnoreNull] = useState(true); // 결측치 무시
     const [ncNaturalFilter, setNcNaturalFilter] = useState(''); // 자연어 필터
+
+    // 🆕 현재 데이터 소스 이름 (파일명 또는 샘플)
+    const [dataSourceName, setDataSourceName] = useState('데모 데이터 (샘플)');
+    
+    // 🆕 커스텀 알림 모달 상태
+    const [alertModal, setAlertModal] = useState({ show: false, title: '', message: '', type: 'info' });
+    
+    // 🆕 커스텀 알림 함수 (세련된 모달)
+    const showAlert = (message, type = 'info', title = '') => {
+        const titles = {
+            info: '알림',
+            success: '성공',
+            error: '오류',
+            warning: '경고'
+        };
+        setAlertModal({
+            show: true,
+            title: title || titles[type] || '알림',
+            message,
+            type
+        });
+    };
+    
+    // 🆕 확인/취소 모달
+    const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null });
+    
+    const showConfirm = (message, onConfirm, title = '확인') => {
+        setConfirmModal({ show: true, title, message, onConfirm });
+    };
 
     // 🆕 워터마크 설정 (대외비)
     const [watermarkEnabled, setWatermarkEnabled] = useState(false);
@@ -203,24 +260,57 @@ function App() {
 
     const processFile = (file) => {
         if (!file) return;
+        
+        // 🆕 JSON 파일인 경우 sessionStorage에 저장 후 jsonToCsv 페이지로 이동
+        if (file.name.toLowerCase().endsWith('.json')) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const content = e.target.result;
+                try {
+                    // sessionStorage에 JSON 파일 내용 저장
+                    sessionStorage.setItem('pendingJsonFile', JSON.stringify({
+                        name: file.name,
+                        content: content
+                    }));
+                    // 사용자에게 알려주고 페이지 이동
+                    alert('JSON 파일은 데이터 분석이 불가능합니다.\nCSV 파일로 변환 후 사용해 주세요.\n\nJSON to CSV 변환 페이지로 이동합니다.');
+                    navigateTo('jsonToCsv');
+                } catch (err) {
+                    alert('파일 읽기 오류: ' + err.message);
+                }
+            };
+            reader.onerror = () => {
+                alert('파일을 읽는 중 오류가 발생했습니다.');
+            };
+            reader.readAsText(file);
+            return;
+        }
+        
         setLoading(`${file.name} 파싱 중...`);
         Papa.parse(file, {
             header: true,
             dynamicTyping: true,
             skipEmptyLines: true,
             complete: (results) => {
-                loadData(results.data);
+                loadData(results.data, file.name);
             },
             error: (error) => {
-                alert('파일 파싱 에러: ' + error.message);
+                showAlert('파일 파싱 에러: ' + error.message, 'error', '파싱 실패');
                 setLoading('');
             }
         });
     };
-
-    const loadData = (arr) => {
+    const loadData = (arr, sourceName = null) => {
         if (!db || !arr.length) return;
         setLoading('메모리 적재 중...');
+        
+        // 🆕 파일명 또는 샘플 설정
+        if (sourceName) {
+            setDataSourceName(sourceName);
+        } else {
+            setDataSourceName('데모 데이터 (샘플)');
+        }
+        
         setTimeout(() => {
             try {
                 setOriginalData(arr);
@@ -232,12 +322,49 @@ function App() {
                 executeSQL('SELECT rowid as _rowid, * FROM main_table LIMIT 1000;', true);
                 setViewMode('grid');
             } catch (e) {
-                alert("적재 에러: " + e.message);
+                showAlert("적재 에러: " + e.message, 'error', '데이터 적재 실패');
             } finally {
                 setLoading('');
             }
         }, 50);
     };
+    const selectCol = (msg, filterType) => {
+        const available = filterType ? allColumns.filter(c => colTypes[c] === filterType) : allColumns;
+        const c = prompt(`${msg}\n사용가능한 컬럼:\n${available.join(', ')}`, available[0]);
+        return allColumns.includes(c) ? c : null;
+    };
+
+    const selectTwoCols = (msg) => {
+        const c = prompt(`${msg}\n사용가능한 컬럼:\n${allColumns.join(', ')}`, allColumns.slice(0, 2).join(', '));
+        const parts = c ? c.split(',').map(x => x.trim()) : [];
+        if (parts.length >= 2 && allColumns.includes(parts[0]) && allColumns.includes(parts[1])) {
+            return parts;
+        }
+        showAlert('두 개의 컬럼을 쉼표로 구분하여 입력해주세요.', 'warning', '입력 오류');
+        return null;
+    };
+    const exportData = (type) => {
+        if (!data.length) return showAlert('내보낼 데이터가 없습니다.', 'warning', '내보내기 실패');
+        let content, mime, ext;
+        if (type === 'csv') {
+            content = exportToCSV(data, columns);
+            mime = 'text/csv';
+            ext = 'csv';
+        } else if (type === 'json') {
+            content = exportToJSON(data);
+            mime = 'application/json';
+            ext = 'json';
+        }
+        if (content) {
+            const blob = new Blob([content], { type: mime });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `vaultsheet_export.${ext}`;
+            a.click();
+        }
+    };
+
+
 
     const handleCellUpdate = (id, col, val) => {
         if (!db || id == null) return;
@@ -322,21 +449,8 @@ function App() {
         executeSQL(query, true);
     };
 
-    const selectCol = (msg, filterType) => {
-        const available = filterType ? allColumns.filter(c => colTypes[c] === filterType) : allColumns;
-        const c = prompt(`${msg}\n사용가능한 컬럼:\n${available.join(', ')}`, available[0]);
-        return allColumns.includes(c) ? c : null;
-    };
 
-    const selectTwoCols = (msg) => {
-        const c = prompt(`${msg}\n사용가능한 컬럼:\n${allColumns.join(', ')}`, allColumns.slice(0, 2).join(', '));
-        const parts = c ? c.split(',').map(x => x.trim()) : [];
-        if (parts.length >= 2 && allColumns.includes(parts[0]) && allColumns.includes(parts[1])) {
-            return parts;
-        }
-        alert('두 개의 컬럼을 쉼표로 구분하여 입력해주세요.');
-        return null;
-    };
+   
 
     const actions = useMemo(() => [
         // ========================================
@@ -482,73 +596,101 @@ function App() {
         { name: "휴가 유형 분류", category: "Office", desc: "휴가 종류를 분류합니다.", example: "연차, 반차, 병가...", condition: () => allColumns.length > 0, inputs: [{ id: 'col', type: 'select', label: '휴가명 컬럼' }], run: ({ col }) => applyJSTransform(col, v => { const s = String(v || '').toLowerCase(); if(s.includes('연차') || s.includes('年休')) return '연차'; if(s.includes('반차') || s.includes('半休')) return '반차'; if(s.includes('병가') || s.includes('病假')) return '병가'; if(s.includes('휴가') || s.includes('휴식')) return '휴가'; return '기타'; }) },
     ], [allColumns, colTypes, db, query, executeSQL, originalData, saveHistoryBeforeMutation]);
 
-    const exportData = (type) => {
-        if (!data.length) return alert('내보낼 데이터가 없습니다.');
-        let content, mime, ext;
-        if (type === 'csv') {
-            content = exportToCSV(data, columns);
-            mime = 'text/csv';
-            ext = 'csv';
-        } else if (type === 'json') {
-            content = exportToJSON(data);
-            mime = 'application/json';
-            ext = 'json';
-        }
-        if (content) {
-            const blob = new Blob([content], { type: mime });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `vaultsheet_export.${ext}`;
-            a.click();
-        }
-    };
+    
 
-    const handleShare = async () => {
-        setIsSharing(true);
-        try {
-            const response = await fetch('/api/share', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    columns,
-                    chartType: 'bar',
-                    filters: ncFilters,
-                    sortConfig: { column: ncSortCol, direction: ncSortDir },
-                    groupConfig: { column: ncGroupCol, aggFn: ncAggFn, aggCol: ncAggCol }
-                })
-            });
-            const result = await response.json();
-            if (result.success) {
-                alert(`공유 링크가 생성되었습니다!\nURL: http://localhost:3000/shared/${result.shareId}`);
-            } else {
-                alert('공유 실패: ' + result.error);
-            }
-        } catch (error) {
-            console.error("공유 실패:", error);
-            alert("공유 실패: 서버 연결을 확인해주세요.");
-        }
-        setIsSharing(false);
-    };
+
 
     const isDataReady = allColumns.length > 0;
 
     return (
         <div className="app-wrapper bg-slate-950">
             <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col">
-                <header className="app-header border border-slate-700/50 bg-slate-900/80 backdrop-blur-md rounded-2xl flex items-center justify-between px-6 shadow-2xl">
+                <header className="app-header border border-slate-700/50 bg-slate-900/80 backdrop-blur-md rounded-2xl flex items-center justify-between px-6 shadow-2xl relative z-[100]">
                     <div className="flex items-center gap-3">
                         <img src="/logo.svg" alt="VaultSheet" className="w-10 h-10 rounded-lg shadow-lg" />
                         <div>
-                            <h1 className="text-lg font-bold text-slate-100 tracking-tight">VaultSheet (볼트시트) - 직장인을 위한 마법의 금고</h1>
+                            <h1 className="text-lg font-bold text-slate-100 tracking-tight">VaultSheet (볼트시트) - 나만의 데이터 분석 도구</h1>
                             <div className="flex items-center gap-4">
                                 <p className="text-sm text-slate-400 flex items-center gap-1"><Icons.Shield /> 100% Offline WASM Engine</p>
                                 <p className="text-sm text-emerald-400 flex items-center gap-1">
-                                    🔒 내 데이터가 서버로 넘어갈까 걱정? 개인의 대외비 데이터가 절대 외부로 유출되지 않습니다.
+                                    🔒 내 데이터가 서버로 넘어갈까 걱정되나요? 개인의 대외비 데이터가 절대 외부로 유출되지 않습니다.
                                 </p>
                             </div>
                         </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                        {/* 메인 페이지로 돌아가기 버튼 (서브 페이지에서만 표시) */}
+                        {currentPage !== 'main' ? (
+                            <button
+                                onClick={() => navigateTo('main')}
+                                className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold border transition-all shadow-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600 hover:border-emerald-500"
+                            >
+                                <Icons.ArrowLeft /> 메인으로
+                            </button>
+                        ) : (
+                            /* 도구 버튼들 - 드롭다운 메뉴로 통합 */
+                            <div className="relative group">
+                                <button
+                                    className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold border transition-all shadow-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600 hover:border-brand-500"
+                                >
+                                    <Icons.Grid /> 변환 도구 모음 <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                </button>
+                                <div className="absolute top-full left-0 mt-2 w-56 bg-slate-800 border border-slate-600 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100]">
+                                    <div className="py-2">
+                                        <button
+                                            onClick={() => navigateTo('jsonToCsv')}
+                                            className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                        >
+                                            <Icons.FileJson />
+                                            <div className="text-left">
+                                                <div className="font-medium">JSON to CSV</div>
+                                                <div className="text-xs text-slate-400">JSON 파일을 CSV로 변환</div>
+                                            </div>
+                                        </button>
+                                        <button
+                                            onClick={() => navigateTo('encoding')}
+                                            className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                        >
+                                            <span className="text-lg">🚨</span>
+                                            <div className="text-left">
+                                                <div className="font-medium">한글 깨짐 복구</div>
+                                                <div className="text-xs text-slate-400">EUC-KR ↔ UTF-8 변환</div>
+                                            </div>
+                                        </button>
+                                        <button
+                                            onClick={() => navigateTo('htmlTable')}
+                                            className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                        >
+                                            <span className="text-lg">🌐</span>
+                                            <div className="text-left">
+                                                <div className="font-medium">웹 표 추출</div>
+                                                <div className="text-xs text-slate-400">HTML 테이블을 CSV로</div>
+                                            </div>
+                                        </button>
+                                        <button
+                                            onClick={() => navigateTo('textExtractor')}
+                                            className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                        >
+                                            <span className="text-lg">🧹</span>
+                                            <div className="text-left">
+                                                <div className="font-medium">텍스트 정제</div>
+                                                <div className="text-xs text-slate-400">이메일, 전화번호 등 추출</div>
+                                            </div>
+                                        </button>
+                                        <button
+                                            onClick={() => navigateTo('listToComma')}
+                                            className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                        >
+                                            <span className="text-lg">🔗</span>
+                                            <div className="text-left">
+                                                <div className="font-medium">줄바꿈 변환</div>
+                                                <div className="text-xs text-slate-400">쉼표 ↔ 줄바꿈 변환</div>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                         <button
                             onClick={() => setCmdOpen(true)}
                             className={`flex items-center gap-2 px-5 py-2 rounded-md text-base font-semibold border transition-all shadow-lg ${isDataReady ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600 hover:border-brand-500' : 'bg-slate-900/50 text-slate-500 border-slate-800 cursor-not-allowed'}`}
@@ -622,6 +764,28 @@ function App() {
                     </div>
                 </div>
 
+                {/* 🆕 페이지에 따른 메인 컨텐츠 렌더링 */}
+                {currentPage === 'jsonToCsv' ? (
+                    <div className="main-wrapper">
+                        <JsonToCsvConverter />
+                    </div>
+                ) : currentPage === 'encoding' ? (
+                    <div className="main-wrapper">
+                        <EncodingConverter />
+                    </div>
+                ) : currentPage === 'htmlTable' ? (
+                    <div className="main-wrapper">
+                        <HtmlTableExtractor />
+                    </div>
+                ) : currentPage === 'textExtractor' ? (
+                    <div className="main-wrapper">
+                        <TextExtractor />
+                    </div>
+                ) : currentPage === 'listToComma' ? (
+                    <div className="main-wrapper">
+                        <ListToCommaConverter />
+                    </div>
+                ) : (
                 <div className="main-wrapper">
                     <div className={`sidebar bg-slate-900/80 backdrop-blur-sm border border-slate-700/50 rounded-2xl flex flex-col z-10 shadow-xl overflow-hidden transition-all duration-300 ${isZoomed ? 'hidden' : ''}`}>
                         <div className="flex text-sm font-semibold border-b border-slate-800 bg-slate-950">
@@ -923,10 +1087,10 @@ function App() {
                         ) : (
                             <div className="flex-1 flex flex-col h-full overflow-hidden">
                                 <div className="flex justify-between items-center mb-4 shrink-0">
-                                    {/* 🆕 샘플 데이터 표시 배너 */}
+                                    {/* 🆕 데이터 소스 표시 배너 - 파일명에 따라 표시 */}
                                     <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-900/30 to-yellow-900/20 border border-amber-500/30 rounded-lg mr-4">
                                         <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                        <span className="text-xs font-bold text-amber-400">📌 데모 데이터 (샘플)</span>
+                                        <span className="text-xs font-bold text-amber-400">📌 {dataSourceName}</span>
                                     </div>
 
                                     <div className="flex bg-slate-900 rounded-xl p-1 border border-slate-800 shadow-inner">
@@ -976,6 +1140,7 @@ function App() {
                         )}
                     </div>
                 </div>
+                )}
 
                 <CmdPalette 
                     isOpen={cmdOpen} 
