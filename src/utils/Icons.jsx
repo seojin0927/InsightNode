@@ -1,4 +1,4 @@
-// Icon components for InsightNode
+// Icon components for VaultSheet
 
 export const Icons = {
     Database: () => (

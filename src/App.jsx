@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Papa from 'papaparse';
 import DataGrid from './components/DataGrid';
 import ChartViewer from './components/ChartViewer';
+import PivotTable from './components/PivotTable';
 import CmdPalette from './components/CmdPalette';
 import Icons from './utils/Icons';
 import { initSqlEngine, runQuery, createTableFromData, updateCell, detectColumnTypes, exportToCSV, exportToJSON } from './utils/sqlEngine';
@@ -497,7 +498,7 @@ function App() {
             const blob = new Blob([content], { type: mime });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = `insightnode_export.${ext}`;
+            a.download = `vaultsheet_export.${ext}`;
             a.click();
         }
     };
@@ -536,9 +537,9 @@ function App() {
             <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col">
                 <header className="app-header border border-slate-700/50 bg-slate-900/80 backdrop-blur-md rounded-2xl flex items-center justify-between px-6 shadow-2xl">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg text-lg">IN</div>
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg text-lg">VS</div>
                         <div>
-                            <h1 className="text-lg font-bold text-slate-100 tracking-tight">InsightNode (인사이트노드) - 직장인을 위한 마법의 스튜디오</h1>
+                            <h1 className="text-lg font-bold text-slate-100 tracking-tight">VaultSheet (볼트시트) - 직장인을 위한 마법의 금고</h1>
                             <div className="flex items-center gap-4">
                                 <p className="text-sm text-slate-400 flex items-center gap-1"><Icons.Shield /> 100% Offline WASM Engine</p>
                                 <p className="text-sm text-emerald-400 flex items-center gap-1">
@@ -932,6 +933,7 @@ function App() {
                                         {[
                                             { id: 'raw', icon: <Icons.Eye />, label: '원본' },
                                             { id: 'grid', icon: <Icons.Table />, label: '결과 그리드' },
+                                            { id: 'pivot', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>, label: '피벗 테이블' },
                                             { id: 'chart', icon: <Icons.Chart />, label: '차트' }
                                         ].map(mode => (
                                             <button
@@ -967,6 +969,7 @@ function App() {
                                 <div className="flex-1 overflow-hidden relative">
                                     {viewMode === 'raw' && <DataGrid data={originalData} columns={Object.keys(originalData[0] || {})} readOnly={true} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} />}
                                     {viewMode === 'grid' && <DataGrid data={data} columns={columns} onUpdate={handleCellUpdate} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} />}
+                                    {viewMode === 'pivot' && <PivotTable data={data} columns={columns} colTypes={colTypes} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} />}
                                     {viewMode === 'chart' && <ChartViewer data={data} columns={columns} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} />}
                                 </div>
                             </div>

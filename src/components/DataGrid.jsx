@@ -75,7 +75,7 @@ const DataGrid = ({ data, columns, onUpdate, readOnly = false, watermarkEnabled 
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>InsightNode Data Export</title>
+    <title>VaultSheet Data Export</title>
     <style>
         body { font-family: 'Inter', sans-serif; padding: 20px; background: #0f172a; color: #e2e8f0; }
         h1 { color: #e2e8f0; margin-bottom: 20px; }
@@ -89,7 +89,7 @@ const DataGrid = ({ data, columns, onUpdate, readOnly = false, watermarkEnabled 
 </head>
 <body>
     ${watermarkHTML}
-    <h1>InsightNode Data Export</h1>
+    <h1>VaultSheet Data Export</h1>
     <table>
         <thead>
             <tr>
