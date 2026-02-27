@@ -1,56 +1,111 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 
-const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEnabled = false, watermarkText: propWatermarkText = 'CONFIDENTIAL', watermarkDesign: propWatermarkDesign = 'single', onZoomChange }) => {
+const PivotTable = ({ data, columns, colTypes, onZoomChange }) => {
     // 피벗 테이블 설정 상태
     const [rowField, setRowField] = useState('');
     const [colField, setColField] = useState('');
     const [valueField, setValueField] = useState('');
     const [aggFunction, setAggFunction] = useState('SUM');
     const [showHeatmap, setShowHeatmap] = useState(true);
-    const [colorScheme, setColorScheme] = useState('blue'); // blue, green, red, purple
     const [showTotals, setShowTotals] = useState(true);
     const [valueFormat, setValueFormat] = useState('comma'); // comma, krw, usd, percent, none
     const [displayMode, setDisplayMode] = useState('value'); // value, grandTotalPct, rowPct, colPct
     const [sortByTotal, setSortByTotal] = useState(null); // null, 'desc', 'asc'
-    const [isZoomed, setIsZoomed] = useState(false);
     const [containerRef, setContainerRef] = useState(null);
     const [drillDownData, setDrillDownData] = useState(null); // 드릴다운 데이터
     const [drillDownTitle, setDrillDownTitle] = useState('');
+    const [isFullscreen, setIsFullscreen] = useState(false);
     
-    // 🆕 디자인 & 워터마크 상태 (ChartViewer 스타일)
-    const [activeDesignTab, setActiveDesignTab] = useState('display'); // display, design, watermark
+    // 디자인 상태
+    const [activeDesignTab, setActiveDesignTab] = useState('display'); // display, design
+    const [showDataSettings, setShowDataSettings] = useState(false);
+    
+    // 표 스타일 상태
     const [tableBgColor, setTableBgColor] = useState('#1e293b');
-    const [headerBgColor, setHeaderBgColor] = useState('#334155');
-    const [headerTextColor, setHeaderTextColor] = useState('#ffffff');
     const [textColor, setTextColor] = useState('#e2e8f0');
     const [borderColor, setBorderColor] = useState('#475569');
     const [fontFamily, setFontFamily] = useState("'Pretendard', sans-serif");
-    
-    // 표 스타일 상태
     const [cellPadding, setCellPadding] = useState(12);
     const [fontSize, setFontSize] = useState(14);
-    const [textAlign, setTextAlign] = useState('right'); // left, center, right
+    const [textAlign, setTextAlign] = useState('right');
     const [headerTextAlign, setHeaderTextAlign] = useState('center');
     const [borderWidth, setBorderWidth] = useState(1);
-    const [borderStyle, setBorderStyle] = useState('solid'); // solid, dashed, dotted
+    const [borderStyle, setBorderStyle] = useState('solid');
     const [showRowStripe, setShowRowStripe] = useState(false);
     const [stripeColor, setStripeColor] = useState('#1e293b');
-    const [frozenRowCount, setFrozenRowCount] = useState(0);
-    const [frozenColCount, setFrozenColCount] = useState(1);
     const [compactMode, setCompactMode] = useState(false);
+
+    // 🎨 색상 팔레트 정의 - 배경색별로 최적의 색상 조합
+    const colorPalettes = {
+        // 다크 배경들
+        '#1e293b': { header: '#334155', headerText: '#ffffff', total: '#38bdf8', border: '#475569', heatmap: 'blueDark', stripe: '#0f172a' },
+        '#0f172a': { header: '#1e293b', headerText: '#ffffff', total: '#38bdf8', border: '#334155', heatmap: 'blueDark', stripe: '#020617' },
+        
+        // 밝은 배경들
+        '#ffffff': { header: '#f1f5f9', headerText: '#1e293b', total: '#0d9488', border: '#e2e8f0', heatmap: 'teal', stripe: '#f8fafc' },
+        '#f8fafc': { header: '#e2e8f0', headerText: '#1e293b', total: '#0d9488', border: '#cbd5e1', heatmap: 'teal', stripe: '#f1f5f9' },
+        '#f1f5f9': { header: '#e2e8f0', headerText: '#1e293b', total: '#0d9488', border: '#cbd5e1', heatmap: 'teal', stripe: '#e2e8f0' },
+        '#e2e8f0': { header: '#cbd5e1', headerText: '#1e293b', total: '#0891b2', border: '#94a3b8', heatmap: 'cyan', stripe: '#cbd5e1' },
+        
+        // 색상 배경들
+        '#f0f9ff': { header: '#e0f2fe', headerText: '#0369a1', total: '#0284c7', border: '#bae6fd', heatmap: 'sky', stripe: '#e0f2fe' },
+        '#ecfeff': { header: '#cffafe', headerText: '#0891b2', total: '#06b6d4', border: '#a5f3fc', heatmap: 'cyan', stripe: '#cffafe' },
+        '#f0fdf4': { header: '#dcfce7', headerText: '#15803d', total: '#16a34a', border: '#bbf7d0', heatmap: 'green', stripe: '#dcfce7' },
+        '#fefce8': { header: '#fef9c3', headerText: '#a16207', total: '#ca8a04', border: '#fef08a', heatmap: 'yellow', stripe: '#fef9c3' },
+        '#fff7ed': { header: '#ffedd5', headerText: '#c2410c', total: '#ea580c', border: '#fed7aa', heatmap: 'orange', stripe: '#ffedd5' },
+        '#faf5ff': { header: '#f3e8ff', headerText: '#7e22ce', total: '#9333ea', border: '#e9d5ff', heatmap: 'purple', stripe: '#f3e8ff' },
+    };
     
-    // 로컬 워터마크 상태
-    const [localWatermarkEnabled, setLocalWatermarkEnabled] = useState(false);
-    const [localWatermarkText, setLocalWatermarkText] = useState('CONFIDENTIAL');
-    const [localWatermarkDesign, setLocalWatermarkDesign] = useState('single');
-    const [localWatermarkColor, setLocalWatermarkColor] = useState('#dc2626');
-    const [watermarkGridSize, setWatermarkGridSize] = useState(4);
+    // 기본 팔레트 (다크)
+    const defaultPalette = { header: '#334155', headerText: '#ffffff', total: '#38bdf8', border: '#475569', heatmap: 'blueDark', stripe: '#0f172a' };
     
-    // 최종 워터마크 값 (props 우선)
-    const watermarkEnabled = propWatermarkEnabled || localWatermarkEnabled;
-    const watermarkText = propWatermarkEnabled ? propWatermarkText : localWatermarkText;
-    const watermarkDesign = localWatermarkDesign;
-    const watermarkColor = localWatermarkColor;
+    // 현재 팔레트 선택
+    const palette = colorPalettes[tableBgColor] || defaultPalette;
+    
+    // 파생 상태
+    const isLightBg = ['#ffffff', '#f8fafc', '#f1f5f9', '#e2e8f0', '#f0f9ff', '#ecfeff', '#f0fdf4', '#fefce8', '#fff7ed', '#faf5ff'].includes(tableBgColor);
+    const isDarkBg = ['#1e293b', '#0f172a'].includes(tableBgColor);
+    const headerBgColor = palette.header;
+    const headerTextColor = palette.headerText;
+    const totalColor = palette.total;
+    const currentBorderColor = palette.border;
+    const heatmapScheme = palette.heatmap;
+
+    // 추가 옵션 상태
+    const [alternatingColors, setAlternatingColors] = useState(false);
+    const [hoverHighlight, setHoverHighlight] = useState(true);
+
+    // 🪄 퀵 템플릿 적용 함수
+    const applyTemplate = (type) => {
+        if (type === 'report') {
+            setTableBgColor('#ffffff');
+            setTextColor('#000000'); // 흰색이 아닌 배경은 검은색
+            setBorderColor('#e2e8f0');
+            setShowHeatmap(true);
+            setCompactMode(false);
+            setCellPadding(12);
+            setFontSize(14);
+            alert('인쇄/문서용(Report) 템플릿이 적용되었습니다.');
+        } else if (type === 'pitch') {
+            setTableBgColor('#1e293b');
+            setTextColor('#ffffff'); // 다크 배경은 흰색
+            setBorderColor('#475569');
+            setShowHeatmap(true);
+            setCompactMode(false);
+            setCellPadding(12);
+            setFontSize(14);
+            alert('프레젠테이션(Pitch) 템플릿이 적용되었습니다.');
+        } else if (type === 'compact') {
+            setTableBgColor('#1e293b');
+            setTextColor('#ffffff'); // 다크 배경은 흰색
+            setBorderColor('#475569');
+            setShowHeatmap(true);
+            setCompactMode(true);
+            setCellPadding(8);
+            setFontSize(12);
+            alert('컴팩트(Compact) 템플릿이 적용되었습니다.');
+        }
+    };
 
     // 숫자형 컬럼 찾기
     const numericColumns = useMemo(() => 
@@ -62,7 +117,7 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
         columns.filter(col => !numericColumns.includes(col))
     , [columns, numericColumns]);
 
-    // 기본값 설정 (첫 번째 선택 가능한 값들)
+    // 기본값 설정
     useEffect(() => {
         if (!rowField && textColumns.length > 0) setRowField(textColumns[0]);
         if (!colField && textColumns.length > 1) setColField(textColumns[1]);
@@ -76,9 +131,8 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
         const rowValues = new Set();
         const colValues = new Set();
         const pivotMap = {};
-        const rowColMap = {}; // 각 셀의 원본 데이터 추적
+        const rowColMap = {};
 
-        // 데이터 순회하며 피벗 맵 생성
         data.forEach((row, idx) => {
             const rowVal = String(row[rowField] || 'N/A');
             const colVal = colField ? String(row[colField] || 'N/A') : 'Total';
@@ -94,7 +148,7 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
             }
             if (!isNaN(numVal)) {
                 pivotMap[key].push(numVal);
-                rowColMap[key].push(idx); // 원본 데이터 인덱스 저장
+                rowColMap[key].push(idx);
             }
         });
 
@@ -140,23 +194,12 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
                     aggregated[rowVal][colVal] = null;
                 } else {
                     switch (aggFunction) {
-                        case 'SUM':
-                            aggregated[rowVal][colVal] = values.reduce((a, b) => a + b, 0);
-                            break;
-                        case 'AVG':
-                            aggregated[rowVal][colVal] = values.reduce((a, b) => a + b, 0) / values.length;
-                            break;
-                        case 'COUNT':
-                            aggregated[rowVal][colVal] = values.length;
-                            break;
-                        case 'MAX':
-                            aggregated[rowVal][colVal] = Math.max(...values);
-                            break;
-                        case 'MIN':
-                            aggregated[rowVal][colVal] = Math.min(...values);
-                            break;
-                        default:
-                            aggregated[rowVal][colVal] = values.reduce((a, b) => a + b, 0);
+                        case 'SUM': aggregated[rowVal][colVal] = values.reduce((a, b) => a + b, 0); break;
+                        case 'AVG': aggregated[rowVal][colVal] = values.reduce((a, b) => a + b, 0) / values.length; break;
+                        case 'COUNT': aggregated[rowVal][colVal] = values.length; break;
+                        case 'MAX': aggregated[rowVal][colVal] = Math.max(...values); break;
+                        case 'MIN': aggregated[rowVal][colVal] = Math.min(...values); break;
+                        default: aggregated[rowVal][colVal] = values.reduce((a, b) => a + b, 0);
                     }
                 }
             });
@@ -168,23 +211,12 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
             const values = sortedColValues.map(colVal => aggregated[rowVal][colVal]).filter(v => v !== null);
             if (values.length > 0) {
                 switch (aggFunction) {
-                    case 'SUM':
-                        rowTotals[rowVal] = values.reduce((a, b) => a + b, 0);
-                        break;
-                    case 'AVG':
-                        rowTotals[rowVal] = values.reduce((a, b) => a + b, 0) / values.length;
-                        break;
-                    case 'COUNT':
-                        rowTotals[rowVal] = values.length;
-                        break;
-                    case 'MAX':
-                        rowTotals[rowVal] = Math.max(...values);
-                        break;
-                    case 'MIN':
-                        rowTotals[rowVal] = Math.min(...values);
-                        break;
-                    default:
-                        rowTotals[rowVal] = values.reduce((a, b) => a + b, 0);
+                    case 'SUM': rowTotals[rowVal] = values.reduce((a, b) => a + b, 0); break;
+                    case 'AVG': rowTotals[rowVal] = values.reduce((a, b) => a + b, 0) / values.length; break;
+                    case 'COUNT': rowTotals[rowVal] = values.length; break;
+                    case 'MAX': rowTotals[rowVal] = Math.max(...values); break;
+                    case 'MIN': rowTotals[rowVal] = Math.min(...values); break;
+                    default: rowTotals[rowVal] = values.reduce((a, b) => a + b, 0);
                 }
             } else {
                 rowTotals[rowVal] = null;
@@ -197,23 +229,12 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
             const values = sortedRowValues.map(rowVal => aggregated[rowVal][colVal]).filter(v => v !== null);
             if (values.length > 0) {
                 switch (aggFunction) {
-                    case 'SUM':
-                        colTotals[colVal] = values.reduce((a, b) => a + b, 0);
-                        break;
-                    case 'AVG':
-                        colTotals[colVal] = values.reduce((a, b) => a + b, 0) / values.length;
-                        break;
-                    case 'COUNT':
-                        colTotals[colVal] = values.length;
-                        break;
-                    case 'MAX':
-                        colTotals[colVal] = Math.max(...values);
-                        break;
-                    case 'MIN':
-                        colTotals[colVal] = Math.min(...values);
-                        break;
-                    default:
-                        colTotals[colVal] = values.reduce((a, b) => a + b, 0);
+                    case 'SUM': colTotals[colVal] = values.reduce((a, b) => a + b, 0); break;
+                    case 'AVG': colTotals[colVal] = values.reduce((a, b) => a + b, 0) / values.length; break;
+                    case 'COUNT': colTotals[colVal] = values.length; break;
+                    case 'MAX': colTotals[colVal] = Math.max(...values); break;
+                    case 'MIN': colTotals[colVal] = Math.min(...values); break;
+                    default: colTotals[colVal] = values.reduce((a, b) => a + b, 0);
                 }
             } else {
                 colTotals[colVal] = null;
@@ -235,7 +256,7 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
             rowTotals,
             colTotals,
             grandTotal: finalGrandTotal,
-            rowColMap // 원본 데이터 인덱스 반환
+            rowColMap
         };
     }, [data, rowField, colField, valueField, aggFunction, sortByTotal]);
 
@@ -255,36 +276,28 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
         return value;
     };
 
-    // 히트맵 색상 계산
+    // 히트맵 색상 계산 - 팔레트 기반
     const getHeatmapColor = (displayValue, min, max, scheme) => {
         if (displayValue === null || min === max) return 'transparent';
         
         const ratio = (displayValue - min) / (max - min);
         
+        // 팔레트의 히트맵 색상에 맞는 색상 schemes
         const schemes = {
-            blue: {
-                low: [239, 246, 255],
-                mid: [59, 130, 246],
-                high: [29, 78, 216]
-            },
-            green: {
-                low: [240, 253, 244],
-                mid: [34, 197, 94],
-                high: [21, 128, 61]
-            },
-            red: {
-                low: [254, 242, 242],
-                mid: [239, 68, 68],
-                high: [153, 27, 27]
-            },
-            purple: {
-                low: [250, 245, 255],
-                mid: [168, 85, 247],
-                high: [126, 34, 206]
-            }
+            // 다크 배경용
+            blueDark: { low: [30, 58, 138], mid: [59, 130, 246], high: [56, 189, 248] },  // 다크 blues
+            
+            // 밝은 배경용 - 각각의 배경색에 어울리는 색상
+            teal: { low: [240, 253, 250], mid: [45, 212, 191], high: [13, 148, 136] },      // teal greens
+            cyan: { low: [236, 254, 255], mid: [34, 211, 238], high: [8, 145, 178] },        // cyans
+            sky: { low: [224, 242, 254], mid: [14, 165, 233], high: [2, 132, 199] },        // sky blues
+            green: { low: [240, 253, 244], mid: [74, 222, 128], high: [22, 163, 74] },       // greens
+            yellow: { low: [254, 249, 195], mid: [253, 224, 71], high: [202, 138, 4] },      // yellows
+            orange: { low: [255, 247, 237], mid: [251, 146, 60], high: [234, 88, 12] },      // oranges
+            purple: { low: [250, 245, 255], mid: [192, 132, 252], high: [147, 51, 234] },    // purples
         };
 
-        const colors = schemes[scheme] || schemes.blue;
+        const colors = schemes[scheme] || schemes.blueDark;
         
         let r, g, b;
         if (ratio < 0.5) {
@@ -309,7 +322,6 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
         
         const num = Number(val);
         
-        // 퍼센트 모드일 때
         if (isPct || displayMode !== 'value') {
             if (displayMode === 'grandTotalPct' || displayMode === 'rowPct' || displayMode === 'colPct') {
                 return num.toFixed(1) + '%';
@@ -324,7 +336,7 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
         return num.toLocaleString();
     };
 
-    // Min/Max 계산 (표시 모드에 따라)
+    // Min/Max 계산
     const { minVal, maxVal } = useMemo(() => {
         if (!pivotData || !showHeatmap) return { minVal: 0, maxVal: 1 };
         
@@ -341,7 +353,6 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
         
         if (values.length === 0) return { minVal: 0, maxVal: 1 };
         
-        // 퍼센트 모드일 때는 0-100 범위로 조정
         let min = Math.min(...values);
         let max = Math.max(...values);
         
@@ -356,7 +367,7 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
     // 확대/축소 토글
     const toggleZoom = () => {
         if (!containerRef) return;
-        if (!isZoomed) {
+        if (!isFullscreen) {
             containerRef.style.position = 'fixed';
             containerRef.style.top = '0';
             containerRef.style.left = '0';
@@ -379,8 +390,8 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
             containerRef.style.background = '';
             containerRef.style.padding = '';
         }
-        setIsZoomed(!isZoomed);
-        if (onZoomChange) onZoomChange(!isZoomed);
+        setIsFullscreen(!isFullscreen);
+        if (onZoomChange) onZoomChange(!isFullscreen);
     };
 
     // 드릴다운 핸들러
@@ -397,35 +408,30 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
         }
     };
 
-    // CSV 내보내기 - 개선된 버전
+    // CSV 내보내기
     const exportAsCSV = () => {
         if (!pivotData) return;
         
         const csvRows = [];
         
-        // 값을 CSV 형식에 맞게 변환 (따옴표로 감싸기, 특수문자 이스케이프)
         const escapeCSV = (val) => {
             if (val === null || val === undefined) return '';
             const str = String(val);
-            // 따옴표가 있으면 두 개의 따옴표로 변경
             if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
                 return `"${str.replace(/"/g, '""')}"`;
             }
             return str;
         };
         
-        // 헤더
         const headers = [rowField, ...pivotData.cols];
         if (showTotals) headers.push('총계');
         csvRows.push(headers.map(escapeCSV).join(','));
         
-        // 데이터 행
         pivotData.rows.forEach(rowVal => {
             const row = [rowVal];
             pivotData.cols.forEach(colVal => {
                 const val = pivotData.data[rowVal]?.[colVal];
                 const displayVal = getDisplayValue(val, rowVal, colVal);
-                // 표시 형식에 맞게 값 변환
                 const formattedVal = displayVal !== null ? formatValue(displayVal, displayMode !== 'value') : '';
                 row.push(formattedVal);
             });
@@ -438,7 +444,6 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
             csvRows.push(row.map(escapeCSV).join(','));
         });
         
-        // 총계 행
         if (showTotals) {
             const totalRow = ['총계'];
             pivotData.cols.forEach(colVal => {
@@ -454,7 +459,6 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
             csvRows.push(totalRow.map(escapeCSV).join(','));
         }
         
-        // BOM 추가 (Excel에서 한글 깨짐 방지)
         const csvContent = '\uFEFF' + csvRows.join('\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
@@ -463,199 +467,161 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
         link.click();
     };
 
-    // 배경색에서 글자색을 계산하는 함수 (히트맵 포함)
+    // 배경색에서 글자색을 계산하는 함수 - 다크/더다크 배경은 흰색, 나머지는 검은색
     const getTextColor = (bgColor, isHeader = false, isTotal = false) => {
-        // 총계 행인 경우
-        if (isTotal) {
-            return '#38bdf8'; // 총계는 밝은 청색
+        // 다크(#1e293b) 또는 더다크(#0f172a) 배경에서는 모든 글자를 흰색으로
+        if (tableBgColor === '#1e293b' || tableBgColor === '#0f172a') {
+            return '#ffffff';
         }
-        // 헤더인 경우
-        if (isHeader) {
-            return headerTextColor;
-        }
-        
-        // 히트맵 색상인 경우
-        if (bgColor && bgColor.startsWith('rgb')) {
-            const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-            if (match) {
-                const r = parseInt(match[1]);
-                const g = parseInt(match[2]);
-                const b = parseInt(match[3]);
-                // 밝기 계산
-                const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-                // 밝은 배경에는 검정, 어두운 배경에는 흰색
-                return brightness > 150 ? '#1e293b' : '#ffffff';
-            }
-        }
-        
-        // 기본 색상
-        return textColor;
+        // 나머지 배경에서는 모든 글자를 검은색으로
+        return '#000000';
     };
 
-    // PNG 이미지로 저장 (테이블 그대로 캡처)
-    const exportAsPNG = async () => {
-    if (!pivotData || !containerRef) return;
-    
-    const tableEl = containerRef.querySelector('table');
-    if (!tableEl) return;
-    
-    try {
-        // html2canvas가 전역에 있는지 확인
-        if (typeof html2canvas === 'undefined') {
-            // html2canvas를 동적으로 로드 시도
-            await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
-        }
-        
-        if (typeof html2canvas === 'undefined') {
-            // 그래도 없으면 수동 캔버스 방식 사용
-            await manualCanvasExport(tableEl);
-            return;
-        }
-        
-        // 테이블의 실제 크기 계산
-        const tableRect = tableEl.getBoundingClientRect();
-        const scrollWidth = tableEl.scrollWidth;
-        const scrollHeight = tableEl.scrollHeight;
-        
-        // 래퍼 div 생성하여 테이블을 정확한 크기로 렌더링
-        const wrapper = document.createElement('div');
-        wrapper.style.position = 'absolute';
-        wrapper.style.left = '-99999px';
-        wrapper.style.top = '0';
-        wrapper.style.width = Math.max(scrollWidth, tableRect.width) + 'px';
-        wrapper.style.height = Math.max(scrollHeight, tableRect.height) + 'px';
-        wrapper.style.backgroundColor = tableBgColor;
-        wrapper.style.padding = '20px';
-        wrapper.style.boxSizing = 'border-box';
-        wrapper.style.overflow = 'visible';
-        
-        // 테이블 클론 생성 (깊은 복사)
-        const tableClone = tableEl.cloneNode(true);
-        
-        // 테이블 스타일 복사 - 화면에 보이는 그대로
-        tableClone.style.backgroundColor = tableBgColor;
-        tableClone.style.color = textColor;
-        tableClone.style.fontSize = `${compactMode ? fontSize - 2 : fontSize}px`;
-        tableClone.style.fontFamily = fontFamily;
-        tableClone.style.width = scrollWidth + 'px';
-        tableClone.style.minWidth = scrollWidth + 'px';
-        tableClone.style.margin = '0';
-        tableClone.style.borderCollapse = 'collapse';
-        tableClone.style.tableLayout = 'auto';
-        
-        // 모든 행과 셀을 순회하며 스타일 복사
-        const cloneRows = tableClone.querySelectorAll('tr');
-        const originalRows = tableEl.querySelectorAll('tr');
-        
-        cloneRows.forEach((cloneRow, rowIdx) => {
-            const originalRow = originalRows[rowIdx];
-            if (!originalRow) return;
-            
-            // 행 스타일 복사
-            const originalRowStyle = window.getComputedStyle(originalRow);
-            cloneRow.style.backgroundColor = originalRowStyle.backgroundColor;
-            
-            const cloneCells = cloneRow.querySelectorAll('th, td');
-            const originalCells = originalRow.querySelectorAll('th, td');
-            
-            cloneCells.forEach((cloneCell, cellIdx) => {
-                const originalCell = originalCells[cellIdx];
-                if (!originalCell) return;
-                
-                // 스타일 복사
-                const computedStyle = window.getComputedStyle(originalCell);
-                
-                // 셀의 실제 크기 유지
-                const cellWidth = originalCell.offsetWidth;
-                const cellHeight = originalCell.offsetHeight;
-                
-                cloneCell.style.width = cellWidth + 'px';
-                cloneCell.style.minWidth = cellWidth + 'px';
-                cloneCell.style.height = cellHeight + 'px';
-                cloneCell.style.minHeight = cellHeight + 'px';
-                cloneCell.style.maxWidth = cellWidth + 'px';
-                cloneCell.style.backgroundColor = computedStyle.backgroundColor;
-                cloneCell.style.color = computedStyle.color;
-                cloneCell.style.borderColor = borderColor;
-                cloneCell.style.borderWidth = `${borderWidth}px`;
-                cloneCell.style.borderStyle = borderStyle;
 
-                const basePadding = compactMode ? cellPadding / 2 : cellPadding;
-                cloneCell.style.paddingTop = `${Math.max(0, basePadding - 8)}px`; // 위쪽 1px 축소
-                cloneCell.style.paddingBottom = `${basePadding + 8}px`;        // 아래쪽 1px 확대
-                cloneCell.style.paddingLeft = `${basePadding}px`;
-                cloneCell.style.paddingRight = `${basePadding}px`;
-                
-                // PNG 저장 시 사용자가 설정한 텍스트 정렬 적용
-                cloneCell.style.textAlign = originalCell.tagName === 'TH' ? headerTextAlign : textAlign;
-                cloneCell.style.fontWeight = computedStyle.fontWeight;
-                cloneCell.style.fontFamily = computedStyle.fontFamily;
-                cloneCell.style.fontSize = computedStyle.fontSize;
-                cloneCell.style.whiteSpace = 'nowrap';
-                cloneCell.style.overflow = 'visible';
-                cloneCell.style.boxSizing = 'border-box';
-                
-                // 글자 중앙 정렬 (수직)
-                cloneCell.style.verticalAlign = 'middle';
-                cloneCell.style.display = 'table-cell';
-                
-                // sticky 속성 제거 (캡처 시 문제가 됨)
-                cloneCell.style.position = 'static';
-                cloneCell.style.left = 'auto';
-                cloneCell.style.top = 'auto';
-                cloneCell.style.zIndex = 'auto';
-            });
-        });
+    // PNG 이미지로 저장
+    const exportAsPNG = async () => {
+        if (!pivotData || !containerRef) return;
         
-        // thead 스타일 복사
-        const cloneThead = tableClone.querySelector('thead');
-        const originalThead = tableEl.querySelector('thead');
-        if (cloneThead && originalThead) {
-            cloneThead.style.backgroundColor = headerBgColor;
-        }
+        const tableEl = containerRef.querySelector('table');
+        if (!tableEl) return;
         
-        wrapper.appendChild(tableClone);
-        document.body.appendChild(wrapper);
-        
-        // 테이블 영역만 캡처 (고화질)
-        const canvas = await html2canvas(tableClone, {
-            backgroundColor: tableBgColor,
-            scale: 3, // 더 높은 해상도
-            useCORS: true,
-            logging: false,
-            allowTaint: true,
-            windowWidth: scrollWidth + 40,
-            windowHeight: scrollHeight + 40,
-            onclone: (clonedDoc, clonedElement) => {
-                // 클론된 문서에서 추가 조정
-                clonedElement.style.width = scrollWidth + 'px';
-                const cells = clonedElement.querySelectorAll('th, td');
-                cells.forEach(cell => {
-                    cell.style.lineHeight = 'normal'; // 오류를 일으키던 수식 대신 normal 적용
-                    cell.style.display = 'table-cell';
-                });
-            }
-        });
-        
-        // 래퍼 제거
-        document.body.removeChild(wrapper);
-        
-        // 다운로드
-        const link = document.createElement('a');
-        link.download = `pivot_${Date.now()}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-        
-    } catch (err) {
-        console.error('PNG export error:', err);
-        // 폴백: 수동 캔버스 방식
         try {
-            await manualCanvasExport(tableEl);
-        } catch (fallbackErr) {
-            alert('PNG 내보내기에 실패했습니다: ' + fallbackErr.message);
+            if (typeof html2canvas === 'undefined') {
+                await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+            }
+            
+            if (typeof html2canvas === 'undefined') {
+                await manualCanvasExport(tableEl);
+                return;
+            }
+            
+            const tableRect = tableEl.getBoundingClientRect();
+            const scrollWidth = tableEl.scrollWidth;
+            const scrollHeight = tableEl.scrollHeight;
+            
+            const wrapper = document.createElement('div');
+            wrapper.style.position = 'absolute';
+            wrapper.style.left = '-99999px';
+            wrapper.style.top = '0';
+            wrapper.style.width = Math.max(scrollWidth, tableRect.width) + 'px';
+            wrapper.style.height = Math.max(scrollHeight, tableRect.height) + 'px';
+            wrapper.style.backgroundColor = tableBgColor;
+            wrapper.style.padding = '20px';
+            wrapper.style.boxSizing = 'border-box';
+            wrapper.style.overflow = 'visible';
+            
+            const tableClone = tableEl.cloneNode(true);
+            
+            tableClone.style.backgroundColor = tableBgColor;
+            tableClone.style.color = textColor;
+            tableClone.style.fontSize = `${compactMode ? fontSize - 2 : fontSize}px`;
+            tableClone.style.fontFamily = fontFamily;
+            tableClone.style.width = scrollWidth + 'px';
+            tableClone.style.minWidth = scrollWidth + 'px';
+            tableClone.style.margin = '0';
+            tableClone.style.borderCollapse = 'collapse';
+            tableClone.style.tableLayout = 'auto';
+            
+            const cloneRows = tableClone.querySelectorAll('tr');
+            const originalRows = tableEl.querySelectorAll('tr');
+            
+            cloneRows.forEach((cloneRow, rowIdx) => {
+                const originalRow = originalRows[rowIdx];
+                if (!originalRow) return;
+                
+                const originalRowStyle = window.getComputedStyle(originalRow);
+                cloneRow.style.backgroundColor = originalRowStyle.backgroundColor;
+                
+                const cloneCells = cloneRow.querySelectorAll('th, td');
+                const originalCells = originalRow.querySelectorAll('th, td');
+                
+                cloneCells.forEach((cloneCell, cellIdx) => {
+                    const originalCell = originalCells[cellIdx];
+                    if (!originalCell) return;
+                    
+                    const computedStyle = window.getComputedStyle(originalCell);
+                    
+                    const cellWidth = originalCell.offsetWidth;
+                    const cellHeight = originalCell.offsetHeight;
+                    
+                    cloneCell.style.width = cellWidth + 'px';
+                    cloneCell.style.minWidth = cellWidth + 'px';
+                    cloneCell.style.height = cellHeight + 'px';
+                    cloneCell.style.minHeight = cellHeight + 'px';
+                    cloneCell.style.maxWidth = cellWidth + 'px';
+                    cloneCell.style.backgroundColor = computedStyle.backgroundColor;
+                    cloneCell.style.color = computedStyle.color;
+                    cloneCell.style.borderColor = borderColor;
+                    cloneCell.style.borderWidth = `${borderWidth}px`;
+                    cloneCell.style.borderStyle = borderStyle;
+
+                    const basePadding = compactMode ? cellPadding / 2 : cellPadding;
+                    cloneCell.style.paddingTop = `${Math.max(0, basePadding - 8)}px`;
+                    cloneCell.style.paddingBottom = `${basePadding + 8}px`;
+                    cloneCell.style.paddingLeft = `${basePadding}px`;
+                    cloneCell.style.paddingRight = `${basePadding}px`;
+                    
+                    cloneCell.style.textAlign = originalCell.tagName === 'TH' ? headerTextAlign : textAlign;
+                    cloneCell.style.fontWeight = computedStyle.fontWeight;
+                    cloneCell.style.fontFamily = computedStyle.fontFamily;
+                    cloneCell.style.fontSize = computedStyle.fontSize;
+                    cloneCell.style.whiteSpace = 'nowrap';
+                    cloneCell.style.overflow = 'visible';
+                    cloneCell.style.boxSizing = 'border-box';
+                    
+                    cloneCell.style.verticalAlign = 'middle';
+                    cloneCell.style.display = 'table-cell';
+                    
+                    cloneCell.style.position = 'static';
+                    cloneCell.style.left = 'auto';
+                    cloneCell.style.top = 'auto';
+                    cloneCell.style.zIndex = 'auto';
+                });
+            });
+            
+            const cloneThead = tableClone.querySelector('thead');
+            const originalThead = tableEl.querySelector('thead');
+            if (cloneThead && originalThead) {
+                cloneThead.style.backgroundColor = headerBgColor;
+            }
+            
+            wrapper.appendChild(tableClone);
+            document.body.appendChild(wrapper);
+            
+            const canvas = await html2canvas(tableClone, {
+                backgroundColor: tableBgColor,
+                scale: 3,
+                useCORS: true,
+                logging: false,
+                allowTaint: true,
+                windowWidth: scrollWidth + 40,
+                windowHeight: scrollHeight + 40,
+                onclone: (clonedDoc, clonedElement) => {
+                    clonedElement.style.width = scrollWidth + 'px';
+                    const cells = clonedElement.querySelectorAll('th, td');
+                    cells.forEach(cell => {
+                        cell.style.lineHeight = 'normal';
+                        cell.style.display = 'table-cell';
+                    });
+                }
+            });
+            
+            document.body.removeChild(wrapper);
+            
+            const link = document.createElement('a');
+            link.download = `pivot_${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            
+        } catch (err) {
+            console.error('PNG export error:', err);
+            try {
+                await manualCanvasExport(tableEl);
+            } catch (fallbackErr) {
+                alert('PNG 내보내기에 실패했습니다: ' + fallbackErr.message);
+            }
         }
-    }
-};
+    };
     
     // 스크립트 동적 로드
     const loadScript = (src) => {
@@ -668,11 +634,10 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
         });
     };
     
-    // 수동 캔버스 내보내기 (html2canvas 없는 경우)
+    // 수동 캔버스 내보내기
     const manualCanvasExport = async (tableEl) => {
         const scale = 2;
         
-        // 테이블 크기
         const width = tableEl.scrollWidth * scale;
         const height = tableEl.scrollHeight * scale;
         
@@ -682,13 +647,10 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
         canvas.width = width;
         canvas.height = height;
         
-        // 배경색 설정
         ctx.fillStyle = tableBgColor;
         ctx.fillRect(0, 0, width, height);
         
-        // 캡처 시작
         ctx.scale(scale, scale);
-        // 텍스트 수직 정렬 - central이 더 정확하게 중앙 정렬
         ctx.textBaseline = 'central';
         
         const rows = tableEl.querySelectorAll('tr');
@@ -702,19 +664,16 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
             for (const cell of cells) {
                 const style = window.getComputedStyle(cell);
                 
-                // 셀 크기
                 const cellWidth = cell.offsetWidth || 100;
                 const cellHeight = cell.offsetHeight || 30;
                 maxHeight = Math.max(maxHeight, cellHeight);
                 
-                // 배경색
                 const bgColor = style.backgroundColor;
                 if (bgColor && bgColor !== 'transparent' && bgColor !== 'rgba(0, 0, 0, 0)') {
                     ctx.fillStyle = bgColor;
                     ctx.fillRect(x, y, cellWidth, cellHeight);
                 }
                 
-                // 테두리
                 const borderColor = style.borderColor;
                 const borderWidth = parseInt(style.borderWidth) || 1;
                 if (borderWidth > 0 && borderColor) {
@@ -723,7 +682,6 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
                     ctx.strokeRect(x, y, cellWidth, cellHeight);
                 }
                 
-                // 텍스트 - PNG 저장 시 사용자가 설정한 텍스트 정렬 적용
                 const color = style.color;
                 const fontSize = parseInt(style.fontSize) || 14;
                 const fontWeight = style.fontWeight || 'normal';
@@ -732,7 +690,6 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
                 ctx.font = `${fontWeight} ${fontSize}px ${style.fontFamily || 'sans-serif'}`;
                 
                 const text = cell.textContent.trim();
-                // 헤더는 headerTextAlign, 데이터 셀은 textAlign 적용
                 const cellTextAlign = cell.tagName === 'TH' ? headerTextAlign : textAlign;
                 const textX = cellTextAlign === 'center' ? x + cellWidth / 2 :
                               cellTextAlign === 'right' ? x + cellWidth - 8 : x + 8;
@@ -744,7 +701,6 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
             y += maxHeight || 30;
         }
         
-        // 다운로드
         const link = document.createElement('a');
         link.download = `pivot_${Date.now()}.png`;
         link.href = canvas.toDataURL('image/png');
@@ -757,18 +713,16 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
         
         let html = '<table border="1" style="border-collapse: collapse; font-family: Arial, sans-serif;">';
         
-        // 헤더
         html += '<thead><tr>';
         html += `<th style="background: ${headerBgColor}; color: ${headerTextColor}; padding: 8px; text-align: center;">${rowField}</th>`;
         pivotData.cols.forEach(col => {
             html += `<th style="background: ${headerBgColor}; color: ${headerTextColor}; padding: 8px; text-align: center;">${col}</th>`;
         });
         if (showTotals) {
-            html += `<th style="background: ${headerBgColor}; color: #38bdf8; padding: 8px; text-align: center;">총계</th>`;
+            html += `<th style="background: ${headerBgColor}; color: ${totalColor}; padding: 8px; text-align: center;">총계</th>`;
         }
         html += '</tr></thead><tbody>';
         
-        // 데이터 행
         pivotData.rows.forEach(rowVal => {
             html += '<tr>';
             html += `<td style="background: ${tableBgColor}; color: ${textColor}; padding: 8px; font-weight: bold; text-align: ${textAlign};">${rowVal}</td>`;
@@ -777,11 +731,10 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
                 const displayVal = getDisplayValue(rawVal, rowVal, colVal);
                 const displayStr = formatValue(displayVal, displayMode !== 'value');
                 
-                // 히트맵 색상 계산 및 글자색 자동 조정
                 let bgColor = 'transparent';
                 let color = textColor;
                 if (showHeatmap && rawVal !== null) {
-                    bgColor = getHeatmapColor(displayVal, minVal, maxVal, colorScheme);
+                    bgColor = getHeatmapColor(displayVal, minVal, maxVal, heatmapScheme);
                     color = getTextColor(bgColor);
                 }
                 
@@ -790,30 +743,28 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
             if (showTotals) {
                 const totalVal = pivotData.rowTotals[rowVal];
                 const displayTotal = getDisplayValue(totalVal, rowVal, 'Total');
-                html += `<td style="background: ${headerBgColor}; color: #38bdf8; padding: 8px; text-align: ${textAlign}; font-weight: bold;">${formatValue(displayTotal, displayMode !== 'value')}</td>`;
+                html += `<td style="background: ${headerBgColor}; color: ${totalColor}; padding: 8px; text-align: ${textAlign}; font-weight: bold;">${formatValue(displayTotal, displayMode !== 'value')}</td>`;
             }
             html += '</tr>';
         });
         
-        // 총계 행
         if (showTotals) {
             html += '<tr>';
-            html += `<td style="background: ${headerBgColor}; color: #38bdf8; padding: 8px; font-weight: bold; text-align: ${textAlign};">총계</td>`;
+            html += `<td style="background: ${headerBgColor}; color: ${totalColor}; padding: 8px; font-weight: bold; text-align: ${textAlign};">총계</td>`;
             pivotData.cols.forEach(colVal => {
                 const val = pivotData.colTotals[colVal];
                 const displayVal = getDisplayValue(val, 'Total', colVal);
-                // 히트맵 색상 계산 및 글자색 자동 조정
                 let bgColor = 'transparent';
                 let color = textColor;
                 if (showHeatmap && val !== null) {
-                    bgColor = getHeatmapColor(displayVal, minVal, maxVal, colorScheme);
+                    bgColor = getHeatmapColor(displayVal, minVal, maxVal, heatmapScheme);
                     color = getTextColor(bgColor);
                 }
                 html += `<td style="background: ${bgColor}; color: ${color}; padding: 8px; text-align: ${textAlign}; font-weight: bold;">${formatValue(displayVal, displayMode !== 'value')}</td>`;
             });
             const grandVal = pivotData.grandTotal;
             const displayGrand = getDisplayValue(grandVal, 'Total', 'Total');
-            html += `<td style="background: #0f172a; color: white; padding: 8px; text-align: ${textAlign}; font-weight: bold;">${formatValue(displayGrand, displayMode !== 'value')}</td>`;
+            html += `<td style="background: ${headerBgColor}; color: ${totalColor}; padding: 8px; text-align: ${textAlign}; font-weight: bold;">${formatValue(displayGrand, displayMode !== 'value')}</td>`;
             html += '</tr>';
         }
         
@@ -852,142 +803,142 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
     const getContrastColor = (bgColor) => {
         if (!bgColor) return '#e2e8f0';
         
-        // HEX 색상을 RGB로 변환
         const hex = bgColor.replace('#', '');
         const r = parseInt(hex.substr(0, 2), 16);
         const g = parseInt(hex.substr(2, 2), 16);
         const b = parseInt(hex.substr(4, 2), 16);
         
-        // 밝기 계산 (YIQ 방식)
         const brightness = ((r * 299) + (g * 587) + (b * 114)) / 1000;
         
-        // 밝으면 검정, 어두우면 흰색
         return brightness > 128 ? '#1e293b' : '#e2e8f0';
     };
 
-    // 배경색이 변경되면 텍스트색 자동 조정
+    // 배경색 변경 시 텍스트색 및 줄무늬색 자동 조정
     useEffect(() => {
-        setTextColor(getContrastColor(tableBgColor));
+        // 다크 배경(#1e293b, #0f172a)은 흰색, 나머지는 검은색으로 고정
+        if (tableBgColor === '#1e293b' || tableBgColor === '#0f172a') {
+            setTextColor('#ffffff');
+        } else {
+            setTextColor('#000000');
+        }
+        
+        // 줄무늬 색상을 배경색에 맞게 자동 조절
+        const hex = tableBgColor.replace('#', '');
+        const r = parseInt(hex.substr(0, 2), 16);
+        const g = parseInt(hex.substr(2, 2), 16);
+        const b = parseInt(hex.substr(4, 2), 16);
+        const brightness = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+        
+        // 밝은 배경에서는 더 어두운 줄무늬, 어두운 배경에서는 더 밝은 줄무늬
+        if (brightness > 128) {
+            const stripeR = Math.max(0, r - 25);
+            const stripeG = Math.max(0, g - 25);
+            const stripeB = Math.max(0, b - 25);
+            setStripeColor(`rgb(${stripeR}, ${stripeG}, ${stripeB})`);
+        } else {
+            const stripeR = Math.min(255, r + 25);
+            const stripeG = Math.min(255, g + 25);
+            const stripeB = Math.min(255, b + 25);
+            setStripeColor(`rgb(${stripeR}, ${stripeG}, ${stripeB})`);
+        }
     }, [tableBgColor]);
 
-    // 헤더 배경색 변경 시 글자색 자동 조정
-    useEffect(() => {
-        setHeaderTextColor(getContrastColor(headerBgColor));
-    }, [headerBgColor]);
+    // useEffect for header text color - removed since headerBgColor is now derived
 
     // 활성 탭 클래스
-    const activeTabClass = "px-4 py-2 text-sm font-bold text-brand-400 border-b-2 border-brand-500 bg-slate-800/80 transition-colors";
-    const inactiveTabClass = "px-4 py-2 text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 transition-colors";
-
-    // 워터마크 렌더링
-    const renderWatermark = () => {
-        if (!watermarkEnabled) return null;
-        
-        const style = {
-            position: 'absolute',
-            pointerEvents: 'none',
-            color: watermarkColor,
-            opacity: 0.15,
-            fontWeight: 'bold',
-            fontSize: '24px',
-            transform: 'rotate(-45deg)',
-            whiteSpace: 'nowrap',
-            zIndex: 1,
-        };
-        
-        if (watermarkDesign === 'single') {
-            return (
-                <div style={{ 
-                    ...style, 
-                    top: '50%', 
-                    left: '50%', 
-                    transform: 'translate(-50%, -50%) rotate(-45deg)',
-                    fontSize: '48px'
-                }}>
-                    {watermarkText}
-                </div>
-            );
-        }
-        
-        if (watermarkDesign === 'multiple') {
-            const items = [];
-            for (let i = 0; i < watermarkGridSize; i++) {
-                for (let j = 0; j < watermarkGridSize; j++) {
-                    items.push(
-                        <div key={`${i}-${j}`} style={{
-                            ...style,
-                            top: `${(i / watermarkGridSize) * 100}%`,
-                            left: `${(j / watermarkGridSize) * 100}%`,
-                        }}>
-                            {watermarkText}
-                        </div>
-                    );
-                }
-            }
-            return <div className="absolute inset-0 overflow-hidden">{items}</div>;
-        }
-        
-        if (watermarkDesign === 'corner') {
-            return (
-                <div className="absolute inset-0" style={{ pointerEvents: 'none' }}>
-                    <div style={{ ...style, top: '10%', left: '10%', fontSize: '32px' }}>{watermarkText}</div>
-                    <div style={{ ...style, top: '10%', right: '10%', fontSize: '32px' }}>{watermarkText}</div>
-                    <div style={{ ...style, bottom: '10%', left: '10%', fontSize: '32px' }}>{watermarkText}</div>
-                    <div style={{ ...style, bottom: '10%', right: '10%', fontSize: '32px' }}>{watermarkText}</div>
-                </div>
-            );
-        }
-        
-        return null;
-    };
+    const activeTabClass = "px-4 py-3 text-sm font-bold text-brand-400 border-b-2 border-brand-500 bg-slate-800/80 transition-colors";
+    const inactiveTabClass = "px-4 py-3 text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 transition-colors";
 
     return (
-        <div ref={setContainerRef} className="flex flex-col h-full relative rounded-lg overflow-hidden">
-            {renderWatermark()}
+        <div ref={setContainerRef} className="flex flex-col h-full bg-slate-900/50 border border-slate-800 rounded-lg overflow-hidden font-sans relative">
 
-            {/* 첫 번째 줄: 탭 (왼쪽) + 버튼 (오른쪽) */}
-            <div className="flex items-center justify-between gap-2 p-2 bg-slate-900 border-b border-slate-800 shrink-0 z-10">
-                {/* 탭 - 왼쪽 정렬 */}
-                <div className="flex items-center gap-1.5">
-                    <button onClick={() => setActiveDesignTab('display')} className={`px-3 py-2 text-xs font-bold rounded-lg transition-all ${activeDesignTab === 'display' ? 'bg-brand-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}>📊 표시</button>
-                    <button onClick={() => setActiveDesignTab('design')} className={`px-3 py-2 text-xs font-bold rounded-lg transition-all ${activeDesignTab === 'design' ? 'bg-brand-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}>🎨 색상/배경</button>
-                    <button onClick={() => setActiveDesignTab('watermark')} className={`px-3 py-2 text-xs font-bold rounded-lg transition-all ${activeDesignTab === 'watermark' ? 'bg-red-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}>🔒 대외비</button>
+            {/* 첫 번째 줄: 퀵템플릿 + 버튼들 (ChartViewer 스타일) */}
+            <div className="flex items-center justify-between gap-2 p-2.5 bg-slate-900 border-b border-slate-800 shrink-0 z-10">
+                {/* 🪄 퀵 템플릿 - 왼쪽 */}
+                <div className="flex items-center gap-1.5 bg-slate-800/50 p-1.5 rounded-lg border border-slate-700">
+                    <span className="text-[10px] text-slate-400 font-bold ml-1">🪄:</span>
+                    <button 
+                        onClick={() => applyTemplate('report')} 
+                        className="px-2 py-1 text-xs font-bold rounded transition-colors shadow-sm flex items-center gap-1 bg-white text-slate-800 hover:bg-slate-200"
+                    >
+                        문서/보고서용
+                    </button>
+                    <button 
+                        onClick={() => applyTemplate('pitch')} 
+                        className="px-2 py-1 border text-xs font-bold rounded transition-colors shadow-sm flex items-center gap-1 bg-slate-950 text-brand-400 border border-slate-700 hover:bg-slate-900"
+                    >
+                        다크/발표용
+                    </button>
+                    <button 
+                        onClick={() => applyTemplate('compact')} 
+                        className="px-2 py-1 border text-xs font-bold rounded transition-colors shadow-sm flex items-center gap-1 bg-slate-950 text-slate-300 border border-slate-700 hover:bg-slate-900"
+                    >
+                        컴팩트
+                    </button>
                 </div>
-                
+
                 {/* 버튼들 - 오른쪽 정렬 */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 ml-auto">
+                    {/* 데이터 설정 버튼 */}
+                    <button 
+                        onClick={() => {
+                            document.getElementById('pivot-data-settings-panel').classList.toggle('hidden');
+                        }} 
+                        className={`px-3 py-1.5 text-xs rounded font-bold transition-all flex items-center gap-1 ${showDataSettings ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'}`}
+                    >
+                        📊 데이터 설정
+                    </button>
+
+                    {/* 세부 디자인 버튼 */}
+                    <button 
+                        onClick={() => {
+                            const panel = document.getElementById('pivot-design-panel');
+                            if (panel.classList.contains('hidden')) {
+                                panel.classList.remove('hidden');
+                                setActiveDesignTab('design');
+                            } else {
+                                panel.classList.add('hidden');
+                            }
+                        }} 
+                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded font-bold transition-colors flex items-center gap-1"
+                    >
+                        🎨 세부 디자인
+                    </button>
+
+                    <div className="w-px h-5 bg-slate-700 mx-1"></div>
+
                     <button 
                         onClick={copyToClipboard}
-                        className="px-3 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
+                        className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
                     >
                         📋 표 복사
                     </button>
                     <button 
                         onClick={exportAsPNG}
-                        className="px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
+                        className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
                     >
                         🖼️ PNG
                     </button>
                     <button 
                         onClick={exportAsCSV}
-                        className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
                     >
                         📊 CSV
                     </button>
                     <button 
                         onClick={toggleZoom}
-                        className="px-3 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
+                        className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
                     >
-                        {isZoomed ? (
+                        {isFullscreen ? (
                             <>
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                                 닫기
                             </>
                         ) : (
                             <>
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                                 </svg>
                                 확대
@@ -997,482 +948,256 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
                 </div>
             </div>
 
-            {/* 디자인 패널 - 표시 탭 선택 시 */}
-            {(activeDesignTab === 'display' || activeDesignTab === 'design' || activeDesignTab === 'watermark') && (
-                <div className="bg-slate-900 border-b border-slate-700 p-4 shrink-0">
-                    {/* 표시 탭: 피벗 설정 + 옵션 */}
-                    {activeDesignTab === 'display' && (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {/* 피벗 설정 */}
-                            <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-4 rounded-xl border border-slate-700/50">
-                                <h3 className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-brand-500"></span>
-                                    📊 피벗 설정
-                                </h3>
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-2">
-                                        <label className="text-xs font-bold text-slate-400 w-8">행</label>
-                                        <select 
-                                            value={rowField} 
-                                            onChange={e => setRowField(e.target.value)}
-                                            className="flex-1 bg-slate-950/80 text-slate-200 px-3 py-2 text-sm rounded-lg border border-slate-700/50 outline-none focus:border-brand-500"
-                                        >
-                                            {textColumns.map(c => <option key={c} value={c}>{c}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <label className="text-xs font-bold text-slate-400 w-8">열</label>
-                                        <select 
-                                            value={colField} 
-                                            onChange={e => setColField(e.target.value)}
-                                            className="flex-1 bg-slate-950/80 text-slate-200 px-3 py-2 text-sm rounded-lg border border-slate-700/50 outline-none focus:border-brand-500"
-                                        >
-                                            <option value="">-- 단일 열 --</option>
-                                            {textColumns.map(c => <option key={c} value={c}>{c}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <label className="text-xs font-bold text-slate-400 w-8">값</label>
-                                        <select 
-                                            value={valueField} 
-                                            onChange={e => setValueField(e.target.value)}
-                                            className="flex-1 bg-slate-950/80 text-slate-200 px-3 py-2 text-sm rounded-lg border border-slate-700/50 outline-none focus:border-brand-500"
-                                        >
-                                            {numericColumns.map(c => <option key={c} value={c}>{c}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <label className="text-xs font-bold text-slate-400 w-8">집계</label>
-                                        <select 
-                                            value={aggFunction} 
-                                            onChange={e => setAggFunction(e.target.value)}
-                                            className="flex-1 bg-slate-950/80 text-slate-200 px-3 py-2 text-sm rounded-lg border border-slate-700/50 outline-none focus:border-brand-500"
-                                        >
-                                            <option value="SUM">∑ 합계</option>
-                                            <option value="AVG">ø 평균</option>
-                                            <option value="COUNT"># 개수</option>
-                                            <option value="MAX">↑ 최대</option>
-                                            <option value="MIN">↓ 최소</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* 시각화 옵션 */}
-                            <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-4 rounded-xl border border-slate-700/50">
-                                <h3 className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                                    🎨 시각화
-                                </h3>
-                                <div className="space-y-3">
-                                    <label 
-                                        className="flex items-center gap-3 text-sm font-medium bg-slate-950/60 px-4 py-3 rounded-xl border border-slate-700/50 cursor-pointer hover:border-brand-500/50 hover:bg-brand-500/5 transition-all"
-                                        onClick={() => setShowHeatmap(!showHeatmap)}
-                                    >
-                                        <div className={`w-5 h-5 rounded flex items-center justify-center transition-all ${showHeatmap ? 'bg-brand-500' : 'bg-slate-600'}`}>
-                                            {showHeatmap && (
-                                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                                            )}
-                                        </div>
-                                        <span className="text-slate-200">히트맵 표시</span>
-                                    </label>
-                                    
-                                    {showHeatmap && (
-                                        <div className="flex gap-2 pl-4">
-                                            {['blue', 'green', 'red', 'purple'].map(scheme => (
-                                                <button
-                                                    key={scheme}
-                                                    onClick={() => setColorScheme(scheme)}
-                                                    className={`w-8 h-8 rounded-full border-2 transition-all ${colorScheme === scheme ? 'border-white scale-110 shadow-lg' : 'border-slate-600 opacity-70 hover:opacity-100'}`}
-                                                    style={{ 
-                                                        background: scheme === 'blue' ? 'linear-gradient(135deg, #eff6ff, #1d4ed8)' :
-                                                                   scheme === 'green' ? 'linear-gradient(135deg, #f0fdf4, #15803d)' :
-                                                                   scheme === 'red' ? 'linear-gradient(135deg, #fef2f2, #991b1b)' :
-                                                                   'linear-gradient(135deg, #faf5ff, #7e22ce)'
-                                                    }}
-                                                    title={scheme === 'blue' ? '파랑' : scheme === 'green' ? '초록' : scheme === 'red' ? '빨강' : '보라'}
-                                                />
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    <label 
-                                        className="flex items-center gap-3 text-sm font-medium bg-slate-950/60 px-4 py-3 rounded-xl border border-slate-700/50 cursor-pointer hover:border-brand-500/50 hover:bg-brand-500/5 transition-all"
-                                        onClick={() => setShowTotals(!showTotals)}
-                                    >
-                                        <div className={`w-5 h-5 rounded flex items-center justify-center transition-all ${showTotals ? 'bg-brand-500' : 'bg-slate-600'}`}>
-                                            {showTotals && (
-                                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                                            )}
-                                        </div>
-                                        <span className="text-slate-200">총계 표시</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            {/* 표시 형식 */}
-                            <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-4 rounded-xl border border-slate-700/50">
-                                <h3 className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                                    📋 표시 형식
-                                </h3>
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-2">표시 모드</label>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {[
-                                                { value: 'value', label: '값', icon: '🔢' },
-                                                { value: 'grandTotalPct', label: '총계 %', icon: '📊' },
-                                                { value: 'rowPct', label: '행 %', icon: '📋' },
-                                                { value: 'colPct', label: '열 %', icon: '📑' }
-                                            ].map(({ value, label, icon }) => (
-                                                <button
-                                                    key={value}
-                                                    onClick={() => setDisplayMode(value)}
-                                                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${displayMode === value ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/30' : 'bg-slate-950/50 text-slate-400 hover:text-white border border-slate-700/50'}`}
-                                                >
-                                                    {icon} {label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-2">값 서식</label>
-                                        <select 
-                                            value={valueFormat} 
-                                            onChange={e => setValueFormat(e.target.value)}
-                                            className="w-full bg-slate-950/80 text-slate-200 px-4 py-2.5 text-sm rounded-xl border border-slate-700/50 outline-none focus:border-brand-500"
-                                        >
-                                            <option value="comma">1,234 (쉼표)</option>
-                                            <option value="krw">₩1,234 (원화)</option>
-                                            <option value="usd">$1,234 (USD)</option>
-                                            <option value="percent">12.3% (퍼센트)</option>
-                                            <option value="compact">1.2만 (축약)</option>
-                                            <option value="none">원본</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeDesignTab === 'design' && (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {/* 셀 크기 */}
-                            <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-4 rounded-xl border border-slate-700/50">
-                                <h3 className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                                    📏 셀 크기
-                                </h3>
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-2">셀 패딩: {cellPadding}px</label>
-                                        <input 
-                                            type="range" 
-                                            min="4" 
-                                            max="24" 
-                                            value={cellPadding}
-                                            onChange={(e) => setCellPadding(Number(e.target.value))}
-                                            className="w-full accent-brand-500 h-2"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-2">글자 크기: {fontSize}px</label>
-                                        <input 
-                                            type="range" 
-                                            min="10" 
-                                            max="20" 
-                                            value={fontSize}
-                                            onChange={(e) => setFontSize(Number(e.target.value))}
-                                            className="w-full accent-brand-500 h-2"
-                                        />
-                                    </div>
-                                    <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
-                                        <input 
-                                            type="checkbox" 
-                                            checked={compactMode} 
-                                            onChange={e => setCompactMode(e.target.checked)}
-                                            className="w-4 h-4 accent-brand-500" 
-                                        />
-                                        컴팩트 모드
-                                    </label>
-                                </div>
-                            </div>
-
-                            {/* 텍스트 정렬 */}
-                            <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-4 rounded-xl border border-slate-700/50">
-                                <h3 className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                                    ↔️ 텍스트 정렬
-                                </h3>
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-2">데이터 정렬</label>
-                                        <div className="flex gap-1">
-                                            {[
-                                                { value: 'left', icon: '⬅️' },
-                                                { value: 'center', icon: '↔️' },
-                                                { value: 'right', icon: '➡️' }
-                                            ].map(({ value, icon }) => (
-                                                <button
-                                                    key={value}
-                                                    onClick={() => setTextAlign(value)}
-                                                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${textAlign === value ? 'bg-brand-600 text-white' : 'bg-slate-950/50 text-slate-400 border border-slate-700/50 hover:text-white'}`}
-                                                >
-                                                    {icon}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-2">헤더 정렬</label>
-                                        <div className="flex gap-1">
-                                            {[
-                                                { value: 'left', icon: '⬅️' },
-                                                { value: 'center', icon: '↔️' },
-                                                { value: 'right', icon: '➡️' }
-                                            ].map(({ value, icon }) => (
-                                                <button
-                                                    key={value}
-                                                    onClick={() => setHeaderTextAlign(value)}
-                                                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${headerTextAlign === value ? 'bg-brand-600 text-white' : 'bg-slate-950/50 text-slate-400 border border-slate-700/50 hover:text-white'}`}
-                                                >
-                                                    {icon}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* 테두리 스타일 */}
-                            <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-4 rounded-xl border border-slate-700/50">
-                                <h3 className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                                    🔲 테두리
-                                </h3>
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-2">두께: {borderWidth}px</label>
-                                        <input 
-                                            type="range" 
-                                            min="0" 
-                                            max="3" 
-                                            value={borderWidth}
-                                            onChange={(e) => setBorderWidth(Number(e.target.value))}
-                                            className="w-full accent-brand-500 h-2"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-2">스타일</label>
-                                        <div className="flex gap-1">
-                                            {['solid', 'dashed', 'dotted'].map(style => (
-                                                <button
-                                                    key={style}
-                                                    onClick={() => setBorderStyle(style)}
-                                                    className={`flex-1 px-2 py-2 rounded-lg text-xs font-medium transition-all ${borderStyle === style ? 'bg-brand-600 text-white' : 'bg-slate-950/50 text-slate-400 border border-slate-700/50 hover:text-white'}`}
-                                                >
-                                                    {style === 'solid' ? '━' : style === 'dashed' ? ' - ' : ' · '}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* 배경색 */}
-                            <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-4 rounded-xl border border-slate-700/50">
-                                <h3 className="text-sm font-bold text-slate-200 mb-3 flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                                    🎨 배경색
-                                </h3>
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-2">표 배경</label>
-                                        <div className="flex gap-2 flex-wrap">
-                                            {[
-                                                { color: '#1e293b', label: '다크' },
-                                                { color: '#0f172a', label: '더 다크' },
-                                                { color: '#ffffff', label: '화이트' },
-                                                { color: '#f1f5f9', label: '라이트' }
-                                            ].map(({ color, label }) => (
-                                                <button 
-                                                    key={color} 
-                                                    onClick={() => setTableBgColor(color)}
-                                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${tableBgColor === color ? 'bg-brand-500/20 border border-brand-500 text-brand-400' : 'bg-slate-950/50 border border-slate-700/50 text-slate-400 hover:text-white'}`}
-                                                >
-                                                    {label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-2">헤더</label>
-                                        <div className="flex gap-2 flex-wrap">
-                                            {[
-                                                { color: '#334155', label: '기본' },
-                                                { color: '#1e293b', label: '다크' },
-                                                { color: '#475569', label: '라이트' },
-                                                { color: '#2563eb', label: '파랑' },
-                                                { color: '#7c3aed', label: '보라' }
-                                            ].map(({ color, label }) => (
-                                                <button 
-                                                    key={color} 
-                                                    onClick={() => setHeaderBgColor(color)}
-                                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${headerBgColor === color ? 'bg-brand-500/20 border border-brand-500 text-brand-400' : 'bg-slate-950/50 border border-slate-700/50 text-slate-400 hover:text-white'}`}
-                                                >
-                                                    {label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
-                                        <input 
-                                            type="checkbox" 
-                                            checked={showRowStripe} 
-                                            onChange={e => setShowRowStripe(e.target.checked)}
-                                            className="w-4 h-4 accent-brand-500" 
-                                        />
-                                        줄무늬 표시
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeDesignTab === 'watermark' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* 워터마크 설정 */}
-                            <div className="bg-gradient-to-br from-red-900/40 to-slate-900 p-4 rounded-xl border border-red-500/30 shadow-lg shadow-red-500/5">
-                                <h3 className="text-sm font-bold text-red-400 mb-4 flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-red-500 shadow-lg shadow-red-500/50"></span>
-                                    🔒 워터마크 설정
-                                </h3>
-                                
-                                <label 
-                                    className="flex items-center gap-3 text-sm font-bold mb-4 bg-slate-950/60 px-4 py-3 rounded-xl border border-slate-700/50 cursor-pointer hover:border-red-500/50 hover:bg-red-500/5 transition-all"
-                                    onClick={() => setLocalWatermarkEnabled(!localWatermarkEnabled)}
+            {/* 데이터 설정 패널 - 단색 스타일 */}
+            <div id="pivot-data-settings-panel" className="hidden border-b border-slate-700 p-4 bg-slate-900 shrink-0">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    {/* 피벗 설정 */}
+                    <div className="bg-blue-500/10 p-4 rounded-xl border border-blue-500/30">
+                        <h3 className="text-sm font-bold text-blue-400 mb-3">📊 데이터 선택</h3>
+                        <div className="space-y-3">
+                            <div>
+                                <span className="text-[10px] text-blue-400 font-bold uppercase block mb-1">행 (Row)</span>
+                                <select 
+                                    value={rowField} 
+                                    onChange={e => setRowField(e.target.value)}
+                                    className="w-full bg-slate-900 text-slate-200 px-2 py-2 text-xs rounded-lg border border-blue-500/30 outline-none focus:border-blue-500"
                                 >
-                                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${localWatermarkEnabled ? 'bg-red-500 shadow-lg shadow-red-500/50' : 'bg-slate-700'}`}>
-                                        {localWatermarkEnabled ? (
-                                            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                                        ) : (
-                                            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg>
-                                        )}
-                                    </div>
-                                    <span className="text-slate-200">워터마크 활성화</span>
-                                </label>
-
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-2">워터마크 텍스트</label>
-                                        <input 
-                                            type="text" 
-                                            value={localWatermarkText}
-                                            onChange={(e) => {
-                                                if (!propWatermarkEnabled) {
-                                                    setLocalWatermarkText(e.target.value);
-                                                }
-                                            }}
-                                            placeholder="예: CONFIDENTIAL"
-                                            className="w-full bg-slate-950/80 text-slate-200 px-4 py-2.5 text-sm font-medium rounded-xl border border-slate-700/50 outline-none focus:border-red-500"
-                                            disabled={!watermarkEnabled}
-                                        />
-                                    </div>
-                                    
-                                    {/* 색상 선택 */}
-                                    <div>
-                                        <label className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-2">워터마크 색상</label>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {[
-                                                { color: '#dc2626', name: '빨강' },
-                                                { color: '#ea580c', name: '주황' },
-                                                { color: '#ca8a04', name: '노랑' },
-                                                { color: '#16a34a', name: '초록' },
-                                                { color: '#0891b2', name: '청록' },
-                                                { color: '#2563eb', name: '파랑' },
-                                                { color: '#7c3aed', name: '보라' },
-                                                { color: '#4b5563', name: '회색' }
-                                            ].map(({ color, name }) => (
-                                                <button 
-                                                    key={color}
-                                                    onClick={() => {
-                                                        if (!propWatermarkEnabled) {
-                                                            setLocalWatermarkColor(color);
-                                                        }
-                                                    }}
-                                                    disabled={!watermarkEnabled}
-                                                    className={`w-7 h-7 rounded-full border-2 hover:border-white transition-all disabled:opacity-50 ${localWatermarkColor === color ? 'border-white scale-110 shadow-lg' : 'border-slate-600'}`}
-                                                    style={{ backgroundColor: color }}
-                                                    title={name}
-                                                />
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
+                                    {textColumns.map(c => <option key={c} value={c}>{c}</option>)}
+                                </select>
                             </div>
-
-                            {/* 디자인 선택 */}
-                            <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-5 rounded-2xl border border-slate-700/50">
-                                <h3 className="text-sm font-bold text-slate-200 mb-4 flex items-center gap-2">
-                                    🎨 디자인 선택
-                                </h3>
-                                <div className="grid grid-cols-3 gap-3">
-                                    <button 
-                                        onClick={() => setLocalWatermarkDesign('single')}
-                                        disabled={!watermarkEnabled}
-                                        className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${watermarkDesign === 'single' ? 'border-red-500 bg-red-500/10' : 'border-slate-600/50 hover:border-slate-400 disabled:opacity-40'}`}
-                                    >
-                                        <span className="text-2xl font-black text-red-500 -rotate-45">CONFIDENTIAL</span>
-                                        <span className="text-xs font-bold text-slate-400">크게 하나</span>
-                                    </button>
-                                    <button 
-                                        onClick={() => setLocalWatermarkDesign('multiple')}
-                                        disabled={!watermarkEnabled}
-                                        className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${watermarkDesign === 'multiple' ? 'border-red-500 bg-red-500/10' : 'border-slate-600/50 hover:border-slate-400 disabled:opacity-40'}`}
-                                    >
-                                        <div className="grid grid-cols-2 gap-1">
-                                            {[...Array(4)].map((_, i) => (
-                                                <span key={i} className="text-xs text-red-500 -rotate-45 font-bold">C</span>
-                                            ))}
-                                        </div>
-                                        <span className="text-xs font-bold text-slate-400">다수 배치</span>
-                                    </button>
-                                    <button 
-                                        onClick={() => setLocalWatermarkDesign('corner')}
-                                        disabled={!watermarkEnabled}
-                                        className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${watermarkDesign === 'corner' ? 'border-red-500 bg-red-500/10' : 'border-slate-600/50 hover:border-slate-400 disabled:opacity-40'}`}
-                                    >
-                                        <div className="relative w-10 h-10">
-                                            <span className="absolute top-0 left-0 text-xs text-red-500">C</span>
-                                            <span className="absolute bottom-0 right-0 text-xs text-red-500">C</span>
-                                        </div>
-                                        <span className="text-xs font-bold text-slate-400">코너 배치</span>
-                                    </button>
-                                </div>
-                                
-                                {watermarkDesign === 'multiple' && (
-                                    <div className="mt-4 bg-red-500/10 p-3 rounded-xl border border-red-500/20">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="text-xs text-red-300 font-bold">그리드 크기</span>
-                                            <span className="text-sm font-bold text-red-400 bg-red-500/20 px-2 py-0.5 rounded-lg">{watermarkGridSize}×{watermarkGridSize}</span>
-                                        </div>
-                                        <input 
-                                            type="range" 
-                                            min="2" 
-                                            max="16" 
-                                            value={watermarkGridSize}
-                                            onChange={(e) => setWatermarkGridSize(Number(e.target.value))}
-                                            className="w-full accent-red-500 h-2"
-                                            disabled={!watermarkEnabled}
-                                        />
-                                    </div>
-                                )}
+                            <div>
+                                <span className="text-[10px] text-purple-400 font-bold uppercase block mb-1">열 (Column)</span>
+                                <select 
+                                    value={colField} 
+                                    onChange={e => setColField(e.target.value)}
+                                    className="w-full bg-slate-900 text-slate-200 px-2 py-2 text-xs rounded-lg border border-purple-500/30 outline-none focus:border-purple-500"
+                                >
+                                    <option value="">-- 단일 열 --</option>
+                                    {textColumns.map(c => <option key={c} value={c}>{c}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <span className="text-[10px] text-emerald-400 font-bold uppercase block mb-1">값 (Value)</span>
+                                <select 
+                                    value={valueField} 
+                                    onChange={e => setValueField(e.target.value)}
+                                    className="w-full bg-slate-900 text-slate-200 px-2 py-2 text-xs rounded-lg border border-emerald-500/30 outline-none focus:border-emerald-500"
+                                >
+                                    {numericColumns.map(c => <option key={c} value={c}>{c}</option>)}
+                                </select>
                             </div>
                         </div>
-                    )}
+                    </div>
+
+                    {/* 표시 형식 */}
+                    <div className="bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/30">
+                        <h3 className="text-sm font-bold text-emerald-400 mb-3">📝 표시 형식</h3>
+                        <div className="space-y-3">
+                            <div>
+                                <span className="text-[10px] text-emerald-400 font-bold uppercase block mb-2">표시 모드</span>
+                                <div className="grid grid-cols-2 gap-1">
+                                    {[
+                                        { value: 'value', label: '값' },
+                                        { value: 'grandTotalPct', label: '총계%' },
+                                        { value: 'rowPct', label: '행%' },
+                                        { value: 'colPct', label: '열%' }
+                                    ].map(({ value, label }) => (
+                                        <button
+                                            key={value}
+                                            onClick={() => setDisplayMode(value)}
+                                            className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${displayMode === value ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-700/50'}`}
+                                        >
+                                            {label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <span className="text-[10px] text-emerald-400 font-bold uppercase block mb-2">값 서식</span>
+                                <select 
+                                    value={valueFormat} 
+                                    onChange={e => setValueFormat(e.target.value)}
+                                    className="w-full bg-slate-900 text-slate-200 px-3 py-2 text-xs rounded-lg border border-slate-700/50 outline-none focus:border-emerald-500"
+                                >
+                                    <option value="comma">1,234 (쉼표)</option>
+                                    <option value="krw">₩1,234 (원화)</option>
+                                    <option value="usd">$1,234 (USD)</option>
+                                    <option value="percent">12.3% (퍼센트)</option>
+                                    <option value="compact">1.2만 (축약)</option>
+                                    <option value="none">원본</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 정렬 및 총계 */}
+                    <div className="bg-orange-500/10 p-4 rounded-xl border border-orange-500/30">
+                        <h3 className="text-sm font-bold text-orange-400 mb-3">🔢 정렬 / 총계</h3>
+                        <div className="space-y-3">
+                            <div>
+                                <span className="text-[10px] text-orange-400 font-bold uppercase block mb-2">총계 기준 정렬</span>
+                                <div className="flex gap-1">
+                                    <button onClick={() => setSortByTotal('desc')} className={`flex-1 px-2 py-1.5 text-xs font-bold rounded transition-all ${sortByTotal === 'desc' ? 'bg-orange-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-700/50'}`}>내림차순</button>
+                                    <button onClick={() => setSortByTotal('asc')} className={`flex-1 px-2 py-1.5 text-xs font-bold rounded transition-all ${sortByTotal === 'asc' ? 'bg-orange-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-700/50'}`}>오름차순</button>
+                                    <button onClick={() => setSortByTotal(null)} className={`flex-1 px-2 py-1.5 text-xs font-bold rounded transition-all ${sortByTotal === null ? 'bg-slate-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-700/50'}`}>원본</button>
+                                </div>
+                            </div>
+                            <label className={`flex items-center gap-3 text-sm px-3 py-2 rounded-lg border cursor-pointer transition-all ${showTotals ? 'bg-orange-500/20 border-orange-500 text-orange-400' : 'bg-slate-900 border-slate-600 text-slate-300 hover:border-orange-500/50'}`}>
+                                <input type="checkbox" checked={showTotals} onChange={e => setShowTotals(e.target.checked)} className="w-4 h-4 accent-orange-500 hidden" />
+                                <span className="text-lg">📊</span>
+                                <span className="font-medium">총계 표시</span>
+                            </label>
+                            {/* 🔥 집계 방식 - 이동됨 */}
+                            <div>
+                                <span className="text-[10px] text-amber-400 font-bold uppercase block mb-2">집계 방식</span>
+                                <div className="grid grid-cols-3 gap-1">
+                                    {[
+                                        { value: 'SUM', label: '∑ 합' },
+                                        { value: 'AVG', label: 'ø 평균' },
+                                        { value: 'COUNT', label: '# 개수' },
+                                        { value: 'MAX', label: '↑ 최대' },
+                                        { value: 'MIN', label: '↓ 최소' }
+                                    ].map(opt => (
+                                        <button 
+                                            key={opt.value}
+                                            onClick={() => setAggFunction(opt.value)}
+                                            className={`px-2 py-1.5 text-xs font-bold rounded transition-all ${aggFunction === opt.value ? 'bg-amber-600 text-white' : 'bg-slate-900 text-slate-400 hover:bg-slate-800 border border-slate-700'}`}
+                                        >
+                                            {opt.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            )}
+            </div>
+
+            {/* 디자인 패널 - 단일 탭 */}
+            <div id="pivot-design-panel" className="hidden border-b border-slate-700 p-4 bg-slate-900 shrink-0">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* 배경색 */}
+                    <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                        <h3 className="text-sm font-bold text-slate-200 mb-3">🎨 배경색 (헤더 자동)</h3>
+                        <div className="space-y-3">
+                            <div>
+                                <label className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-2">표 배경</label>
+                                <div className="flex gap-2 flex-wrap">
+                                    {[
+                                        { color: '#1e293b', label: '다크', bg: 'bg-slate-800', text: 'text-white' },
+                                        { color: '#0f172a', label: '더 다크', bg: 'bg-slate-950', text: 'text-white' },
+                                        { color: '#ffffff', label: '화이트', bg: 'bg-white', text: 'text-black' },
+                                        { color: '#f8fafc', label: '스노우', bg: 'bg-slate-50', text: 'text-black' },
+                                        { color: '#f1f5f9', label: '라이트', bg: 'bg-slate-100', text: 'text-black' },
+                                        { color: '#e2e8f0', label: '실버', bg: 'bg-slate-200', text: 'text-black' },
+                                        { color: '#f0f9ff', label: '스카이', bg: 'bg-sky-50', text: 'text-black' },
+                                        { color: '#ecfeff', label: '시안', bg: 'bg-cyan-50', text: 'text-black' },
+                                        { color: '#f0fdf4', label: '민트', bg: 'bg-green-50', text: 'text-black' },
+                                        { color: '#fefce8', label: '옐로우', bg: 'bg-yellow-50', text: 'text-black' },
+                                        { color: '#fff7ed', label: '오렌지', bg: 'bg-orange-50', text: 'text-black' },
+                                        { color: '#faf5ff', label: 'Lavender', bg: 'bg-purple-50', text: 'text-black' }
+                                    ].map(({ color, label, bg, text }) => (
+                                        <button 
+                                            key={color} 
+                                            onClick={() => setTableBgColor(color)}
+                                            className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${tableBgColor === color ? 'bg-brand-500/20 border border-brand-500 text-brand-400' : 'bg-slate-900 border border-slate-600 text-slate-400 hover:text-white'}`}
+                                        >
+                                            <span className={`w-3 h-3 rounded-full ${bg} border border-slate-600 ${text}`}></span>
+                                            {label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <label className={`flex items-center gap-3 text-sm px-3 py-2 rounded-lg border cursor-pointer transition-all ${showRowStripe ? 'bg-brand-500/20 border-brand-500 text-brand-400' : 'bg-slate-900 border-slate-600 text-slate-300 hover:border-brand-500/50'}`}>
+                                <input type="checkbox" checked={showRowStripe} onChange={e => setShowRowStripe(e.target.checked)} className="w-4 h-4 accent-brand-500 hidden" />
+                                <span className="text-lg">📋</span>
+                                <span className="font-medium">줄무늬 표시</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* 텍스트/정렬 */}
+                    <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                        <h3 className="text-sm font-bold text-slate-200 mb-3">🔤 텍스트/정렬</h3>
+                        <div className="space-y-3">
+                            <div>
+                                <label className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-2">데이터 정렬</label>
+                                <div className="flex gap-1">
+                                    {[
+                                        { value: 'left', icon: '⬅️' },
+                                        { value: 'center', icon: '↔️' },
+                                        { value: 'right', icon: '➡️' }
+                                    ].map(({ value, icon }) => (
+                                        <button
+                                            key={value}
+                                            onClick={() => setTextAlign(value)}
+                                            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${textAlign === value ? 'bg-brand-600 text-white' : 'bg-slate-900 text-slate-400 border border-slate-600 hover:text-white'}`}
+                                        >
+                                            {icon}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-2">헤더 정렬</label>
+                                <div className="flex gap-1">
+                                    {[
+                                        { value: 'left', icon: '⬅️' },
+                                        { value: 'center', icon: '↔️' },
+                                        { value: 'right', icon: '➡️' }
+                                    ].map(({ value, icon }) => (
+                                        <button
+                                            key={value}
+                                            onClick={() => setHeaderTextAlign(value)}
+                                            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${headerTextAlign === value ? 'bg-brand-600 text-white' : 'bg-slate-900 text-slate-400 border border-slate-600 hover:text-white'}`}
+                                        >
+                                            {icon}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-2">셀 패딩: {cellPadding}px</label>
+                                <input type="range" min="4" max="24" value={cellPadding} onChange={e => setCellPadding(Number(e.target.value))} className="w-full accent-brand-500 h-2" />
+                            </div>
+                            <div>
+                                <label className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-2">글자 크기: {fontSize}px</label>
+                                <input type="range" min="10" max="20" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="w-full accent-brand-500 h-2" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 테두리/히트맵 */}
+                    <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                        <h3 className="text-sm font-bold text-slate-200 mb-3">🔲 테두리 / 🔥 히트맵</h3>
+                        <div className="space-y-3">
+                            <div>
+                                <label className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-2">테두리 두께: {borderWidth}px</label>
+                                <input type="range" min="0" max="3" value={borderWidth} onChange={e => setBorderWidth(Number(e.target.value))} className="w-full accent-brand-500 h-2" />
+                            </div>
+                            <div>
+                                <label className="text-xs text-slate-400 font-bold uppercase tracking-wider block mb-2">테두리 스타일</label>
+                                <div className="flex gap-1 mb-3">
+                                    {['solid', 'dashed', 'dotted'].map(style => (
+                                        <button
+                                            key={style}
+                                            onClick={() => setBorderStyle(style)}
+                                            className={`flex-1 px-2 py-2 rounded-lg text-xs font-medium transition-all ${borderStyle === style ? 'bg-brand-600 text-white' : 'bg-slate-900 text-slate-400 border border-slate-600 hover:text-white'}`}
+                                        >
+                                            {style === 'solid' ? '━' : style === 'dashed' ? ' - ' : ' · '}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <label className={`flex items-center gap-3 text-sm px-3 py-2 rounded-lg border cursor-pointer transition-all ${showHeatmap ? 'bg-orange-500/20 border-orange-500 text-orange-400' : 'bg-slate-900 border-slate-600 text-slate-300 hover:border-orange-500/50'}`}>
+                                <input type="checkbox" checked={showHeatmap} onChange={e => setShowHeatmap(e.target.checked)} className="w-4 h-4 accent-orange-500 hidden" />
+                                <span className="text-lg">🔥</span>
+                                <span className="font-medium">히트맵 표시</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             {/* 피벗 테이블 */}
             <div className="flex-1 overflow-auto custom-scrollbar p-4" style={{ backgroundColor: tableBgColor }}>
@@ -1489,8 +1214,8 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
                                     <th className="sticky top-0 left-0 z-30 font-bold text-xs uppercase tracking-wider min-w-[150px]" 
                                         style={{ 
                                             backgroundColor: headerBgColor, 
-                                            color: headerTextColor,
-                                            borderColor: borderColor,
+                                            color: getTextColor(headerBgColor, true, false),
+                                            borderColor: currentBorderColor,
                                             borderWidth: `${borderWidth}px`,
                                             borderStyle: borderStyle,
                                             padding: `${compactMode ? cellPadding / 2 : cellPadding}px`,
@@ -1502,7 +1227,7 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
                                         <th key={col} className="sticky top-0 z-20 font-bold text-xs uppercase tracking-wider min-w-[100px] whitespace-nowrap" 
                                             style={{ 
                                                 backgroundColor: headerBgColor, 
-                                                color: headerTextColor,
+                                                color: getTextColor(headerBgColor, true, false),
                                                 borderColor: borderColor,
                                                 borderWidth: `${borderWidth}px`,
                                                 borderStyle: borderStyle,
@@ -1522,7 +1247,7 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
                                                 borderStyle: borderStyle,
                                                 padding: `${compactMode ? cellPadding / 2 : cellPadding}px`,
                                                 textAlign: headerTextAlign,
-                                                color: sortByTotal ? 'white' : '#38bdf8' 
+                                                color: getTextColor(headerBgColor, false, true)
                                             }}
                                             onClick={toggleSortByTotal}
                                             title="총계 클릭 시 정렬"
@@ -1534,10 +1259,19 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
                             </thead>
                             <tbody>
                                 {pivotData.rows.map((rowVal, rowIndex) => (
-                                    <tr key={rowVal} style={showRowStripe && rowIndex % 2 === 1 ? { backgroundColor: stripeColor } : {}}>
+                                    <tr 
+                                        key={rowVal} 
+                                        style={
+                                            alternatingColors && rowIndex % 2 === 1 
+                                                ? { backgroundColor: 'rgba(255,255,255,0.05)' }  // alternating일 때 은은한 하이라이트
+                                                : (showRowStripe && rowIndex % 2 === 1 ? { backgroundColor: stripeColor } : {})
+                                        }
+                                        className={hoverHighlight ? 'hover:bg-white/10 transition-colors' : ''}
+                                    >
                                         <td className="sticky left-0 z-10 font-semibold whitespace-nowrap" 
                                             style={{ 
                                                 backgroundColor: tableBgColor, 
+                                                color: getTextColor(tableBgColor),
                                                 borderColor: borderColor,
                                                 borderWidth: `${borderWidth}px`,
                                                 borderStyle: borderStyle,
@@ -1550,11 +1284,9 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
                                             const rawValue = pivotData.data[rowVal]?.[colVal];
                                             const displayValue = getDisplayValue(rawValue, rowVal, colVal);
                                             const bgColor = showHeatmap && rawValue !== null 
-                                                ? getHeatmapColor(displayValue, minVal, maxVal, colorScheme) 
+                                                ? getHeatmapColor(displayValue, minVal, maxVal, heatmapScheme) 
                                                 : 'transparent';
-                                            const cellTextColor = showHeatmap && rawValue !== null && minVal !== maxVal
-                                                ? getTextColor(bgColor)
-                                                : textColor;
+                                            const cellTextColor = getTextColor(bgColor || tableBgColor);
                                             
                                             return (
                                                 <td 
@@ -1585,7 +1317,7 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
                                                     borderStyle: borderStyle,
                                                     padding: `${compactMode ? cellPadding / 2 : cellPadding}px`,
                                                     textAlign: textAlign,
-                                                    color: '#38bdf8' 
+                                                    color: getTextColor(headerBgColor, false, true)
                                                 }}>
                                                 {formatValue(getDisplayValue(pivotData.rowTotals[rowVal], rowVal, 'Total'), isPctMode)}
                                             </td>
@@ -1602,7 +1334,7 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
                                                 borderStyle: borderStyle,
                                                 padding: `${compactMode ? cellPadding / 2 : cellPadding}px`,
                                                 textAlign: textAlign,
-                                                color: '#38bdf8'
+                                                color: getTextColor(headerBgColor, false, true)
                                             }}>
                                             총계
                                         </td>
@@ -1610,11 +1342,9 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
                                             const val = pivotData.colTotals[colVal];
                                             const displayVal = getDisplayValue(val, 'Total', colVal);
                                             const bgColor = showHeatmap && val !== null 
-                                                ? getHeatmapColor(displayVal, minVal, maxVal, colorScheme)
+                                                ? getHeatmapColor(displayVal, minVal, maxVal, heatmapScheme)
                                                 : 'transparent';
-                                            const cellTextColor = showHeatmap && val !== null && minVal !== maxVal
-                                                ? getTextColor(bgColor)
-                                                : textColor;
+                                            const cellTextColor = getTextColor(bgColor || tableBgColor);
                                             
                                             return (
                                                 <td 
@@ -1636,13 +1366,13 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
                                         })}
                                         <td className="font-bold font-mono" 
                                             style={{ 
-                                                backgroundColor: '#0f172a', 
+                                                backgroundColor: headerBgColor, 
                                                 borderColor: borderColor,
                                                 borderWidth: `${borderWidth}px`,
                                                 borderStyle: borderStyle,
                                                 padding: `${compactMode ? cellPadding / 2 : cellPadding}px`,
                                                 textAlign: textAlign,
-                                                color: 'white'
+                                                color: getTextColor(headerBgColor, false, true)
                                             }}>
                                             {formatValue(getDisplayValue(pivotData.grandTotal, 'Total', 'Total'), isPctMode)}
                                         </td>
@@ -1667,13 +1397,15 @@ const PivotTable = ({ data, columns, colTypes, watermarkEnabled: propWatermarkEn
             </div>
 
             {/* 푸터 */}
-            <div className="bg-slate-800/50 border-t border-slate-700 px-4 py-2 text-xs text-slate-500 shrink-0 flex justify-between">
-                <span>
+          <div className="bg-slate-900 border-t border-slate-800 px-5 py-3 text-xs text-slate-400 shrink-0 flex justify-between items-center font-medium">
+                <div className="flex items-center gap-4">
                     {pivotData && (
                         <>행: {pivotData.rows.length} × 열: {pivotData.cols.length} = {pivotData.rows.length * pivotData.cols.length}개 셀</>
                     )}
-                </span>
-                <span>💡 더블클릭: 상세 데이터 | 총계 클릭: 정렬</span>
+                </div>
+                <div className="flex gap-4">
+                    <span>💡 더블클릭: 상세 데이터 | 총계 클릭: 정렬</span>
+                </div>
             </div>
 
             {/* 드릴다운 모달 */}

@@ -111,7 +111,7 @@ function App() {
     };
 
     // 🆕 워터마크 설정 (대외비)
-    const [watermarkEnabled, setWatermarkEnabled] = useState(false);
+    const [watermarkEnabled, setWatermarkEnabled] = useState(true);
     const [watermarkText, setWatermarkText] = useState('CONFIDENTIAL');
     const [watermarkDesign, setWatermarkDesign] = useState('single'); // single, multiple, corner
     
@@ -628,79 +628,96 @@ function App() {
                                 <Icons.ArrowLeft /> 메인으로
                             </button>
                         ) : (
-                            /* 도구 버튼들 - 드롭다운 메뉴로 통합 */
-                            <div className="relative group">
-                                <button
-                                    className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold border transition-all shadow-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600 hover:border-brand-500"
-                                >
-                                    <Icons.Grid /> 변환 도구 모음 <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                                </button>
-                                <div className="absolute top-full left-0 mt-2 w-56 bg-slate-800 border border-slate-600 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100]">
-                                    <div className="py-2">
-                                        <button
-                                            onClick={() => navigateTo('jsonToCsv')}
-                                            className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
-                                        >
-                                            <Icons.FileJson />
-                                            <div className="text-left">
-                                                <div className="font-medium">JSON to CSV</div>
-                                                <div className="text-xs text-slate-400">JSON 파일을 CSV로 변환</div>
-                                            </div>
-                                        </button>
-                                        <button
-                                            onClick={() => navigateTo('encoding')}
-                                            className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
-                                        >
-                                            <span className="text-lg">🚨</span>
-                                            <div className="text-left">
-                                                <div className="font-medium">한글 깨짐 복구</div>
-                                                <div className="text-xs text-slate-400">EUC-KR ↔ UTF-8 변환</div>
-                                            </div>
-                                        </button>
-                                        <button
-                                            onClick={() => navigateTo('htmlTable')}
-                                            className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
-                                        >
-                                            <span className="text-lg">🌐</span>
-                                            <div className="text-left">
-                                                <div className="font-medium">웹 표 추출</div>
-                                                <div className="text-xs text-slate-400">HTML 테이블을 CSV로</div>
-                                            </div>
-                                        </button>
-                                        <button
-                                            onClick={() => navigateTo('textExtractor')}
-                                            className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
-                                        >
-                                            <span className="text-lg">🧹</span>
-                                            <div className="text-left">
-                                                <div className="font-medium">텍스트 정제</div>
-                                                <div className="text-xs text-slate-400">이메일, 전화번호 등 추출</div>
-                                            </div>
-                                        </button>
-                                        <button
-                                            onClick={() => navigateTo('listToComma')}
-                                            className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
-                                        >
-                                            <span className="text-lg">🔗</span>
-                                            <div className="text-left">
-                                                <div className="font-medium">줄바꿈 변환</div>
-                                                <div className="text-xs text-slate-400">쉼표 ↔ 줄바꿈 변환</div>
-                                            </div>
-                                        </button>
+                            /* 도구 버튼들 - 매직 도구함을 포함한 통합 도구 모음 */
+                            <div className="flex items-center gap-2">
+                                {/* 변환 도구 모음 드롭다운 */}
+                                <div className="relative group">
+                                    <button
+                                        className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold border transition-all shadow-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600 hover:border-brand-500"
+                                    >
+                                        <Icons.Grid /> 변환 도구 <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                    </button>
+                                    <div className="absolute top-full left-0 mt-2 w-60 bg-slate-800 border border-slate-600 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100]">
+                                        <div className="py-2">
+                                            <button
+                                                onClick={() => navigateTo('jsonToCsv')}
+                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                            >
+                                                <Icons.FileJson />
+                                                <div className="text-left">
+                                                    <div className="font-medium">JSON to CSV</div>
+                                                    <div className="text-xs text-slate-400">JSON 파일을 CSV로 변환</div>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => navigateTo('encoding')}
+                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                            >
+                                                <span className="text-lg">🚨</span>
+                                                <div className="text-left">
+                                                    <div className="font-medium">한글 깨짐 복구</div>
+                                                    <div className="text-xs text-slate-400">EUC-KR ↔ UTF-8 변환</div>
+                                                </div>
+                                            </button>
+                                            <div className="border-t border-slate-700 my-1"></div>
+                                            {/* HTML 테이블 추출 - 벽(구분선) 추가 */}
+                                            <button
+                                                onClick={() => navigateTo('htmlTable')}
+                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                            >
+                                                <span className="text-lg">🌐</span>
+                                                <div className="text-left">
+                                                    <div className="font-medium">웹 표 추출</div>
+                                                    <div className="text-xs text-slate-400">HTML 테이블을 CSV로</div>
+                                                </div>
+                                            </button>
+                                            <div className="border-t border-slate-700 my-1"></div>
+                                            {/* 벽(구분선) 추가 */}
+                                            <button
+                                                onClick={() => navigateTo('textExtractor')}
+                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                            >
+                                                <span className="text-lg">🧹</span>
+                                                <div className="text-left">
+                                                    <div className="font-medium">텍스트 정제</div>
+                                                    <div className="text-xs text-slate-400">이메일, 전화번호 등 추출</div>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => navigateTo('listToComma')}
+                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                            >
+                                                <span className="text-lg">🔗</span>
+                                                <div className="text-left">
+                                                    <div className="font-medium">줄바꿈 변환</div>
+                                                    <div className="text-xs text-slate-400">쉼표 ↔ 줄바꿈 변환</div>
+                                                </div>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
+                                
+                                {/* 벽(구분선) */}
+                                <div className="h-8 w-px bg-slate-600 mx-1"></div>
+                                
+                                {/* 매직 지능형 도구함 버튼 - 디자인 동일하게 수정 */}
+                                <button
+                                    onClick={() => setCmdOpen(true)}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold border transition-all shadow-lg ${isDataReady ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600 hover:border-brand-500' : 'bg-slate-900/50 text-slate-500 border-slate-800 cursor-not-allowed'}`}
+                                >
+                                    <Icons.Magic /> 매직 도구함 <span className="font-mono opacity-50 ml-1">Ctrl+K</span>
+                                </button>
+                                
+                                {/* 벽(구분선) */}
+                                <div className="h-8 w-px bg-slate-600 mx-1"></div>
+                                
+                                {/* 데이터 열기 버튼 - 변환도구, 매직도구함과 같은 크기로 수정 */}
+                                <button className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2 rounded-md text-base font-medium transition-colors" onClick={() => document.getElementById('file-in').click()}>
+                                데이터 열기
+                                </button>
+                                <input type="file" id="file-in" className="hidden" accept=".csv,.json" onChange={e => processFile(e.target.files[0])} />
                             </div>
                         )}
-                        <button
-                            onClick={() => setCmdOpen(true)}
-                            className={`flex items-center gap-2 px-5 py-2 rounded-md text-base font-semibold border transition-all shadow-lg ${isDataReady ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600 hover:border-brand-500' : 'bg-slate-900/50 text-slate-500 border-slate-800 cursor-not-allowed'}`}
-                        >
-                            <Icons.Magic /> 매직 지능형 도구함 <span className="font-mono opacity-50 ml-1">Ctrl+K</span>
-                        </button>
-                        <button className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2 rounded-md text-base font-medium transition-colors" onClick={() => document.getElementById('file-in').click()}>
-                            데이터 열기
-                        </button>
-                        <input type="file" id="file-in" className="hidden" accept=".csv,.json" onChange={e => processFile(e.target.files[0])} />
                     </div>
                 </header>
 

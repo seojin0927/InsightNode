@@ -14,6 +14,7 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
     const [localWatermarkDesign, setLocalWatermarkDesign] = useState('single');
     const [localWatermarkColor, setLocalWatermarkColor] = useState('#dc2626'); // 워터마크 색상
     const [watermarkGridSize, setWatermarkGridSize] = useState(8); // 2x2, 3x3, 4x4... 최대 16x16
+    const [watermarkFontSize, setWatermarkFontSize] = useState(48); // 워터마크 글자크기
     
     // props가 제공되면 이를 사용, 그렇지 않으면 로컬 상태 사용
     // 디자인 선택은 local 상태를 우선 사용 (사용자 선택 적용)
@@ -51,8 +52,8 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
 
     // ================= 디자인 & 포맷 상태 =================
     const [valueFormat, setValueFormat] = useState('none'); 
-    const [colorTheme, setColorTheme] = useState('corporate'); 
-    const [backgroundColor, setBackgroundColor] = useState('#0f172a');
+    const [colorTheme, setColorTheme] = useState('mckinsey'); 
+    const [backgroundColor, setBackgroundColor] = useState('#ffffff');
     const [fontFamily, setFontFamily] = useState('Pretendard'); 
     const [fonts, setFonts] = useState({ title: 20, axis: 13, legend: 12, dataLabel: 12 });
     const updateFont = (key, val) => setFonts(prev => ({ ...prev, [key]: Number(val) }));
@@ -385,7 +386,7 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
     };
 
     // 워터마크 캔버스에 그리기
-    const drawWatermark = (ctx, width, height, design, text, gridSize = 2, color = '#dc2626') => {
+    const drawWatermark = (ctx, width, height, design, text, gridSize = 2, color = '#dc2626', fontSize = 48) => {
         // 색상에서 rgb 추출하여 투명도 적용
         const hexToRgba = (hex, alpha) => {
             const r = parseInt(hex.slice(1, 3), 16);
@@ -398,15 +399,16 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
             ctx.save();
             ctx.translate(width / 2, height / 2);
             ctx.rotate(-Math.PI / 4);
-            ctx.font = 'bold 100px sans-serif';
+            ctx.font = `bold ${fontSize}px sans-serif`;
             ctx.fillStyle = hexToRgba(color, 0.08);
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(text, 0, 0);
             ctx.restore();
         } else if (design === 'multiple') {
-            const fontSize = Math.max(12, 60 - gridSize * 3);
-            ctx.font = `bold ${fontSize}px sans-serif`;
+            // 그리드 크기에 따라 글자 크기 자동 조절 (최대 fontSize, 최소 12px)
+            const adjustedFontSize = Math.max(12, Math.min(fontSize, fontSize - gridSize * 2));
+            ctx.font = `bold ${adjustedFontSize}px sans-serif`;
             ctx.fillStyle = hexToRgba(color, 0.06);
             for (let i = 0; i < gridSize; i++) {
                 for (let j = 0; j < gridSize; j++) {
@@ -420,8 +422,9 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
                 }
             }
         } else if (design === 'corner') {
-            // 4코너 배치
-            ctx.font = 'bold 32px sans-serif';
+            // 4코너 배치 - 글자 크기의 60% 크기
+            const cornerFontSize = Math.max(24, fontSize * 0.6);
+            ctx.font = `bold ${cornerFontSize}px sans-serif`;
             ctx.fillStyle = hexToRgba(color, 0.12);
             // 우상단
             ctx.textAlign = 'right';
@@ -452,7 +455,7 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
 
         // 워터마크 그리기
         if (watermarkEnabled) {
-            drawWatermark(ctx, tempCanvas.width, tempCanvas.height, watermarkDesign, watermarkText, watermarkGridSize);
+            drawWatermark(ctx, tempCanvas.width, tempCanvas.height, watermarkDesign, watermarkText, watermarkGridSize, watermarkColor, watermarkFontSize);
         }
 
         textOverlays.forEach(textObj => {
@@ -665,7 +668,7 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
                 const ctx = chart.ctx;
                 const width = chart.width;
                 const height = chart.height;
-                drawWatermark(ctx, width, height, watermarkDesign, watermarkText, watermarkGridSize, watermarkColor);
+                drawWatermark(ctx, width, height, watermarkDesign, watermarkText, watermarkGridSize, watermarkColor, watermarkFontSize);
             }
         };
 
@@ -732,7 +735,7 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
 
         chartRef.current = new Chart(ctx, config);
         return () => { if (chartRef.current) chartRef.current.destroy(); };
-    }, [chartDataObj, chartType, title, showLegend, legendPosition, colorTheme, backgroundColor, showGrid, barThickness, borderRadius, lineWidth, fontFamily, fonts, xAxisLabel, yAxisLabel, showHorizontal, showDataLabels, beginAtZero, gridColor, labelColor, titleColor, stacked, cutoutPercent, valueFormat, showAverageLine, customColors, autoHighlight, highlightNegative, enableGradient, dataLabelPosition, lineStyle, yMin, yMax, showPiePercent, chartPadding, watermarkEnabled, watermarkText, watermarkDesign, watermarkGridSize]);
+    }, [chartDataObj, chartType, title, showLegend, legendPosition, colorTheme, backgroundColor, showGrid, barThickness, borderRadius, lineWidth, fontFamily, fonts, xAxisLabel, yAxisLabel, showHorizontal, showDataLabels, beginAtZero, gridColor, labelColor, titleColor, stacked, cutoutPercent, valueFormat, showAverageLine, customColors, autoHighlight, highlightNegative, enableGradient, dataLabelPosition, lineStyle, yMin, yMax, showPiePercent, chartPadding, watermarkEnabled, watermarkText, watermarkDesign, watermarkGridSize, watermarkFontSize]);
 
     const activeTabClass = "px-4 py-3 text-sm font-bold text-brand-400 border-b-2 border-brand-500 bg-slate-800/80 transition-colors";
     const inactiveTabClass = "px-4 py-3 text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 transition-colors";
@@ -1493,6 +1496,27 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
                                         </div>
                                     </div>
                                 )}
+
+                                {/* 워터마크 글자 크기 조절 */}
+                                <div className="mt-4 bg-red-500/10 p-3 rounded-xl border border-red-500/20">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-xs text-red-300 font-bold">글자 크기</span>
+                                        <span className="text-sm font-bold text-red-400 bg-red-500/20 px-2 py-0.5 rounded-lg">{watermarkFontSize}px</span>
+                                    </div>
+                                    <input 
+                                        type="range" 
+                                        min="12" 
+                                        max="120" 
+                                        value={watermarkFontSize}
+                                        onChange={(e) => setWatermarkFontSize(Number(e.target.value))}
+                                        className="w-full accent-red-500 h-2 cursor-pointer"
+                                        disabled={!watermarkEnabled}
+                                    />
+                                    <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+                                        <span>12px</span>
+                                        <span>120px</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -1535,7 +1559,7 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
                             <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
                                 {watermarkDesign === 'single' && (
                                     <div className="absolute inset-0 flex items-center justify-center">
-                                        <span className="text-[100px] font-black -rotate-45 whitespace-nowrap select-none opacity-10" style={{ color: watermarkColor }}>{watermarkText}</span>
+                                        <span className="font-black -rotate-45 whitespace-nowrap select-none opacity-10" style={{ color: watermarkColor, fontSize: `${watermarkFontSize}px` }}>{watermarkText}</span>
                                     </div>
                                 )}
                                 {watermarkDesign === 'multiple' && (
@@ -1547,13 +1571,13 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
                                         }}
                                     >
                                         {Array.from({ length: watermarkGridSize * watermarkGridSize }).map((_, i) => {
-                                            // 그리드 크기에 따라 글자 크기 자동 조절 (최대 60px, 최소 10px)
-                                            const fontSize = Math.max(10, Math.min(60, 80 - watermarkGridSize * 4));
+                                            // 그리드 크기에 따라 글자 크기 자동 조절 (최대 watermarkFontSize, 최소 12px)
+                                            const adjustedFontSize = Math.max(12, Math.min(watermarkFontSize, watermarkFontSize - watermarkGridSize * 2));
                                             return (
                                                 <div key={i} className="flex items-center justify-center">
                                                     <span 
                                                         className="font-black -rotate-45 select-none whitespace-nowrap"
-                                                        style={{ fontSize: `${fontSize}px`, color: watermarkColor }}
+                                                        style={{ fontSize: `${adjustedFontSize}px`, color: watermarkColor }}
                                                     >
                                                         {watermarkText}
                                                     </span>
@@ -1564,10 +1588,10 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
                                 )}
                                 {watermarkDesign === 'corner' && (
                                     <>
-                                        <span className="absolute top-8 right-8 text-[32px] font-black select-none opacity-15" style={{ color: watermarkColor }}>{watermarkText}</span>
-                                        <span className="absolute bottom-8 left-8 text-[32px] font-black select-none opacity-15" style={{ color: watermarkColor }}>{watermarkText}</span>
-                                        <span className="absolute top-8 left-8 text-[32px] font-black select-none opacity-15" style={{ color: watermarkColor }}>{watermarkText}</span>
-                                        <span className="absolute bottom-8 right-8 text-[32px] font-black select-none opacity-15" style={{ color: watermarkColor }}>{watermarkText}</span>
+                                        <span className="absolute font-black select-none opacity-15" style={{ color: watermarkColor, fontSize: `${Math.max(24, watermarkFontSize * 0.6)}px`, top: '2rem', right: '2rem' }}>{watermarkText}</span>
+                                        <span className="absolute font-black select-none opacity-15" style={{ color: watermarkColor, fontSize: `${Math.max(24, watermarkFontSize * 0.6)}px`, bottom: '2rem', left: '2rem' }}>{watermarkText}</span>
+                                        <span className="absolute font-black select-none opacity-15" style={{ color: watermarkColor, fontSize: `${Math.max(24, watermarkFontSize * 0.6)}px`, top: '2rem', left: '2rem' }}>{watermarkText}</span>
+                                        <span className="absolute font-black select-none opacity-15" style={{ color: watermarkColor, fontSize: `${Math.max(24, watermarkFontSize * 0.6)}px`, bottom: '2rem', right: '2rem' }}>{watermarkText}</span>
                                     </>
                                 )}
                             </div>
