@@ -9,6 +9,19 @@ const TextExtractor = () => {
     const [customRegex, setCustomRegex] = useState('');
     const [error, setError] = useState('');
 
+    // 샘플 텍스트
+    const sampleText = ` contact info:
+홍길동 (hong@example.com) / 010-1234-5678
+김철수 (kim@company.co.kr) / 02-987-6543
+이영희 (lee@business.kr) / 010-1111-2222
+박지민 (park@startup.io) / 070-1234-5678
+
+웹사이트: https://www.example.com, https://blog.test.kr
+사업자번호: 123-45-67890, 234-56-78901
+IP주소: 192.168.1.100, 10.0.0.1
+날짜: 2024-01-15, 2024/02/20
+주소: 서울특별시 강남구, 부산광역시 해운대구`;
+
     // 정규식 패턴
     const regexPatterns = {
         email: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
@@ -129,6 +142,12 @@ const TextExtractor = () => {
                                 </div>
                                 <span className="ml-3 text-sm font-semibold text-slate-300">원본 텍스트</span>
                             </div>
+                            <button 
+                                onClick={() => setInputText(sampleText)}
+                                className="ml-auto mr-4 px-3 py-1.5 bg-brand-500/20 hover:bg-brand-500/30 text-brand-400 text-xs font-medium rounded-lg border border-brand-500/30 transition-all"
+                            >
+                                📋 샘플
+                            </button>
                         </div>
                         
                         <div className="flex-1 p-4">

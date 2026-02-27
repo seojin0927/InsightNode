@@ -9,6 +9,15 @@ const HtmlTableExtractor = () => {
     const [error, setError] = useState('');
     const [previewRows, setPreviewRows] = useState(10);
 
+    // 샘플 HTML
+    const sampleHtml = `<table>
+  <tr><th>이름</th><th>부서</th><th>직책</th><th>이메일</th></tr>
+  <tr><td>홍길동</td><td>영업팀</td><td>팀장</td><td>hong@example.com</td></tr>
+  <tr><td>김철수</td><td>마케팅팀</td><td>과장</td><td>kim@company.co.kr</td></tr>
+  <tr><td>박지민</td><td>개발팀</td><td>대리</td><td>park@dev.kr</td></tr>
+  <tr><td>이영희</td><td>인사팀</td><td>팀장</td><td>lee@hr.co.kr</td></tr>
+</table>`;
+
     // HTML에서 테이블 추출
     const extractTables = useCallback((html) => {
         try {
@@ -152,6 +161,12 @@ const HtmlTableExtractor = () => {
                                 </div>
                                 <span className="ml-3 text-sm font-semibold text-slate-300">HTML 입력</span>
                             </div>
+                            <button 
+                                onClick={() => setInputHtml(sampleHtml)}
+                                className="ml-auto mr-4 px-3 py-1.5 bg-brand-500/20 hover:bg-brand-500/30 text-brand-400 text-xs font-medium rounded-lg border border-brand-500/30 transition-all"
+                            >
+                                📋 샘플
+                            </button>
                         </div>
                         
                         <div className="flex-1 p-4">

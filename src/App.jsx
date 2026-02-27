@@ -9,6 +9,12 @@ import EncodingConverter from './components/EncodingConverter';
 import HtmlTableExtractor from './components/HtmlTableExtractor';
 import TextExtractor from './components/TextExtractor';
 import ListToCommaConverter from './components/ListToCommaConverter';
+import ListComparator from './components/ListComparator';
+import PersonalDataMasker from './components/PersonalDataMasker';
+import MockDataGenerator from './components/MockDataGenerator';
+import QrCodeGenerator from './components/QrCodeGenerator';
+import UrlParamEditor from './components/UrlParamEditor';
+import ColorConverter from './components/ColorConverter';
 import Icons from './utils/Icons';
 import { initSqlEngine, runQuery, createTableFromData, updateCell, detectColumnTypes, exportToCSV, exportToJSON } from './utils/sqlEngine';
 
@@ -34,7 +40,7 @@ function App() {
     // URL 해시를 사용하여 페이지 라우팅 (새 페이지로 연결되는 효과)
     const getInitialPage = () => {
         const hash = window.location.hash.replace('#', '');
-        const validPages = ['main', 'jsonToCsv', 'encoding', 'htmlTable', 'textExtractor', 'listToComma'];
+        const validPages = ['main', 'jsonToCsv', 'encoding', 'htmlTable', 'textExtractor', 'listToComma', 'listComparator', 'personalDataMasker', 'mockDataGenerator', 'qrCode', 'urlParam', 'colorConverter'];
         return validPages.includes(hash) ? hash : 'main';
     };
     const [currentPage, setCurrentPage] = useState(getInitialPage);
@@ -43,7 +49,7 @@ function App() {
     useEffect(() => {
         const handleHashChange = () => {
             const hash = window.location.hash.replace('#', '');
-            const validPages = ['main', 'jsonToCsv', 'encoding', 'htmlTable', 'textExtractor', 'listToComma'];
+            const validPages = ['main', 'jsonToCsv', 'encoding', 'htmlTable', 'textExtractor', 'listToComma', 'listComparator', 'personalDataMasker', 'mockDataGenerator', 'qrCode', 'urlParam', 'colorConverter'];
             setCurrentPage(validPages.includes(hash) ? hash : 'main');
         };
         window.addEventListener('hashchange', handleHashChange);
@@ -693,6 +699,67 @@ function App() {
                                                     <div className="text-xs text-slate-400">쉼표 ↔ 줄바꿈 변환</div>
                                                 </div>
                                             </button>
+                                            <div className="border-t border-slate-700 my-1"></div>
+                                            <button
+                                                onClick={() => navigateTo('listComparator')}
+                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                            >
+                                                <span className="text-lg">⚖️</span>
+                                                <div className="text-left">
+                                                    <div className="font-medium">목록 비교</div>
+                                                    <div className="text-xs text-slate-400">두 목록의 차이점 분석</div>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => navigateTo('personalDataMasker')}
+                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                            >
+                                                <span className="text-lg">🔒</span>
+                                                <div className="text-left">
+                                                    <div className="font-medium">개인정보 마스킹</div>
+                                                    <div className="text-xs text-slate-400">이름, 전화번호 등 마스킹</div>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => navigateTo('mockDataGenerator')}
+                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                            >
+                                                <span className="text-lg">🎭</span>
+                                                <div className="text-left">
+                                                    <div className="font-medium">Mock 데이터 생성</div>
+                                                    <div className="text-xs text-slate-400">한국형 테스트 데이터 생성</div>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => navigateTo('qrCode')}
+                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                            >
+                                                <span className="text-lg">📱</span>
+                                                <div className="text-left">
+                                                    <div className="font-medium">QR 코드 생성</div>
+                                                    <div className="text-xs text-slate-400">URL/텍스트를 QR코드로 변환</div>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => navigateTo('urlParam')}
+                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                            >
+                                                <span className="text-lg">🔗</span>
+                                                <div className="text-left">
+                                                    <div className="font-medium">URL 파라미터 편집</div>
+                                                    <div className="text-xs text-slate-400">URL 쿼리 파라미터 관리</div>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => navigateTo('colorConverter')}
+                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                            >
+                                                <span className="text-lg">🎨</span>
+                                                <div className="text-left">
+                                                    <div className="font-medium">색상 변환기</div>
+                                                    <div className="text-xs text-slate-400">HEX, RGB, HSL 변환</div>
+                                                </div>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -801,6 +868,30 @@ function App() {
                 ) : currentPage === 'listToComma' ? (
                     <div className="main-wrapper">
                         <ListToCommaConverter />
+                    </div>
+                ) : currentPage === 'listComparator' ? (
+                    <div className="main-wrapper">
+                        <ListComparator />
+                    </div>
+                ) : currentPage === 'personalDataMasker' ? (
+                    <div className="main-wrapper">
+                        <PersonalDataMasker />
+                    </div>
+                ) : currentPage === 'mockDataGenerator' ? (
+                    <div className="main-wrapper">
+                        <MockDataGenerator />
+                    </div>
+                ) : currentPage === 'qrCode' ? (
+                    <div className="main-wrapper">
+                        <QrCodeGenerator />
+                    </div>
+                ) : currentPage === 'urlParam' ? (
+                    <div className="main-wrapper">
+                        <UrlParamEditor />
+                    </div>
+                ) : currentPage === 'colorConverter' ? (
+                    <div className="main-wrapper">
+                        <ColorConverter />
                     </div>
                 ) : (
                 <div className="main-wrapper">

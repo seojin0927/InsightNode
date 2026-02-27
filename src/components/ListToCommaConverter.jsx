@@ -112,6 +112,18 @@ const ListToCommaConverter = () => {
                                 </div>
                                 <span className="ml-3 text-sm font-semibold text-slate-300">원본 텍스트</span>
                             </div>
+                            <button 
+                                onClick={() => {
+                                    if (mode === 'listToComma') {
+                                        setInputText(sampleListToComma);
+                                    } else {
+                                        setInputText(sampleCommaToList);
+                                    }
+                                }}
+                                className="ml-auto mr-4 px-3 py-1.5 bg-brand-500/20 hover:bg-brand-500/30 text-brand-400 text-xs font-medium rounded-lg border border-brand-500/30 transition-all"
+                            >
+                                📋 샘플
+                            </button>
                         </div>
                         
                         <div className="flex-1 p-4">
