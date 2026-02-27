@@ -200,7 +200,7 @@ const UrlParamEditor = () => {
                             <svg className="w-6 h-6 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                             </svg>
-                            🔗 URL 파라미터 편집기
+                            URL 파라미터 편집기
                         </h2>
                         <p className="text-sm text-slate-400 mt-1">
                             URL의 파라미터를 추출, 편집, 추가하거나 UTM 템플릿을 적용합니다

@@ -122,7 +122,7 @@ IP주소: 192.168.1.100, 10.0.0.1
                             <svg className="w-6 h-6 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                             </svg>
-                            🧹 더티 텍스트 정제기
+                            더티 텍스트 정제기
                         </h2>
                         <p className="text-sm text-slate-400 mt-1">
                             텍스트에서 이메일, 전화번호, 사업자번호 등 원하는 정보만 추출합니다

@@ -643,121 +643,138 @@ function App() {
                                     >
                                         <Icons.Grid /> 변환 도구 <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                     </button>
-                                    <div className="absolute top-full left-0 mt-2 w-60 bg-slate-800 border border-slate-600 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100]">
-                                        <div className="py-2">
+                                    <div className="absolute top-full left-0 mt-2 w-[500px] bg-slate-800 border border-slate-600/50 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100]">
+                                        <div className="grid grid-cols-2 gap-1 p-2">
                                             <button
                                                 onClick={() => navigateTo('jsonToCsv')}
-                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-emerald-500/20 hover:to-transparent transition-all rounded-lg group/item"
                                             >
-                                                <Icons.FileJson />
-                                                <div className="text-left">
-                                                    <div className="font-medium">JSON to CSV</div>
-                                                    <div className="text-xs text-slate-400">JSON 파일을 CSV로 변환</div>
+                                                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.FileJson />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">JSON to CSV</div>
+                                                    <div className="text-xs text-slate-500 truncate">JSON → CSV 변환</div>
                                                 </div>
                                             </button>
                                             <button
                                                 onClick={() => navigateTo('encoding')}
-                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-amber-500/20 hover:to-transparent transition-all rounded-lg group/item"
                                             >
-                                                <span className="text-lg">🚨</span>
-                                                <div className="text-left">
-                                                    <div className="font-medium">한글 깨짐 복구</div>
-                                                    <div className="text-xs text-slate-400">EUC-KR ↔ UTF-8 변환</div>
+                                                <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.Alert />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">한글 깨짐 복구</div>
+                                                    <div className="text-xs text-slate-500 truncate">EUC-KR ↔ UTF-8</div>
                                                 </div>
                                             </button>
-                                            <div className="border-t border-slate-700 my-1"></div>
-                                            {/* HTML 테이블 추출 - 벽(구분선) 추가 */}
                                             <button
                                                 onClick={() => navigateTo('htmlTable')}
-                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-blue-500/20 hover:to-transparent transition-all rounded-lg group/item"
                                             >
-                                                <span className="text-lg">🌐</span>
-                                                <div className="text-left">
-                                                    <div className="font-medium">웹 표 추출</div>
-                                                    <div className="text-xs text-slate-400">HTML 테이블을 CSV로</div>
+                                                <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.Globe />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">웹 표 추출</div>
+                                                    <div className="text-xs text-slate-500 truncate">HTML → CSV</div>
                                                 </div>
                                             </button>
-                                            <div className="border-t border-slate-700 my-1"></div>
-                                            {/* 벽(구분선) 추가 */}
                                             <button
                                                 onClick={() => navigateTo('textExtractor')}
-                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-purple-500/20 hover:to-transparent transition-all rounded-lg group/item"
                                             >
-                                                <span className="text-lg">🧹</span>
-                                                <div className="text-left">
-                                                    <div className="font-medium">텍스트 정제</div>
-                                                    <div className="text-xs text-slate-400">이메일, 전화번호 등 추출</div>
+                                                <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.Cleaning />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">텍스트 정제</div>
+                                                    <div className="text-xs text-slate-500 truncate">이메일, 전화번호 추출</div>
                                                 </div>
                                             </button>
                                             <button
                                                 onClick={() => navigateTo('listToComma')}
-                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-transparent transition-all rounded-lg group/item"
                                             >
-                                                <span className="text-lg">🔗</span>
-                                                <div className="text-left">
-                                                    <div className="font-medium">줄바꿈 변환</div>
-                                                    <div className="text-xs text-slate-400">쉼표 ↔ 줄바꿈 변환</div>
+                                                <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center text-cyan-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.Link />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">줄바꿈 변환</div>
+                                                    <div className="text-xs text-slate-500 truncate">쉼표 ↔ 줄바꿈</div>
                                                 </div>
                                             </button>
-                                            <div className="border-t border-slate-700 my-1"></div>
                                             <button
                                                 onClick={() => navigateTo('listComparator')}
-                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-rose-500/20 hover:to-transparent transition-all rounded-lg group/item"
                                             >
-                                                <span className="text-lg">⚖️</span>
-                                                <div className="text-left">
-                                                    <div className="font-medium">목록 비교</div>
-                                                    <div className="text-xs text-slate-400">두 목록의 차이점 분석</div>
+                                                <div className="w-8 h-8 rounded-lg bg-rose-500/20 flex items-center justify-center text-rose-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.Compare />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">목록 비교</div>
+                                                    <div className="text-xs text-slate-500 truncate">두 목록 차이점</div>
                                                 </div>
                                             </button>
                                             <button
                                                 onClick={() => navigateTo('personalDataMasker')}
-                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-red-500/20 hover:to-transparent transition-all rounded-lg group/item"
                                             >
-                                                <span className="text-lg">🔒</span>
-                                                <div className="text-left">
-                                                    <div className="font-medium">개인정보 마스킹</div>
-                                                    <div className="text-xs text-slate-400">이름, 전화번호 등 마스킹</div>
+                                                <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center text-red-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.Shield />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">개인정보 마스킹</div>
+                                                    <div className="text-xs text-slate-500 truncate">이름, 전화번호 등</div>
                                                 </div>
                                             </button>
                                             <button
                                                 onClick={() => navigateTo('mockDataGenerator')}
-                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-violet-500/20 hover:to-transparent transition-all rounded-lg group/item"
                                             >
-                                                <span className="text-lg">🎭</span>
-                                                <div className="text-left">
-                                                    <div className="font-medium">Mock 데이터 생성</div>
-                                                    <div className="text-xs text-slate-400">한국형 테스트 데이터 생성</div>
+                                                <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center text-violet-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.Magic />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">Mock 데이터 생성</div>
+                                                    <div className="text-xs text-slate-500 truncate">테스트용 데이터</div>
                                                 </div>
                                             </button>
                                             <button
                                                 onClick={() => navigateTo('qrCode')}
-                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-teal-500/20 hover:to-transparent transition-all rounded-lg group/item"
                                             >
-                                                <span className="text-lg">📱</span>
-                                                <div className="text-left">
-                                                    <div className="font-medium">QR 코드 생성</div>
-                                                    <div className="text-xs text-slate-400">URL/텍스트를 QR코드로 변환</div>
+                                                <div className="w-8 h-8 rounded-lg bg-teal-500/20 flex items-center justify-center text-teal-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.QrCode />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">QR 코드 생성</div>
+                                                    <div className="text-xs text-slate-500 truncate">URL/텍스트 → QR</div>
                                                 </div>
                                             </button>
                                             <button
                                                 onClick={() => navigateTo('urlParam')}
-                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-orange-500/20 hover:to-transparent transition-all rounded-lg group/item"
                                             >
-                                                <span className="text-lg">🔗</span>
-                                                <div className="text-left">
-                                                    <div className="font-medium">URL 파라미터 편집</div>
-                                                    <div className="text-xs text-slate-400">URL 쿼리 파라미터 관리</div>
+                                                <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center text-orange-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.Link />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">URL 파라미터 편집</div>
+                                                    <div className="text-xs text-slate-500 truncate">쿼리 파라미터 관리</div>
                                                 </div>
                                             </button>
                                             <button
                                                 onClick={() => navigateTo('colorConverter')}
-                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-slate-700 transition-colors"
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-pink-500/20 hover:to-transparent transition-all rounded-lg group/item"
                                             >
-                                                <span className="text-lg">🎨</span>
-                                                <div className="text-left">
-                                                    <div className="font-medium">색상 변환기</div>
-                                                    <div className="text-xs text-slate-400">HEX, RGB, HSL 변환</div>
+                                                <div className="w-8 h-8 rounded-lg bg-pink-500/20 flex items-center justify-center text-pink-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.Palette />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">색상 변환기</div>
+                                                    <div className="text-xs text-slate-500 truncate">HEX, RGB, HSL 변환</div>
                                                 </div>
                                             </button>
                                         </div>

@@ -92,7 +92,7 @@ const ListToCommaConverter = () => {
                             <svg className="w-6 h-6 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
                             </svg>
-                            🔗 줄바꿈/구분자 변환기
+                            줄바꿈/구분자 변환기
                         </h2>
                         <p className="text-sm text-slate-400 mt-1">
                             세로로 나열된 텍스트를 쉼표로 연결하거나, 쉼표로 연결된 텍스트를 세로로 변환합니다

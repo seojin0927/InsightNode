@@ -141,7 +141,7 @@ const HtmlTableExtractor = () => {
                             <svg className="w-6 h-6 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                             </svg>
-                            🌐 웹 표 (HTML Table) 추출기
+                            웹 표 (HTML Table) 추출기
                         </h2>
                         <p className="text-sm text-slate-400 mt-1">
                             웹페이지의 표를 깔끔한 CSV/Excel 데이터로 변환합니다
