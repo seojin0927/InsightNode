@@ -27,13 +27,21 @@ const PersonalDataMasker = () => {
         return str;
     };
 
+    // 전화번호: 02 지역번호 및 다양한 자릿수 대응 (이전 수정사항 유지)
     const maskPhone = (phone) => {
         if (!phone) return phone;
         const s = String(phone).replace(/\D/g, '');
-        if (s.length === 11) {
+        
+        if (s.length === 11) { // 010-1234-5678
             return s.replace(/(\d{3})(\d{4})(\d{4})/, `$1-${maskChar.repeat(4)}-$3`);
         } else if (s.length === 10) {
-            return s.replace(/(\d{3})(\d{3,4})(\d{4})/, `$1-${maskChar.repeat(3)}-$3`);
+            if (s.startsWith('02')) { // 02-1234-5678
+                return s.replace(/(\d{2})(\d{4})(\d{4})/, `$1-${maskChar.repeat(4)}-$3`);
+            }
+            // 031-123-4567
+            return s.replace(/(\d{3})(\d{3})(\d{4})/, `$1-${maskChar.repeat(3)}-$3`);
+        } else if (s.length === 9) { // 02-123-4567
+            return s.replace(/(\d{2})(\d{3})(\d{4})/, `$1-${maskChar.repeat(3)}-$3`);
         }
         return phone;
     };
@@ -48,20 +56,37 @@ const PersonalDataMasker = () => {
         return maskChar.repeat(id.length) + '@' + parts[1];
     };
 
+    // [수정됨] 주소: 도로명(3번째 어절)부터 마스킹 처리
     const maskAddress = (address) => {
         if (!address) return address;
         const str = String(address).trim();
-        if (str.length > 3) {
-            return maskChar.repeat(3) + str.slice(3);
+        const parts = str.split(' ');
+        
+        // 주소가 3어절 이상인 경우 (예: 서울 강남구 테헤란로 123)
+        if (parts.length >= 3) {
+            // 시/도, 구/군 (앞 2어절)만 보여줌
+            // 기존 3어절 -> 2어절로 변경하여 '테헤란로' 같은 도로명부터 마스킹
+            const visibleCount = 2; 
+            const visible = parts.slice(0, visibleCount).join(' ');
+            
+            // 나머지 부분은 길이만큼 마스킹 문자로 대체
+            const remainingLen = str.length - visible.length;
+            return visible + maskChar.repeat(remainingLen);
+        } else if (str.length > 5) {
+            // 주소가 짧은 경우 절반만 마스킹
+            const half = Math.floor(str.length / 2);
+            return str.slice(0, half) + maskChar.repeat(str.length - half);
         }
         return address;
     };
 
+    // 사업자번호: 뒷자리 5자리 유지 (이전 수정사항 유지)
     const maskBusinessNumber = (num) => {
         if (!num) return num;
         const s = String(num).replace(/\D/g, '');
         if (s.length === 10) {
-            return maskChar.repeat(3) + '-' + maskChar.repeat(2) + '-' + s.slice(6);
+            // 123-45-67890 -> ***-**-67890
+            return maskChar.repeat(3) + '-' + maskChar.repeat(2) + '-' + s.slice(5);
         }
         return num;
     };
@@ -101,7 +126,6 @@ const PersonalDataMasker = () => {
             let result = inputText;
 
             if (mode === 'csv') {
-                // CSV parsing and processing
                 const parsed = Papa.parse(inputText, { header: true, skipEmptyLines: true });
                 if (parsed.data && parsed.data.length > 0) {
                     const maskedData = parsed.data.map(row => {
@@ -140,22 +164,18 @@ const PersonalDataMasker = () => {
                     result = Papa.unparse(maskedData);
                 }
             } else {
-                // Plain text processing - apply all masks based on patterns
                 let masked = inputText;
                 
-                // Name masking - match after "이름:" or similar labels
                 if (maskOptions.name) {
                     masked = masked.replace(/(?:이름|성명|name)[:\s]*([가-힣]{2,4})/gi, (match, name) => {
                         return match.replace(name, maskName(name));
                     });
                 }
                 
-                // Email masking
                 if (maskOptions.email) {
                     masked = masked.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, (match) => maskEmail(match));
                 }
                 
-                // Phone masking (Korean phone numbers)
                 if (maskOptions.phone) {
                     masked = masked.replace(/(?:전화|전화번호|phone|tel|휴대)[:\s]*0\d{1,2}[-\s]?\d{3,4}[-\s]?\d{4}/gi, (match) => {
                         const phoneMatch = match.match(/0\d{1,2}[-\s]?\d{3,4}[-\s]?\d{4}/);
@@ -164,43 +184,35 @@ const PersonalDataMasker = () => {
                         }
                         return match;
                     });
-                    // Also match standalone phone numbers
                     masked = masked.replace(/0\d{1,2}[-\s]?\d{3,4}[-\s]?\d{4}/g, (match) => maskPhone(match));
                 }
                 
-                // Business number - match after label
                 if (maskOptions.businessNumber) {
                     masked = masked.replace(/(?:사업자번호|business)[:\s]*(\d{3}[-\s]?\d{2}[-\s]?\d{5})/gi, (match, num) => {
                         return match.replace(num, maskBusinessNumber(num));
                     });
                 }
                 
-                // Card number
                 if (maskOptions.cardNumber) {
                     masked = masked.replace(/(?:카드번호|card)[:\s]*(\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4})/gi, (match, num) => {
                         return match.replace(num, maskCardNumber(num));
                     });
-                    // Also match standalone card numbers
                     masked = masked.replace(/\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}/g, (match) => maskCardNumber(match));
                 }
                 
-                // IP address - match after label
                 if (maskOptions.ipAddress) {
                     masked = masked.replace(/(?:IP주소|ip)[:\s]*(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/gi, (match, ip) => {
                         return match.replace(ip, maskIPAddress(ip));
                     });
-                    // Also match standalone IP addresses
                     masked = masked.replace(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/g, (match) => maskIPAddress(match));
                 }
                 
-                // Resident number - match after label
                 if (maskOptions.residentNumber) {
                     masked = masked.replace(/(?:주민번호|resident)[:\s]*(\d{6}[-\s]?\d{7})/gi, (match, num) => {
                         return match.replace(num, maskResidentNumber(num));
                     });
                 }
                 
-                // Address - match after label
                 if (maskOptions.address) {
                     masked = masked.replace(/(?:주소|address)[:\s]*(.+?)(?=,|$)/gi, (match, addr) => {
                         return match.replace(addr, maskAddress(addr));
