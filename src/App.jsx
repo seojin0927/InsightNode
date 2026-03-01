@@ -13,8 +13,17 @@ import ListComparator from './components/ListComparator';
 import PersonalDataMasker from './components/PersonalDataMasker';
 import MockDataGenerator from './components/MockDataGenerator';
 import QrCodeGenerator from './components/QrCodeGenerator';
-import UrlParamEditor from './components/UrlParamEditor';
 import ColorConverter from './components/ColorConverter';
+import Calculator from './components/Calculator';
+import CodeMinifier from './components/CodeMinifier';
+import ImageCompressor from './components/ImageCompressor';
+import JsonFormatter from './components/JsonFormatter';
+import MarkdownEditor from './components/MarkdownEditor';
+import PdfConverter from './components/PdfConverter';
+import RegexTester from './components/RegexTester';
+import UnitConverter from './components/UnitConverter';
+import UuidGenerator from './components/UuidGenerator';
+import DigitalStampSignStudio from './components/DigitalStampSignStudio';
 import Icons from './utils/Icons';
 import { initSqlEngine, runQuery, createTableFromData, updateCell, detectColumnTypes, exportToCSV, exportToJSON } from './utils/sqlEngine';
 
@@ -40,7 +49,7 @@ function App() {
     // URL 해시를 사용하여 페이지 라우팅 (새 페이지로 연결되는 효과)
     const getInitialPage = () => {
         const hash = window.location.hash.replace('#', '');
-        const validPages = ['main', 'jsonToCsv', 'encoding', 'htmlTable', 'textExtractor', 'listToComma', 'listComparator', 'personalDataMasker', 'mockDataGenerator', 'qrCode', 'urlParam', 'colorConverter'];
+        const validPages = ['main', 'jsonToCsv', 'encoding', 'htmlTable', 'textExtractor', 'listToComma', 'listComparator', 'personalDataMasker', 'mockDataGenerator', 'qrCode', 'colorConverter'];
         return validPages.includes(hash) ? hash : 'main';
     };
     const [currentPage, setCurrentPage] = useState(getInitialPage);
@@ -49,7 +58,7 @@ function App() {
     useEffect(() => {
         const handleHashChange = () => {
             const hash = window.location.hash.replace('#', '');
-            const validPages = ['main', 'jsonToCsv', 'encoding', 'htmlTable', 'textExtractor', 'listToComma', 'listComparator', 'personalDataMasker', 'mockDataGenerator', 'qrCode', 'urlParam', 'colorConverter'];
+            const validPages = ['main', 'jsonToCsv', 'encoding', 'htmlTable', 'textExtractor', 'listToComma', 'listComparator', 'personalDataMasker', 'mockDataGenerator', 'qrCode', 'colorConverter', 'calculator', 'codeMinifier', 'imageCompressor', 'jsonFormatter', 'markdownEditor', 'pdfConverter', 'regexTester', 'unitConverter', 'uuidGenerator','digitalStampSignStudio'];
             setCurrentPage(validPages.includes(hash) ? hash : 'main');
         };
         window.addEventListener('hashchange', handleHashChange);
@@ -754,18 +763,6 @@ function App() {
                                                 </div>
                                             </button>
                                             <button
-                                                onClick={() => navigateTo('urlParam')}
-                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-orange-500/20 hover:to-transparent transition-all rounded-lg group/item"
-                                            >
-                                                <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center text-orange-400 group-hover/item:scale-110 transition-transform shrink-0">
-                                                    <Icons.Link />
-                                                </div>
-                                                <div className="text-left min-w-0">
-                                                    <div className="font-medium text-sm">URL 파라미터 편집</div>
-                                                    <div className="text-xs text-slate-500 truncate">쿼리 파라미터 관리</div>
-                                                </div>
-                                            </button>
-                                            <button
                                                 onClick={() => navigateTo('colorConverter')}
                                                 className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-pink-500/20 hover:to-transparent transition-all rounded-lg group/item"
                                             >
@@ -775,6 +772,126 @@ function App() {
                                                 <div className="text-left min-w-0">
                                                     <div className="font-medium text-sm">색상 변환기</div>
                                                     <div className="text-xs text-slate-500 truncate">HEX, RGB, HSL 변환</div>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => navigateTo('calculator')}
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-blue-500/20 hover:to-transparent transition-all rounded-lg group/item"
+                                            >
+                                                <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.Calc />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">계산기</div>
+                                                    <div className="text-xs text-slate-500 truncate">과학계산, 통계, 함수</div>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => navigateTo('codeMinifier')}
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-green-500/20 hover:to-transparent transition-all rounded-lg group/item"
+                                            >
+                                                <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center text-green-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.Compress />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">코드 미니파이어</div>
+                                                    <div className="text-xs text-slate-500 truncate">JS, CSS, HTML 압축</div>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => navigateTo('imageCompressor')}
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-purple-500/20 hover:to-transparent transition-all rounded-lg group/item"
+                                            >
+                                                <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.Compress />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">이미지 압축기</div>
+                                                    <div className="text-xs text-slate-500 truncate">JPEG, PNG, WebP</div>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => navigateTo('jsonFormatter')}
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-orange-500/20 hover:to-transparent transition-all rounded-lg group/item"
+                                            >
+                                                <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center text-orange-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.FileJson />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">JSON 포맷터</div>
+                                                    <div className="text-xs text-slate-500 truncate">정렬, 검증, 뷰어</div>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => navigateTo('markdownEditor')}
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-indigo-500/20 hover:to-transparent transition-all rounded-lg group/item"
+                                            >
+                                                <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.FileJson />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">마크다운 에디터</div>
+                                                    <div className="text-xs text-slate-500 truncate">실시간 미리보기</div>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => navigateTo('pdfConverter')}
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-red-500/20 hover:to-transparent transition-all rounded-lg group/item"
+                                            >
+                                                <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center text-red-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.FileJson />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">PDF 변환기</div>
+                                                    <div className="text-xs text-slate-500 truncate">HTML, 이미지, 텍스트</div>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => navigateTo('regexTester')}
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-transparent transition-all rounded-lg group/item"
+                                            >
+                                                <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center text-cyan-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.Search />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">정규식 테스터</div>
+                                                    <div className="text-xs text-slate-500 truncate">패턴 매칭, 검증</div>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => navigateTo('unitConverter')}
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-yellow-500/20 hover:to-transparent transition-all rounded-lg group/item"
+                                            >
+                                                <div className="w-8 h-8 rounded-lg bg-yellow-500/20 flex items-center justify-center text-yellow-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.Convert />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">단위 변환기</div>
+                                                    <div className="text-xs text-slate-500 truncate">길이, 무게, 온도</div>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => navigateTo('uuidGenerator')}
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-teal-500/20 hover:to-transparent transition-all rounded-lg group/item"
+                                            >
+                                                <div className="w-8 h-8 rounded-lg bg-teal-500/20 flex items-center justify-center text-teal-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.ArrowRight />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">ID 마스터</div>
+                                                    <div className="text-xs text-slate-500 truncate">고유 식별자 생성</div>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => navigateTo('digitalStampSignStudio')}
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-red-500/20 hover:to-transparent transition-all rounded-lg group/item"
+                                            >
+                                                <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center text-red-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.Stamp />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">디지털 도장 & 서명</div>
+                                                    <div className="text-xs text-slate-500 truncate">PDF/이미지에 서명 삽입</div>
                                                 </div>
                                             </button>
                                         </div>
@@ -902,13 +1019,49 @@ function App() {
                     <div className="main-wrapper">
                         <QrCodeGenerator />
                     </div>
-                ) : currentPage === 'urlParam' ? (
-                    <div className="main-wrapper">
-                        <UrlParamEditor />
-                    </div>
                 ) : currentPage === 'colorConverter' ? (
                     <div className="main-wrapper">
                         <ColorConverter />
+                    </div>
+                ) : currentPage === 'calculator' ? (
+                    <div className="main-wrapper">
+                        <Calculator />
+                    </div>
+                ) : currentPage === 'codeMinifier' ? (
+                    <div className="main-wrapper">
+                        <CodeMinifier />
+                    </div>
+                ) : currentPage === 'imageCompressor' ? (
+                    <div className="main-wrapper">
+                        <ImageCompressor />
+                    </div>
+                ) : currentPage === 'jsonFormatter' ? (
+                    <div className="main-wrapper">
+                        <JsonFormatter />
+                    </div>
+                ) : currentPage === 'markdownEditor' ? (
+                    <div className="main-wrapper">
+                        <MarkdownEditor />
+                    </div>
+                ) : currentPage === 'pdfConverter' ? (
+                    <div className="main-wrapper">
+                        <PdfConverter />
+                    </div>
+                ) : currentPage === 'regexTester' ? (
+                    <div className="main-wrapper">
+                        <RegexTester />
+                    </div>
+                ) : currentPage === 'unitConverter' ? (
+                    <div className="main-wrapper">
+                        <UnitConverter />
+                    </div>
+                ) : currentPage === 'uuidGenerator' ? (
+                    <div className="main-wrapper">
+                        <UuidGenerator />
+                    </div>
+                ) : currentPage === 'digitalStampSignStudio' ? (
+                    <div className="main-wrapper">
+                        <DigitalStampSignStudio />
                     </div>
                 ) : (
                 <div className="main-wrapper">

@@ -1,396 +1,329 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Papa from 'papaparse';
-import Icons from '../utils/Icons';
+
+// 아이콘 컴포넌트
+const Icon = ({ path }) => (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={path} />
+    </svg>
+);
 
 const JsonToCsvConverter = () => {
+    // === 상태 관리 ===
     const [jsonInput, setJsonInput] = useState('');
     const [csvOutput, setCsvOutput] = useState('');
-    const [error, setError] = useState('');
+    const [parsedData, setParsedData] = useState(null); // 초기값 null
     const [fileName, setFileName] = useState('');
-    const [parsedData, setParsedData] = useState(null);
-    const [previewRows, setPreviewRows] = useState(5);
+    const [error, setError] = useState('');
+    
+    // UI 상태
+    const [activeTab, setActiveTab] = useState('raw'); // raw, preview
+    const [isConverting, setIsConverting] = useState(false);
 
-    // 🆕 페이지 로드 시 sessionStorage에서 JSON 파일 확인 및 자동 로드
-    useEffect(() => {
-        const pendingJsonFile = sessionStorage.getItem('pendingJsonFile');
-        if (pendingJsonFile) {
-            try {
-                const { name, content } = JSON.parse(pendingJsonFile);
-                setFileName(name);
-                setJsonInput(content);
-                
-                // JSON 파싱
-                let data;
-                try {
-                    data = JSON.parse(content);
-                } catch {
-                    // JSON이 아니면 JSON Lines 형식 시도
-                    const lines = content.trim().split('\n');
-                    data = lines.map(line => {
-                        try {
-                            return JSON.parse(line);
-                        } catch {
-                            return line;
-                        }
-                    });
-                }
-                
-                // 배열이 아닌 경우 배열로 감싸기
-                if (!Array.isArray(data)) {
-                    data = [data];
-                }
-                
-                setParsedData(data);
-                
-                // CSV로 변환
-                const csv = Papa.unparse(data);
-                setCsvOutput(csv);
-                
-                // sessionStorage에서 제거 (한 번만 사용)
-                sessionStorage.removeItem('pendingJsonFile');
-            } catch (err) {
-                setError('파일 로드 오류: ' + err.message);
-                sessionStorage.removeItem('pendingJsonFile');
+    // 변환 옵션
+    const [options, setOptions] = useState({
+        delimiter: ',',
+        header: true,
+        addBOM: true, // 엑셀 호환
+        flatten: false, // 중첩 객체 평탄화
+    });
+
+    // 통계 정보 (초기값을 0으로 설정하여 null 참조 방지)
+    const [stats, setStats] = useState({
+        totalRows: 0,
+        totalColumns: 0,
+        dataSize: 0,
+        processingTime: 0,
+    });
+
+    // === 유틸리티: 객체 평탄화 (Flatten) ===
+    const flattenObject = (obj, prefix = '', res = {}) => {
+        for (const key in obj) {
+            const val = obj[key];
+            const newKey = prefix ? `${prefix}.${key}` : key;
+            if (val && typeof val === 'object' && !Array.isArray(val)) {
+                flattenObject(val, newKey, res);
+            } else {
+                res[newKey] = val;
             }
         }
-    }, []);
+        return res;
+    };
 
-    // JSON 파일을 읽어서 처리
-    const handleFileRead = useCallback((file) => {
-        if (!file) return;
-        
-        setFileName(file.name);
-        setError('');
-        
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const content = e.target.result;
-            setJsonInput(content);
-            
+    // === 핵심: 변환 엔진 ===
+    const processConversion = useCallback(() => {
+        if (!jsonInput) {
+            setParsedData(null);
+            setCsvOutput('');
+            setStats({ totalRows: 0, totalColumns: 0, dataSize: 0, processingTime: 0 });
+            return;
+        }
+
+        setIsConverting(true);
+        const startTime = performance.now();
+
+        try {
+            // 1. JSON 파싱
+            let data;
             try {
-                // JSON 파싱 시도
-                let data;
-                try {
-                    data = JSON.parse(content);
-                } catch {
-                    // JSON이 아니면 JSON Lines 형식尝试
-                    const lines = content.trim().split('\n');
-                    data = lines.map(line => {
-                        try {
-                            return JSON.parse(line);
-                        } catch {
-                            return line;
-                        }
-                    });
-                }
-                
-                // 배열이 아닌 경우 배열로 감싸기
-                if (!Array.isArray(data)) {
-                    data = [data];
-                }
-                
-                setParsedData(data);
-                
-                // CSV로 변환
-                const csv = Papa.unparse(data);
-                setCsvOutput(csv);
-            } catch (err) {
-                setError('JSON 파싱 오류: ' + err.message);
-                setParsedData(null);
+                data = JSON.parse(jsonInput);
+            } catch {
+                // JSON Lines 지원 시도
+                const lines = jsonInput.trim().split('\n');
+                data = lines.map(line => JSON.parse(line));
             }
+
+            // 배열로 정규화
+            if (!Array.isArray(data)) data = [data];
+
+            // 2. 평탄화 (Flatten) 적용
+            if (options.flatten) {
+                data = data.map(item => flattenObject(item));
+            }
+
+            // 파싱된 데이터 상태 업데이트
+            setParsedData(data); 
+
+            // 3. CSV 변환 (PapaParse)
+            const csv = Papa.unparse(data, {
+                delimiter: options.delimiter,
+                header: options.header,
+            });
+
+            // 4. BOM 추가 (한글 깨짐 방지)
+            const finalCsv = options.addBOM ? '\uFEFF' + csv : csv;
+            setCsvOutput(finalCsv);
+
+            const endTime = performance.now();
+            
+            // 통계 업데이트 (데이터가 있을 때만 계산)
+            setStats({
+                totalRows: data.length,
+                totalColumns: data.length > 0 ? Object.keys(data[0]).length : 0,
+                dataSize: new Blob([finalCsv]).size,
+                processingTime: endTime - startTime
+            });
+            setError('');
+
+        } catch (err) {
+            console.error(err);
+            setError('JSON 파싱 오류: 올바른 JSON 형식이 아닙니다.');
+            setParsedData(null);
+            setCsvOutput('');
+        } finally {
+            setIsConverting(false);
+        }
+    }, [jsonInput, options]);
+
+    // 옵션 변경 시 자동 변환 (Debounce)
+    useEffect(() => {
+        const timer = setTimeout(() => processConversion(), 500); 
+        return () => clearTimeout(timer);
+    }, [processConversion]);
+
+    // === 파일 처리 ===
+    const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            setJsonInput(event.target.result);
+            setFileName(file.name);
         };
         reader.readAsText(file);
-    }, []);
+    };
 
-    // 파일 드롭 핸들러
-    const handleDrop = useCallback((e) => {
-        e.preventDefault();
-        const file = e.dataTransfer.files[0];
-        if (file && (file.name.endsWith('.json') || file.name.endsWith('.jsonl'))) {
-            handleFileRead(file);
-        } else {
-            setError('JSON 파일만 지원됩니다.');
-        }
-    }, [handleFileRead]);
+    const loadSampleData = () => {
+        const sample = [
+            { id: 1, name: "홍길동", info: { city: "Seoul", age: 30 }, skills: ["React", "JS"] },
+            { id: 2, name: "Jane", info: { city: "New York", age: 25 }, skills: ["Design"] },
+            { id: 3, name: "Yuki", info: { city: "Tokyo", age: 28 }, skills: ["Java"] }
+        ];
+        setJsonInput(JSON.stringify(sample, null, 2));
+        setFileName('sample_data.json');
+    };
 
-    // 드래그 오버 방지
-    const handleDragOver = useCallback((e) => {
-        e.preventDefault();
-    }, []);
-
-    // CSV 다운로드
-    const handleDownload = useCallback(() => {
+    // 다운로드
+    const handleDownload = () => {
         if (!csvOutput) return;
-        
         const blob = new Blob([csvOutput], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
-        
-        // 원본 파일명이 있으면 변환, 없으면 기본값
-        const baseName = fileName ? fileName.replace(/\.(json|jsonl)$/i, '') : 'converted';
-        link.setAttribute('href', url);
-        link.setAttribute('download', `${baseName}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }, [csvOutput, fileName]);
-
-    // 클립보드 복사
-    const handleCopyToClipboard = useCallback(() => {
-        if (!csvOutput) return;
-        navigator.clipboard.writeText(csvOutput).then(() => {
-            alert('CSV가 클립보드에 복사되었습니다!');
-        });
-    }, [csvOutput]);
-
-    // 미리보기 행 수 변경
-    const handlePreviewRowsChange = useCallback((e) => {
-        setPreviewRows(parseInt(e.target.value, 10));
-    }, []);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName ? fileName.replace('.json', '.csv') : 'converted.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+    };
 
     return (
-        <>
-            {/* SEO Heading (화면에 표시되지 않음) */}
-            <h1 className="sr-only">JSON to CSV 변환기 - 무료 온라인 JSON 파일을 CSV로 변환</h1>
-            
-            {/* 메인 컨텐츠 - 좌우 분할 (main-content와 동일한 스타일) */}
-            <div className="main-content bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-5 overflow-hidden flex-1">
-                
-                {/* 헤더 */}
-                <div className="flex items-center justify-between pb-4 border-b border-slate-700/30 mb-4">
+        <div className="w-full h-full min-h-[850px] bg-slate-900 rounded-2xl p-6 border border-slate-700 flex flex-col">
+            {/* 1. 헤더 */}
+            <div className="flex items-center justify-between mb-6 flex-shrink-0">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/20">
+                        <Icon path="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </div>
                     <div>
-                        <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-                            <svg className="w-6 h-6 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-                            </svg>
-                            JSON to CSV 변환
-                        </h2>
-                        <p className="text-sm text-slate-400 mt-1">
-                            JSON 파일을 CSV 형식으로 변환합니다
-                        </p>
+                        <h2 className="text-2xl font-bold text-slate-100">JSON to CSV Master</h2>
+                        <p className="text-slate-400 text-sm">중첩 데이터 평탄화 및 대용량 변환 지원</p>
                     </div>
-                    
-                    {csvOutput && (
-                        <div className="flex items-center gap-3">
-                            <button
-                                onClick={handleCopyToClipboard}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-slate-800/80 hover:bg-slate-700 text-slate-200 rounded-xl font-medium transition-all border border-slate-600/50 shadow-lg"
-                            >
-                                <Icons.Copy /> 복사
-                            </button>
-                            <button
-                                onClick={handleDownload}
-                                className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-brand-600/20"
-                            >
-                                <Icons.Download /> CSV 다운로드
-                            </button>
-                        </div>
-                    )}
                 </div>
-
-                {/* 컨텐츠 영역 - 좌우 분할 */}
-                <div className="flex-1 flex gap-4 overflow-hidden" style={{ minHeight: 'calc(100% - 80px)' }}>
-                    {/* 좌측: JSON 입력 (sidebar와 동일한 스타일) */}
-                    <div className="flex-1 flex flex-col bg-slate-900/80 backdrop-blur-sm border border-slate-700/50 rounded-xl overflow-hidden">
-                        <div className="flex text-sm font-semibold border-b border-slate-800 bg-slate-950">
-                            <div className="flex items-center gap-2 py-3 px-4">
-                                <div className="flex gap-1.5">
-                                    <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
-                                    <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
-                                    <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
-                                </div>
-                                <span className="ml-3 text-sm font-semibold text-slate-300">JSON 입력</span>
-                            </div>
-                            <label className="ml-auto mr-4 my-auto px-4 py-2 bg-slate-800/60 hover:bg-slate-700/80 text-slate-200 rounded-lg text-sm font-medium cursor-pointer transition-all border border-slate-600/30 hover:border-brand-500/50">
-                                파일 열기
-                                <input 
-                                    type="file" 
-                                    accept=".json,.jsonl" 
-                                    className="hidden" 
-                                    onChange={(e) => handleFileRead(e.target.files[0])}
-                                />
-                            </label>
-                        </div>
-                        
-                        <div 
-                            className="flex-1 relative"
-                            onDrop={handleDrop}
-                            onDragOver={handleDragOver}
-                        >
-                            {parsedData ? (
-                                <div className="h-full flex flex-col">
-                                    <textarea
-                                        className="flex-1 w-full bg-[#0d1117] text-[#c9d1d9] p-4 font-mono text-sm resize-none outline-none custom-scrollbar"
-                                        value={jsonInput}
-                                        onChange={(e) => {
-                                            setJsonInput(e.target.value);
-                                            try {
-                                                const data = JSON.parse(e.target.value);
-                                                setParsedData(Array.isArray(data) ? data : [data]);
-                                                setCsvOutput(Papa.unparse(Array.isArray(data) ? data : [data]));
-                                                setError('');
-                                            } catch {
-                                                setError('유효하지 않은 JSON 형식');
-                                            }
-                                        }}
-                                        placeholder={`{
-  "name": "John",
-  "age": 30,
-  "city": "Seoul"
-}`}
-                                        spellCheck="false"
-                                    />
-                                </div>
-                            ) : (
-                                <div 
-                                    className="h-full flex flex-col items-center justify-center border-2 border-dashed border-slate-700/30 m-4 rounded-xl bg-gradient-to-br from-slate-800/20 to-slate-900/20 hover:from-slate-800/30 hover:to-slate-900/40 hover:border-brand-500/30 transition-all cursor-pointer group"
-                                    onClick={() => document.querySelector('input[type="file"]').click()}
-                                >
-                                    <div className="bg-slate-800/60 p-6 rounded-xl mb-4 text-slate-500 group-hover:text-brand-400 transition-colors shadow-lg">
-                                        <Icons.Upload />
-                                    </div>
-                                    <h3 className="text-lg font-bold text-slate-200 mb-2">JSON 파일을 여기에 드롭하세요</h3>
-                                    <p className="text-sm text-slate-500 mb-4">또는 클릭하여 파일 선택</p>
-                                    <div className="text-xs text-slate-500 bg-slate-800/50 px-4 py-2 rounded-lg border border-slate-700/30">
-                                        지원: .json, .jsonl
-                                    </div>
-                                </div>
-                            )}
-                            
-                            {error && (
-                                <div className="absolute bottom-4 left-4 right-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm flex items-center gap-2 shadow-lg">
-                                    <Icons.Error />
-                                    {error}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* 우측: CSV 출력 (main-content와 동일한 스타일) */}
-                    <div className="flex-1 flex flex-col bg-slate-900/80 backdrop-blur-sm border border-slate-700/50 rounded-xl overflow-hidden">
-                        <div className="flex text-sm font-semibold border-b border-slate-800 bg-slate-950">
-                            <div className="flex items-center gap-2 py-3 px-4">
-                                <div className="flex gap-1.5">
-                                    <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
-                                    <div className="w-3 h-3 rounded-full bg-slate-500/50"></div>
-                                    <div className="w-3 h-3 rounded-full bg-slate-500/50"></div>
-                                </div>
-                                <span className="ml-3 text-sm font-semibold text-slate-300">CSV 출력</span>
-                            </div>
-                            
-                            {parsedData && (
-                                <div className="ml-auto mr-4 my-auto flex items-center gap-3">
-                                    <span className="text-xs text-slate-500">미리보기:</span>
-                                    <select
-                                        value={previewRows}
-                                        onChange={handlePreviewRowsChange}
-                                        className="bg-slate-800/60 text-slate-200 text-sm px-3 py-1.5 rounded-lg border border-slate-600/30 outline-none hover:border-brand-500/50 transition-colors"
-                                    >
-                                        <option value={5}>5행</option>
-                                        <option value={10}>10행</option>
-                                        <option value={20}>20행</option>
-                                        <option value={50}>50행</option>
-                                    </select>
-                                </div>
-                            )}
-                        </div>
-                        
-                        <div className="flex-1 overflow-hidden bg-[#0d1117]">
-                            {csvOutput ? (
-                                <div className="h-full flex flex-col">
-                                    {/* 데이터 정보 */}
-                                    <div className="p-3 border-b border-slate-800/50 bg-gradient-to-r from-slate-800/20 to-transparent flex items-center gap-6 text-sm">
-                                        <span className="flex items-center gap-2">
-                                            <span className="text-slate-500">총</span>
-                                            <span className="text-brand-400 font-bold text-lg">{parsedData.length}</span>
-                                            <span className="text-slate-500">행</span>
-                                        </span>
-                                        <span className="text-slate-700">|</span>
-                                        <span className="flex items-center gap-2">
-                                            <span className="text-slate-500">컬럼</span>
-                                            <span className="text-brand-400 font-bold text-lg">{parsedData.length > 0 ? Object.keys(parsedData[0]).length : 0}</span>
-                                        </span>
-                                    </div>
-                                    
-                                    {/* CSV 미리보기 */}
-                                    <div className="flex-1 overflow-auto custom-scrollbar">
-                                        <table className="w-full text-left border-collapse">
-                                            <thead className="sticky top-0 bg-gradient-to-r from-slate-800 to-slate-800/80 backdrop-blur-sm">
-                                                <tr>
-                                                    {parsedData.length > 0 && Object.keys(parsedData[0]).map((key, idx) => (
-                                                        <th 
-                                                            key={idx} 
-                                                            className="py-3 px-4 text-xs font-bold text-brand-400 border-b border-slate-700/50 whitespace-nowrap bg-transparent"
-                                                        >
-                                                            {key}
-                                                        </th>
-                                                    ))}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {parsedData.slice(0, previewRows).map((row, rowIdx) => (
-                                                    <tr 
-                                                        key={rowIdx} 
-                                                        className="border-b border-slate-800/30 hover:bg-slate-800/20 transition-colors"
-                                                    >
-                                                        {Object.values(row).map((val, valIdx) => (
-                                                            <td 
-                                                                key={valIdx} 
-                                                                className="py-3 px-4 text-sm text-slate-300 font-mono whitespace-nowrap max-w-[200px] overflow-hidden text-ellipsis"
-                                                                title={String(val)}
-                                                            >
-                                                                {val === null ? (
-                                                                    <span className="text-slate-600 italic">null</span>
-                                                                ) : val === '' ? (
-                                                                    <span className="text-slate-600 italic">empty</span>
-                                                                ) : (
-                                                                    String(val)
-                                                                )}
-                                                            </td>
-                                                        ))}
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                        
-                                        {parsedData.length > previewRows && (
-                                            <div className="p-3 text-center text-sm text-slate-500">
-                                                ... 외 <span className="text-brand-400 font-semibold">{parsedData.length - previewRows}</span>행
-                                            </div>
-                                        )}
-                                    </div>
-                                    
-                                    {/* 원본 CSV 텍스트 */}
-                                    <div className="border-t border-slate-700/30 p-3 bg-slate-900/30">
-                                        <details className="group">
-                                            <summary className="cursor-pointer text-xs text-slate-500 hover:text-brand-400 flex items-center gap-2 transition-colors">
-                                                <Icons.ChevronDown />
-                                                CSV 원본 텍스트 보기
-                                            </summary>
-                                            <textarea
-                                                className="w-full mt-3 h-32 bg-slate-950 text-slate-300 p-3 font-mono text-xs rounded-lg border border-slate-700/30 resize-none outline-none custom-scrollbar"
-                                                value={csvOutput}
-                                                readOnly
-                                            />
-                                        </details>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="h-full flex flex-col items-center justify-center text-slate-500">
-                                    <div className="w-16 h-16 mb-4 opacity-20">
-                                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                        </svg>
-                                    </div>
-                                    <p className="text-slate-500">변환된 CSV가 여기에 표시됩니다</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                
+                <div className="flex gap-2">
+                    <button onClick={loadSampleData} className="px-4 py-2 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 rounded-lg text-xs font-bold border border-emerald-500/30 transition-all">
+                        샘플 데이터
+                    </button>
+                    <button onClick={() => { setJsonInput(''); setCsvOutput(''); setParsedData(null); }} className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-xs font-bold border border-red-500/30 transition-all">
+                        초기화
+                    </button>
                 </div>
             </div>
-        </>
+
+            {/* 2. 메인 컨텐츠 */}
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
+                
+                {/* 좌측: 설정 및 입력 (Col 4) */}
+                <div className="lg:col-span-4 flex flex-col h-full min-h-0">
+                    <div className="bg-slate-800 rounded-xl p-5 flex flex-col h-full shadow-inner border border-slate-700/50 overflow-y-auto custom-scrollbar">
+                        
+                        {/* 파일 입력 */}
+                        <div className="mb-6">
+                            <h3 className="text-xs font-bold text-slate-400 uppercase mb-3">Input Source</h3>
+                            <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-600 rounded-xl cursor-pointer hover:bg-slate-700/30 transition-colors mb-3">
+                                <Icon path="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                <span className="mt-2 text-xs text-slate-400">JSON 파일 업로드</span>
+                                <input type="file" className="hidden" accept=".json,.jsonl" onChange={handleFileUpload} />
+                            </label>
+                            <textarea 
+                                value={jsonInput}
+                                onChange={(e) => setJsonInput(e.target.value)}
+                                placeholder='또는 JSON 텍스트를 여기에 직접 붙여넣으세요...'
+                                className="w-full h-40 bg-slate-900 border border-slate-600 rounded-lg p-3 text-xs text-slate-300 font-mono resize-none focus:border-green-500 outline-none custom-scrollbar"
+                            />
+                        </div>
+
+                        {/* 옵션 설정 */}
+                        <div className="mb-6">
+                            <h3 className="text-xs font-bold text-slate-400 uppercase mb-3">Options</h3>
+                            <div className="space-y-3">
+                                <label className="flex items-center justify-between text-xs text-slate-300 bg-slate-700/30 p-2 rounded cursor-pointer hover:bg-slate-700/50">
+                                    <span>Flatten Objects (평탄화)</span>
+                                    <input type="checkbox" checked={options.flatten} onChange={(e) => setOptions({...options, flatten: e.target.checked})} className="accent-green-500" />
+                                </label>
+                                <label className="flex items-center justify-between text-xs text-slate-300 bg-slate-700/30 p-2 rounded cursor-pointer hover:bg-slate-700/50">
+                                    <span>BOM 추가 (Excel 호환)</span>
+                                    <input type="checkbox" checked={options.addBOM} onChange={(e) => setOptions({...options, addBOM: e.target.checked})} className="accent-green-500" />
+                                </label>
+                                <div>
+                                    <label className="text-xs text-slate-500 block mb-1">구분자 (Delimiter)</label>
+                                    <select 
+                                        value={options.delimiter}
+                                        onChange={(e) => setOptions({...options, delimiter: e.target.value})}
+                                        className="w-full bg-slate-900 border border-slate-600 rounded p-1.5 text-xs text-white outline-none"
+                                    >
+                                        <option value=",">Comma (,)</option>
+                                        <option value=";">Semicolon (;)</option>
+                                        <option value="|">Pipe (|)</option>
+                                        <option value="\t">Tab</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 통계 (오류 발생 지점 수정됨: stats는 초기값이 있으므로 안전함) */}
+                        <div className="mt-auto bg-slate-900 p-3 rounded-lg border border-slate-700">
+                            <h4 className="text-[10px] text-slate-500 uppercase font-bold mb-2">Statistics</h4>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div className="text-slate-400">Rows: <span className="text-white">{stats.totalRows.toLocaleString()}</span></div>
+                                <div className="text-slate-400">Cols: <span className="text-white">{stats.totalColumns}</span></div>
+                                <div className="text-slate-400">Time: <span className="text-green-400">{stats.processingTime.toFixed(2)}ms</span></div>
+                                <div className="text-slate-400">Size: <span className="text-white">{(stats.dataSize/1024).toFixed(1)}KB</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 우측: 결과 (Col 8) */}
+                <div className="lg:col-span-8 flex flex-col h-full min-h-0">
+                    <div className="bg-slate-800 rounded-xl p-5 flex flex-col h-full shadow-inner border border-slate-700/50">
+                        <div className="flex justify-between items-center mb-4">
+                            <div className="flex gap-2">
+                                <button 
+                                    onClick={() => setActiveTab('raw')}
+                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${activeTab === 'raw' ? 'bg-green-600 text-white' : 'text-slate-400 hover:bg-slate-700'}`}
+                                >
+                                    CSV Raw Text
+                                </button>
+                                <button 
+                                    onClick={() => setActiveTab('preview')}
+                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${activeTab === 'preview' ? 'bg-green-600 text-white' : 'text-slate-400 hover:bg-slate-700'}`}
+                                >
+                                    Table Preview
+                                </button>
+                            </div>
+                            
+                            <button 
+                                onClick={handleDownload}
+                                disabled={!csvOutput}
+                                className="flex items-center gap-2 bg-slate-100 hover:bg-white text-slate-900 px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <Icon path="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                Download CSV
+                            </button>
+                        </div>
+
+                        <div className="flex-1 bg-slate-950 rounded-xl border border-slate-700 overflow-hidden relative">
+                            {error ? (
+                                <div className="h-full flex items-center justify-center text-red-400 flex-col gap-2">
+                                    <Icon path="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    <span>{error}</span>
+                                </div>
+                            ) : !csvOutput ? (
+                                <div className="h-full flex items-center justify-center text-slate-600 flex-col gap-2">
+                                    <Icon path="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                    <span className="text-xs">JSON을 입력하면 자동으로 변환됩니다</span>
+                                </div>
+                            ) : activeTab === 'raw' ? (
+                                <textarea 
+                                    readOnly
+                                    value={csvOutput}
+                                    className="w-full h-full bg-transparent text-slate-300 p-4 font-mono text-xs resize-none outline-none custom-scrollbar leading-relaxed whitespace-pre"
+                                />
+                            ) : (
+                                <div className="h-full overflow-auto custom-scrollbar">
+                                    <table className="w-full text-left text-xs border-collapse">
+                                        <thead className="bg-slate-900 sticky top-0">
+                                            <tr>
+                                                {/* 핵심 수정: Optional Chaining 사용 */}
+                                                {parsedData && parsedData.length > 0 && Object.keys(parsedData[0]).map((key) => (
+                                                    <th key={key} className="p-3 border-b border-slate-700 text-green-400 font-mono whitespace-nowrap bg-slate-900">
+                                                        {key}
+                                                    </th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody className="text-slate-300 font-mono">
+                                            {/* 핵심 수정: parsedData가 null일 경우 안전하게 처리 */}
+                                            {parsedData?.slice(0, 50).map((row, idx) => (
+                                                <tr key={idx} className="hover:bg-slate-800/50 border-b border-slate-800/50">
+                                                    {Object.values(row).map((val, vIdx) => (
+                                                        <td key={vIdx} className="p-3 whitespace-nowrap max-w-[200px] overflow-hidden text-ellipsis">
+                                                            {typeof val === 'object' ? JSON.stringify(val) : String(val)}
+                                                        </td>
+                                                    ))}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
     );
 };
 
