@@ -24,7 +24,7 @@ const StampSignStudio = () => {
     const [borderDamage, setBorderDamage] = useState(2);
     const [rotation, setRotation] = useState(0);
     const [autoAppendIn, setAutoAppendIn] = useState(true);
-    const [inType, setInType] = useState('hanja'); // 'hangul' or 'hanja'
+    const [inType, setInType] = useState('hangul'); // 'hangul' or 'hanja'
 
     // 2. 날짜 도장 설정
     const [dateText, setDateText] = useState('결 재');
@@ -58,13 +58,22 @@ const StampSignStudio = () => {
         const size = 300; 
         const center = size / 2;
         
-        canvas.width = size;
-        canvas.height = size;
-        ctx.clearRect(0, 0, size, size);
+        // 회전을 고려한 캔버스 크기 계산
+        const rotationRad = (rotation * Math.PI) / 180;
+        const cos = Math.abs(Math.cos(rotationRad));
+        const sin = Math.abs(Math.sin(rotationRad));
+        const rotatedSize = Math.ceil(size * (cos + sin));
+        
+        canvas.width = rotatedSize;
+        canvas.height = rotatedSize;
+        ctx.clearRect(0, 0, rotatedSize, rotatedSize);
 
+        // 회전 중심점 조정
+        const rotatedCenter = rotatedSize / 2;
+        
         // 회전 적용
         ctx.save();
-        ctx.translate(center, center);
+        ctx.translate(rotatedCenter, rotatedCenter);
         ctx.rotate((rotation * Math.PI) / 180);
         ctx.translate(-center, -center);
 
@@ -74,10 +83,12 @@ const StampSignStudio = () => {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         
-        // 번짐 효과
+        // 번짐 효과 (캔버스 크기 비율에 맞게 조정)
         if (bleedLevel > 0) {
+            const sizeRatio = rotatedSize / 300; // 기본 크기 대비 비율
+            const adjustedBleed = bleedLevel * sizeRatio;
             ctx.shadowColor = stampColor;
-            ctx.shadowBlur = bleedLevel;
+            ctx.shadowBlur = adjustedBleed;
         }
 
         // 테두리 그리기
@@ -145,7 +156,7 @@ const StampSignStudio = () => {
                 offsetRatio = 0.18; 
             } else if (stampType === 'circle') {
                 fontSize = size * 0.32;
-                offsetRatio = 0.22;
+                offsetRatio = 0.18; // 원형: 글자를 더 중앙으로 모아서 삐져나감 방지
             } else {
                 // 사각형: 공간이 넓으므로 큼직하게
                 fontSize = size * 0.38;
@@ -183,8 +194,9 @@ const StampSignStudio = () => {
             ctx.globalCompositeOperation = 'destination-out';
             const noiseCount = (1 - inkLevel) * 30000;
             for (let i = 0; i < noiseCount; i++) {
-                const x = Math.random() * size;
-                const y = Math.random() * size;
+                // 회전된 캔버스 크기에 맞게 랜덤 좌표 생성
+                const x = Math.random() * rotatedSize;
+                const y = Math.random() * rotatedSize;
                 const r = Math.random() * 1.5;
                 ctx.beginPath();
                 ctx.arc(x, y, r, 0, Math.PI * 2);

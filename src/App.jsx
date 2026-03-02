@@ -24,6 +24,9 @@ import RegexTester from './components/RegexTester';
 import UnitConverter from './components/UnitConverter';
 import UuidGenerator from './components/UuidGenerator';
 import DigitalStampSignStudio from './components/DigitalStampSignStudio';
+import ImageTools from './components/ImageTools';
+import VideoTools from './components/VideoTools';
+import ZipTools from './components/ZipTools';
 import Icons from './utils/Icons';
 import { initSqlEngine, runQuery, createTableFromData, updateCell, detectColumnTypes, exportToCSV, exportToJSON } from './utils/sqlEngine';
 
@@ -49,7 +52,7 @@ function App() {
     // URL 해시를 사용하여 페이지 라우팅 (새 페이지로 연결되는 효과)
     const getInitialPage = () => {
         const hash = window.location.hash.replace('#', '');
-        const validPages = ['main', 'jsonToCsv', 'encoding', 'htmlTable', 'textExtractor', 'listToComma', 'listComparator', 'personalDataMasker', 'mockDataGenerator', 'qrCode', 'colorConverter'];
+        const validPages = ['main', 'jsonToCsv', 'encoding', 'htmlTable', 'textExtractor', 'listToComma', 'listComparator', 'personalDataMasker', 'mockDataGenerator', 'qrCode', 'colorConverter', 'calculator', 'codeMinifier', 'imageCompressor', 'jsonFormatter', 'markdownEditor', 'pdfConverter', 'regexTester', 'unitConverter', 'uuidGenerator','digitalStampSignStudio','imageTools','videoTools','zipTools'];
         return validPages.includes(hash) ? hash : 'main';
     };
     const [currentPage, setCurrentPage] = useState(getInitialPage);
@@ -58,7 +61,7 @@ function App() {
     useEffect(() => {
         const handleHashChange = () => {
             const hash = window.location.hash.replace('#', '');
-            const validPages = ['main', 'jsonToCsv', 'encoding', 'htmlTable', 'textExtractor', 'listToComma', 'listComparator', 'personalDataMasker', 'mockDataGenerator', 'qrCode', 'colorConverter', 'calculator', 'codeMinifier', 'imageCompressor', 'jsonFormatter', 'markdownEditor', 'pdfConverter', 'regexTester', 'unitConverter', 'uuidGenerator','digitalStampSignStudio'];
+            const validPages = ['main', 'jsonToCsv', 'encoding', 'htmlTable', 'textExtractor', 'listToComma', 'listComparator', 'personalDataMasker', 'mockDataGenerator', 'qrCode', 'colorConverter', 'calculator', 'codeMinifier', 'imageCompressor', 'jsonFormatter', 'markdownEditor', 'pdfConverter', 'regexTester', 'unitConverter', 'uuidGenerator','digitalStampSignStudio','imageTools','videoTools','zipTools'];
             setCurrentPage(validPages.includes(hash) ? hash : 'main');
         };
         window.addEventListener('hashchange', handleHashChange);
@@ -839,11 +842,13 @@ function App() {
                                                 className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-red-500/20 hover:to-transparent transition-all rounded-lg group/item"
                                             >
                                                 <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center text-red-400 group-hover/item:scale-110 transition-transform shrink-0">
-                                                    <Icons.FileJson />
+                                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                    </svg>
                                                 </div>
                                                 <div className="text-left min-w-0">
                                                     <div className="font-medium text-sm">PDF 변환기</div>
-                                                    <div className="text-xs text-slate-500 truncate">HTML, 이미지, 텍스트</div>
+                                                    <div className="text-xs text-slate-500 truncate">PDF ↔ Word, Excel, PPT, 이미지</div>
                                                 </div>
                                             </button>
                                             <button
@@ -880,6 +885,42 @@ function App() {
                                                 <div className="text-left min-w-0">
                                                     <div className="font-medium text-sm">ID 마스터</div>
                                                     <div className="text-xs text-slate-500 truncate">고유 식별자 생성</div>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => navigateTo('imageTools')}
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-green-500/20 hover:to-transparent transition-all rounded-lg group/item"
+                                            >
+                                                <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center text-green-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.Image />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">이미지 변환기</div>
+                                                    <div className="text-xs text-slate-500 truncate">PNG, JPG, WebP 변환</div>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => navigateTo('videoTools')}
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-blue-500/20 hover:to-transparent transition-all rounded-lg group/item"
+                                            >
+                                                <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.Video />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">동영상 변환기</div>
+                                                    <div className="text-xs text-slate-500 truncate">MP4, AVI, MOV 변환</div>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={() => navigateTo('zipTools')}
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-purple-500/20 hover:to-transparent transition-all rounded-lg group/item"
+                                            >
+                                                <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.Zip />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">압축 변환기</div>
+                                                    <div className="text-xs text-slate-500 truncate">ZIP, RAR, 7Z 변환</div>
                                                 </div>
                                             </button>
                                             <button
@@ -1063,9 +1104,21 @@ function App() {
                     <div className="main-wrapper">
                         <DigitalStampSignStudio />
                     </div>
+                ) : currentPage === 'imageTools' ? (
+                    <div className="main-wrapper">
+                        <ImageTools />
+                    </div>
+                ) : currentPage === 'videoTools' ? (
+                    <div className="main-wrapper">
+                        <VideoTools />
+                    </div>
+                ) : currentPage === 'zipTools' ? (
+                    <div className="main-wrapper">
+                        <ZipTools />
+                    </div>
                 ) : (
-                <div className="main-wrapper">
-                    <div className={`sidebar bg-slate-900/80 backdrop-blur-sm border border-slate-700/50 rounded-2xl flex flex-col z-10 shadow-xl overflow-hidden transition-all duration-300 ${isZoomed ? 'hidden' : ''}`}>
+        <div className="main-wrapper">
+            <div className={`sidebar bg-slate-900/80 backdrop-blur-sm border border-slate-700/50 rounded-2xl flex flex-col z-10 shadow-xl overflow-hidden transition-all duration-300 ${isZoomed ? 'hidden' : ''}`}>
                         <div className="flex text-sm font-semibold border-b border-slate-800 bg-slate-950">
                             <button
                                 onClick={() => setLeftTab('nocode')}
