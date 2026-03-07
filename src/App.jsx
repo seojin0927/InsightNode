@@ -27,6 +27,7 @@ import DigitalStampSignStudio from './components/DigitalStampSignStudio';
 import ImageTools from './components/ImageTools';
 import VideoTools from './components/VideoTools';
 import ZipTools from './components/ZipTools';
+import ServiceCenter from './components/ServiceCenter';
 import Icons from './utils/Icons';
 import { initSqlEngine, runQuery, createTableFromData, updateCell, detectColumnTypes, exportToCSV, exportToJSON } from './utils/sqlEngine';
 
@@ -52,7 +53,7 @@ function App() {
     // URL 해시를 사용하여 페이지 라우팅 (새 페이지로 연결되는 효과)
     const getInitialPage = () => {
         const hash = window.location.hash.replace('#', '');
-        const validPages = ['main', 'jsonToCsv', 'encoding', 'htmlTable', 'textExtractor', 'listToComma', 'listComparator', 'personalDataMasker', 'mockDataGenerator', 'qrCode', 'colorConverter', 'calculator', 'codeMinifier', 'imageCompressor', 'jsonFormatter', 'markdownEditor', 'pdfConverter', 'regexTester', 'unitConverter', 'uuidGenerator','digitalStampSignStudio','imageTools','videoTools','zipTools'];
+        const validPages = ['main', 'jsonToCsv', 'encoding', 'htmlTable', 'textExtractor', 'listToComma', 'listComparator', 'personalDataMasker', 'mockDataGenerator', 'qrCode', 'colorConverter', 'calculator', 'codeMinifier', 'imageCompressor', 'jsonFormatter', 'markdownEditor', 'pdfConverter', 'regexTester', 'unitConverter', 'uuidGenerator','digitalStampSignStudio','imageTools','videoTools','zipTools','serviceCenter'];
         return validPages.includes(hash) ? hash : 'main';
     };
     const [currentPage, setCurrentPage] = useState(getInitialPage);
@@ -61,7 +62,7 @@ function App() {
     useEffect(() => {
         const handleHashChange = () => {
             const hash = window.location.hash.replace('#', '');
-            const validPages = ['main', 'jsonToCsv', 'encoding', 'htmlTable', 'textExtractor', 'listToComma', 'listComparator', 'personalDataMasker', 'mockDataGenerator', 'qrCode', 'colorConverter', 'calculator', 'codeMinifier', 'imageCompressor', 'jsonFormatter', 'markdownEditor', 'pdfConverter', 'regexTester', 'unitConverter', 'uuidGenerator','digitalStampSignStudio','imageTools','videoTools','zipTools'];
+            const validPages = ['main', 'jsonToCsv', 'encoding', 'htmlTable', 'textExtractor', 'listToComma', 'listComparator', 'personalDataMasker', 'mockDataGenerator', 'qrCode', 'colorConverter', 'calculator', 'codeMinifier', 'imageCompressor', 'jsonFormatter', 'markdownEditor', 'pdfConverter', 'regexTester', 'unitConverter', 'uuidGenerator','digitalStampSignStudio','imageTools','videoTools','zipTools','serviceCenter'];
             setCurrentPage(validPages.includes(hash) ? hash : 'main');
         };
         window.addEventListener('hashchange', handleHashChange);
@@ -658,15 +659,15 @@ function App() {
                                     <div className="absolute top-full left-0 mt-2 w-[500px] bg-slate-800 border border-slate-600/50 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100]">
                                         <div className="grid grid-cols-2 gap-1 p-2">
                                             <button
-                                                onClick={() => navigateTo('jsonToCsv')}
+                                                onClick={() => navigateTo('serviceCenter')}
                                                 className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-emerald-500/20 hover:to-transparent transition-all rounded-lg group/item"
                                             >
                                                 <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover/item:scale-110 transition-transform shrink-0">
-                                                    <Icons.FileJson />
+                                                    <Icons.Shield />
                                                 </div>
                                                 <div className="text-left min-w-0">
-                                                    <div className="font-medium text-sm">JSON to CSV</div>
-                                                    <div className="text-xs text-slate-500 truncate">JSON → CSV 변환</div>
+                                                    <div className="font-medium text-sm">고객센터</div>
+                                                    <div className="text-xs text-slate-500 truncate">서비스 문의 및 지원</div>
                                                 </div>
                                             </button>
                                             <button
@@ -935,6 +936,18 @@ function App() {
                                                     <div className="text-xs text-slate-500 truncate">PDF/이미지에 서명 삽입</div>
                                                 </div>
                                             </button>
+                                            <button
+                                                onClick={() => navigateTo('serviceCenter')}
+                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-emerald-500/20 hover:to-transparent transition-all rounded-lg group/item"
+                                            >
+                                                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover/item:scale-110 transition-transform shrink-0">
+                                                    <Icons.Shield />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-medium text-sm">고객센터</div>
+                                                    <div className="text-xs text-slate-500 truncate">서비스 문의 및 지원</div>
+                                                </div>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -1116,7 +1129,12 @@ function App() {
                     <div className="main-wrapper">
                         <ZipTools />
                     </div>
+                ) : currentPage === 'serviceCenter' ? (
+                    <div className="main-wrapper">
+                        <ServiceCenter />
+                    </div>
                 ) : (
+                    
         <div className="main-wrapper">
             <div className={`sidebar bg-slate-900/80 backdrop-blur-sm border border-slate-700/50 rounded-2xl flex flex-col z-10 shadow-xl overflow-hidden transition-all duration-300 ${isZoomed ? 'hidden' : ''}`}>
                         <div className="flex text-sm font-semibold border-b border-slate-800 bg-slate-950">
