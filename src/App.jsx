@@ -627,15 +627,15 @@ function App() {
                 <header className="app-header border border-slate-700/50 bg-slate-900/80 backdrop-blur-md rounded-2xl flex items-center justify-between px-6 shadow-2xl relative z-[100]">
                     <div className="flex items-center gap-3">
                         <img src="/logo.svg" alt="VaultSheet" className="w-10 h-10 rounded-lg shadow-lg" />
-                        <div>
-                            <h1 className="text-lg font-bold text-slate-100 tracking-tight">VaultSheet (볼트시트) - 나만의 데이터 분석 도구</h1>
-                            <div className="flex items-center gap-4">
-                                <p className="text-sm text-slate-400 flex items-center gap-1"><Icons.Shield /> 100% Offline WASM Engine</p>
-                                <p className="text-sm text-emerald-400 flex items-center gap-1">
-                                    🔒 내 데이터가 서버로 넘어갈까 걱정되나요? 개인의 대외비 데이터가 절대 외부로 유출되지 않습니다.
-                                </p>
+                            <div>
+                                <h1 className="text-lg font-bold text-slate-100 tracking-tight">VaultSheet</h1>
+                                <div className="flex items-center gap-4">
+                                    <p className="text-sm text-slate-400 flex items-center gap-1"><Icons.Shield /> <span className="hidden md:inline">100% Offline WASM Engine</span></p>
+                                    <p className="text-sm text-emerald-400 flex items-center gap-1 hidden md:block">
+                                        🔒 내 데이터가 서버로 넘어갈까 걱정되나요? 개인의 대외비 데이터가 절대 외부로 유출되지 않습니다.
+                                    </p>
+                                </div>
                             </div>
-                        </div>
                     </div>
                     <div className="flex items-center gap-2">
                         {/* 메인 페이지로 돌아가기 버튼 (서브 페이지에서만 표시) */}
@@ -654,7 +654,7 @@ function App() {
                                     <button
                                         className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold border transition-all shadow-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600 hover:border-brand-500"
                                     >
-                                        <Icons.Grid /> 변환 도구 <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                        <Icons.Grid /> <span className="hidden md:inline">변환 도구</span> <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                     </button>
                                     <div className="absolute top-full left-0 mt-2 w-[500px] bg-slate-800 border border-slate-600/50 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100]">
                                         <div className="grid grid-cols-2 gap-1 p-2">
@@ -960,7 +960,7 @@ function App() {
                                     onClick={() => setCmdOpen(true)}
                                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold border transition-all shadow-lg ${isDataReady ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600 hover:border-brand-500' : 'bg-slate-900/50 text-slate-500 border-slate-800 cursor-not-allowed'}`}
                                 >
-                                    <Icons.Magic /> 매직 도구함 <span className="font-mono opacity-50 ml-1">Ctrl+K</span>
+                                    <Icons.Magic /> <span className="hidden md:inline">매직 도구함</span> <span className="hidden md:inline font-mono opacity-50 ml-1">Ctrl+K</span>
                                 </button>
                                 
                                 {/* 벽(구분선) */}
@@ -968,7 +968,8 @@ function App() {
                                 
                                 {/* 데이터 열기 버튼 - 변환도구, 매직도구함과 같은 크기로 수정 */}
                                 <button className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2 rounded-md text-base font-medium transition-colors" onClick={() => document.getElementById('file-in').click()}>
-                                데이터 열기
+                                    <span className="hidden md:inline">데이터 열기</span>
+                                    <span className="md:hidden">+</span>
                                 </button>
                                 <input type="file" id="file-in" className="hidden" accept=".csv,.json" onChange={e => processFile(e.target.files[0])} />
                             </div>
