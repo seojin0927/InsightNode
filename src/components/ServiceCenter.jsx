@@ -21,7 +21,7 @@ const ServiceCenter = () => {
         <div className="w-full h-full min-h-[850px] bg-slate-900 rounded-2xl p-6 border border-slate-700 flex flex-col">
             
             {/* 1. 헤더 */}
-            <div className="flex items-center gap-3 mb-6 flex-shrink-0">
+                                <div className="flex items-center gap-3 mb-6 flex-shrink-0">
                 <div className="w-12 h-12 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/20">
                     <Icon path="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0z" className="w-6 h-6 text-white" />
                 </div>
@@ -32,10 +32,10 @@ const ServiceCenter = () => {
             </div>
 
             {/* 2. 메인 레이아웃 (Grid 구조로 변경) */}
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
+                                <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
                 
                 {/* 좌측: 사이드바 메뉴 (Col 3) */}
-                <div className="lg:col-span-3 flex flex-col h-full min-h-0">
+                                <div className="lg:col-span-3 flex flex-col h-full min-h-0">
                     <div className="bg-slate-800 rounded-xl p-3 flex flex-col h-full shadow-inner border border-slate-700/50">
                         <h3 className="text-xs font-bold text-slate-400 uppercase mb-3 px-2">Menu</h3>
                         <div className="space-y-1">
@@ -43,7 +43,7 @@ const ServiceCenter = () => {
                                 <button
                                     key={t.id}
                                     onClick={() => setActiveTab(t.id)}
-                                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all ${
+                                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all truncate ${
                                         activeTab === t.id 
                                         ? 'bg-violet-600 text-white shadow-md shadow-violet-500/20' 
                                         : 'text-slate-300 hover:bg-slate-700 hover:text-white'
@@ -58,7 +58,7 @@ const ServiceCenter = () => {
                 </div>
 
                 {/* 우측: 컨텐츠 영역 (Col 9) */}
-                <div className="lg:col-span-9 flex flex-col min-h-0">
+                                <div className="lg:col-span-9 flex flex-col min-h-0">
                     <div className="flex-1 bg-slate-800 rounded-xl shadow-inner border border-slate-700/50 relative overflow-hidden flex flex-col">
                         
                         {/* 배경 패턴 효과 */}
@@ -165,7 +165,7 @@ const ServiceCenter = () => {
                                     <div className="grid md:grid-cols-2 gap-6 mb-10">
                                         <ContactCard 
                                             title="이메일 문의" 
-                                            value="wlstjrkd06@naver.com" 
+                                            value="aairavoxx@gmail.com" 
                                             sub="24시간 연중무휴 문의 가능"
                                             icon={<Icon path="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />}
                                         />

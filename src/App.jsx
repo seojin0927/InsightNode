@@ -28,6 +28,9 @@ import ImageTools from './components/ImageTools';
 import VideoTools from './components/VideoTools';
 import ZipTools from './components/ZipTools';
 import ServiceCenter from './components/ServiceCenter';
+import MobileServiceCenter from './components/MobileServiceCenter';
+import MobilePdfConverter from './components/MobilePdfConverter';
+import MobileQrCodeGenerator from './components/MobileQrCodeGenerator';
 import Icons from './utils/Icons';
 import { initSqlEngine, runQuery, createTableFromData, updateCell, detectColumnTypes, exportToCSV, exportToJSON } from './utils/sqlEngine';
 
@@ -56,7 +59,7 @@ function App() {
         const validPages = ['main', 'jsonToCsv', 'encoding', 'htmlTable', 'textExtractor', 'listToComma', 'listComparator', 'personalDataMasker', 'mockDataGenerator', 'qrCode', 'colorConverter', 'calculator', 'codeMinifier', 'imageCompressor', 'jsonFormatter', 'markdownEditor', 'pdfConverter', 'regexTester', 'unitConverter', 'uuidGenerator','digitalStampSignStudio','imageTools','videoTools','zipTools','serviceCenter'];
         return validPages.includes(hash) ? hash : 'main';
     };
-    const [currentPage, setCurrentPage] = useState(getInitialPage);
+    const [currentPage, setCurrentPage] = useState(getInitialPage());
     
     // 해시 변경 시 페이지 업데이트
     useEffect(() => {
@@ -139,6 +142,22 @@ function App() {
 
     // 결과 기록 관리 (이전 결과로 되돌리기 기능)
     const [resultHistory, setResultHistory] = useState([]);
+
+    // 모바일 감지
+    const [isMobile, setIsMobile] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    
+    useEffect(() => {
+        const checkIsMobile = () => {
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+            const isSmallScreen = window.innerWidth <= 768;
+            setIsMobile(isMobileDevice || isSmallScreen);
+        };
+        checkIsMobile();
+        window.addEventListener('resize', checkIsMobile);
+        return () => window.removeEventListener('resize', checkIsMobile);
+    }, []);
 
     // 🆕 앱 로드 시 자동으로 샘플 데이터 로드
     useEffect(() => {
@@ -624,6 +643,7 @@ function App() {
     return (
         <div className="app-wrapper bg-slate-950">
             <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col">
+                {!isMobile && (
                 <header className="app-header border border-slate-700/50 bg-slate-900/80 backdrop-blur-md rounded-2xl flex items-center justify-between px-6 shadow-2xl relative z-[100]">
                     <div className="flex items-center gap-3">
                         <img src="/logo.svg" alt="VaultSheet" className="w-10 h-10 rounded-lg shadow-lg" />
@@ -936,18 +956,6 @@ function App() {
                                                     <div className="text-xs text-slate-500 truncate">PDF/이미지에 서명 삽입</div>
                                                 </div>
                                             </button>
-                                            <button
-                                                onClick={() => navigateTo('serviceCenter')}
-                                                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-gradient-to-r hover:from-emerald-500/20 hover:to-transparent transition-all rounded-lg group/item"
-                                            >
-                                                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover/item:scale-110 transition-transform shrink-0">
-                                                    <Icons.Shield />
-                                                </div>
-                                                <div className="text-left min-w-0">
-                                                    <div className="font-medium text-sm">고객센터</div>
-                                                    <div className="text-xs text-slate-500 truncate">서비스 문의 및 지원</div>
-                                                </div>
-                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -976,7 +984,7 @@ function App() {
                         )}
                     </div>
                 </header>
-
+                )}
                 {/* 🆕 워터마크 설정 패널 */}
                 <div id="watermark-panel" className="hidden bg-slate-900 border-b border-slate-700 p-4">
                     <div className="flex items-center gap-6 flex-wrap">
@@ -1072,7 +1080,7 @@ function App() {
                     </div>
                 ) : currentPage === 'qrCode' ? (
                     <div className="main-wrapper">
-                        <QrCodeGenerator />
+                        {isMobile ? <MobileQrCodeGenerator /> : <QrCodeGenerator />}
                     </div>
                 ) : currentPage === 'colorConverter' ? (
                     <div className="main-wrapper">
@@ -1100,7 +1108,7 @@ function App() {
                     </div>
                 ) : currentPage === 'pdfConverter' ? (
                     <div className="main-wrapper">
-                        <PdfConverter />
+                        {isMobile ? <MobilePdfConverter /> : <PdfConverter />}
                     </div>
                 ) : currentPage === 'regexTester' ? (
                     <div className="main-wrapper">
@@ -1132,370 +1140,497 @@ function App() {
                     </div>
                 ) : currentPage === 'serviceCenter' ? (
                     <div className="main-wrapper">
-                        <ServiceCenter />
+                        {isMobile ? <MobileServiceCenter /> : <ServiceCenter />}
                     </div>
+                ) : isMobile ? (
+                    /* ============================================================
+                       📱 모바일 전용 뷰 (Mobile Version)
+                       - 모바일에서 데이터 분석 기능은 숨기고, 유용한 도구만 보여줍니다.
+                       - 상단 바를 완전히 숨깁니다.
+                       ============================================================ */
+                    <div className="w-full min-h-screen bg-[#020617] flex flex-col items-center justify-center p-5 font-sans selection:bg-emerald-500/30">
+  {/* 다이나믹 배경 레이어 */}
+  <div className="fixed inset-0 overflow-hidden pointer-events-none">
+    <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-emerald-600/20 rounded-full blur-[120px] animate-pulse"></div>
+    <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/20 rounded-full blur-[120px] animate-pulse delay-1000"></div>
+    <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")' }}></div>
+  </div>
+
+  {/* 헤더 섹션 */}
+  <div className="z-10 flex flex-col items-center mb-10 transition-all">
+    <div className="relative group">
+      <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+      <div className="relative w-20 h-20 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-center shadow-2xl">
+        <img src="/logo.svg" alt="VaultSheet" className="w-12 h-12 drop-shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+      </div>
+    </div>
+    <div className="mt-5 text-center">
+      <h1 className="text-4xl font-black tracking-tighter text-white">
+        Vault<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Sheet</span>
+      </h1>
+      <div className="flex items-center gap-2 mt-1">
+        <span className="h-[1px] w-4 bg-slate-700"></span>
+        <p className="text-[10px] text-slate-500 font-bold tracking-[0.2em] uppercase">Intelligence Hub</p>
+        <span className="h-[1px] w-4 bg-slate-700"></span>
+      </div>
+    </div>
+  </div>
+
+  {/* 메인 컨테이너 (Bento Grid) */}
+  <div className="w-full max-w-[360px] z-10 space-y-4">
+    
+    {/* 알림 배너 - 플로팅 스타일 */}
+    <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800/50 rounded-2xl p-4 flex items-center gap-4 shadow-xl">
+      <div className="flex-shrink-0 w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-500 border border-amber-500/20">
+        <Icons.Alert size={20} />
+      </div>
+      <div>
+        <p className="text-xs font-bold text-slate-200">데이터 분석은 PC 환경 권장</p>
+        <p className="text-[10px] text-slate-500 mt-0.5">대량의 데이터 그리드는 PC에서 최적화됩니다.</p>
+      </div>
+    </div>
+
+    {/* 그리드 메뉴 */}
+    <div className="grid grid-cols-2 gap-4">
+      {/* QR 생성 카드 */}
+      <button
+        onClick={() => navigateTo('qrCode')}
+        className="group relative h-40 bg-slate-900/50 backdrop-blur-sm border border-slate-800 hover:border-emerald-500/50 rounded-[2rem] p-5 transition-all duration-300 active:scale-95 flex flex-col justify-between overflow-hidden"
+      >
+        <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-150 duration-700"></div>
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+          <Icons.QrCode size={24} />
+        </div>
+        <div className="relative">
+          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">Tool 01</p>
+          <p className="text-lg font-bold text-white">QR 생성</p>
+        </div>
+      </button>
+
+      {/* PDF 변환 카드 */}
+      <button
+        onClick={() => navigateTo('pdfConverter')}
+        className="group relative h-40 bg-slate-900/50 backdrop-blur-sm border border-slate-800 hover:border-red-500/50 rounded-[2rem] p-5 transition-all duration-300 active:scale-95 flex flex-col justify-between overflow-hidden"
+      >
+        <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/5 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-150 duration-700"></div>
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500/20 to-red-500/5 flex items-center justify-center text-red-400 group-hover:scale-110 transition-transform">
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <div className="relative">
+          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">Tool 02</p>
+          <p className="text-lg font-bold text-white">이미지 PDF 변환</p>
+        </div>
+      </button>
+
+      {/* 고객센터 (Full Width 프리미엄 카드) */}
+      <button
+        onClick={() => navigateTo('serviceCenter')}
+        className="col-span-2 group relative overflow-hidden rounded-[2rem] p-6 transition-all duration-300 active:scale-[0.98]"
+      >
+        {/* 프리미엄 배경 그라데이션 */}
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-800 to-slate-900 group-hover:from-slate-700 group-hover:to-slate-800 transition-colors"></div>
+        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-emerald-500/10 to-transparent"></div>
+        
+        {/* 장식용 서클 */}
+        <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all duration-500"></div>
+
+        <div className="relative flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span className="text-[10px] font-bold text-emerald-400 tracking-widest uppercase">Direct Support</span>
+            </div>
+            <h3 className="text-xl font-bold text-white">서비스 소개</h3>
+            <p className="text-xs text-slate-400">개인정보 처리방침, 서비스 소개, 고객센터</p>
+          </div>
+          <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:translate-x-1 transition-transform">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </div>
+      </button>
+    </div>
+  </div>
+
+  {/* 푸터 하단 바 - 모바일 감성 */}
+  <div className="mt-auto pt-10 pb-4 text-slate-600 text-[10px] font-medium tracking-widest uppercase z-10">
+    © 2024 VAULTSHEET CORE
+  </div>
+</div>
                 ) : (
-                    
-        <div className="main-wrapper">
-            <div className={`sidebar bg-slate-900/80 backdrop-blur-sm border border-slate-700/50 rounded-2xl flex flex-col z-10 shadow-xl overflow-hidden transition-all duration-300 ${isZoomed ? 'hidden' : ''}`}>
-                        <div className="flex text-sm font-semibold border-b border-slate-800 bg-slate-950">
-                            <button
-                                onClick={() => setLeftTab('nocode')}
-                                className={`flex-1 py-4 flex items-center justify-center gap-2 ${leftTab === 'nocode' ? 'text-brand-400 border-b-2 border-brand-500 bg-slate-900' : 'text-slate-500 hover:text-slate-300'}`}
-                            >
-                                <Icons.Wand /> 노코드 빌더
-                            </button>
-                            <button
-                                onClick={() => setLeftTab('sql')}
-                                className={`flex-1 py-4 flex items-center justify-center gap-2 ${leftTab === 'sql' ? 'text-brand-400 border-b-2 border-brand-500 bg-slate-900' : 'text-slate-500 hover:text-slate-300'}`}
-                            >
-                                <Icons.Code /> SQL 작성
-                            </button>
-                        </div>
-                        
-                        <div className="flex-1 overflow-y-auto custom-scrollbar p-5">
-                            {!isDataReady ? (
-                                <div className="text-center text-slate-500 text-base mt-10">
-                                    파일을 불러오거나<br />
-                                    <button onClick={() => loadData(Papa.parse(SAMPLE_DATA, { header: true, dynamicTyping: true }).data)} className="mt-4 text-brand-400 underline hover:text-brand-300 text-base">샘플 데이터 로드</button>
+                    /* ============================================================
+                       🖥️ 데스크탑 뷰 (Desktop Version) - 수정됨
+                       - 부모 div에 'flex' 클래스를 추가하여 사이드바와 메인화면을 가로로 배치
+                       ============================================================ */
+                    <div className="main-wrapper w-full h-full relative">
+                        {/* 왼쪽 사이드바 영역 */}
+                        <div className="h-full shrink-0">
+                            <div className={`sidebar bg-slate-900/80 backdrop-blur-sm border border-slate-700/50 rounded-2xl flex flex-col z-10 shadow-xl overflow-hidden transition-all duration-300 ${isZoomed ? 'hidden' : 'w-[420px] h-full'}`}>
+                                <div className="flex text-sm font-semibold border-b border-slate-800 bg-slate-950">
+                                    <button
+                                        onClick={() => setLeftTab('nocode')}
+                                        className={`flex-1 py-4 flex items-center justify-center gap-2 ${leftTab === 'nocode' ? 'text-brand-400 border-b-2 border-brand-500 bg-slate-900' : 'text-slate-500 hover:text-slate-300'}`}
+                                    >
+                                        <Icons.Wand /> 노코드 빌더
+                                    </button>
+                                    <button
+                                        onClick={() => setLeftTab('sql')}
+                                        className={`flex-1 py-4 flex items-center justify-center gap-2 ${leftTab === 'sql' ? 'text-brand-400 border-b-2 border-brand-500 bg-slate-900' : 'text-slate-500 hover:text-slate-300'}`}
+                                    >
+                                        <Icons.Code /> SQL 작성
+                                    </button>
                                 </div>
-                            ) : leftTab === 'nocode' ? (
-                                <div className="flex flex-col gap-6">
-                                    {/* 🆕 자연어 필터 (NLP) */}
-                                    <div className="p-4 bg-gradient-to-r from-indigo-900/30 to-purple-900/20 rounded-xl border border-indigo-500/30">
-                                        <label className="text-sm font-bold text-indigo-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                                            🔍 자연어 필터
-                                        </label>
-                                        <input 
-                                            type="text" 
-                                            placeholder="예: revenue 10000 이상 and country USA" 
-                                            value={ncNaturalFilter}
-                                            onChange={e => setNcNaturalFilter(e.target.value)}
-                                            onKeyDown={e => {
-                                                if (e.key === 'Enter' && ncNaturalFilter.trim()) {
-                                                    // 자연어를 필터로 변환
-                                                    const text = ncNaturalFilter.toLowerCase();
-                                                    let newFilters = [...ncFilters];
-                                                    
-                                                    // 숫자 + 이상/이하 패턴
-                                                    const numMatch = text.match(/(\w+)\s*(\d+以上|이상|초과|이하|미만|小于)?/);
-                                                    if (numMatch) {
-                                                        const col = numMatch[1];
-                                                        const op = text.includes('이상') || text.includes('>=') || text.includes('以上') ? '>=' : 
-                                                                   text.includes('초과') || text.includes('>') ? '>' :
-                                                                   text.includes('이하') || text.includes('<=') || text.includes('以下') ? '<=' : 
-                                                                   text.includes('미만') || text.includes('<') ? '<' : '=';
-                                                        const val = numMatch[2] ? numMatch[2].replace(/[^0-9]/g, '') : '';
-                                                        if (val && allColumns.includes(col)) {
-                                                            newFilters.push({ id: Date.now(), col, op, val });
-                                                            setNcFilters(newFilters);
-                                                            setNcNaturalFilter('');
-                                                        }
-                                                    }
-                                                }
-                                            }}
-                                            className="w-full bg-slate-900/80 text-slate-200 px-4 py-2.5 text-sm rounded-lg border border-indigo-500/30 outline-none focus:border-indigo-400 placeholder:text-slate-500"
-                                        />
-                                        <p className="text-[10px] text-indigo-300/60 mt-1">엔터를 누르면 필터에 추가됩니다 (영문 지원)</p>
-                                    </div>
 
-                                    {/* 🆕 결측치 무시 토글 */}
-                                    <div className="flex items-center justify-between bg-slate-800/50 p-3 rounded-lg border border-slate-700">
-                                        <span className="text-sm font-medium text-slate-300">빈 데이터(Null) 무시</span>
-                                        <button 
-                                            onClick={() => setNcIgnoreNull(!ncIgnoreNull)}
-                                            className={`w-12 h-6 rounded-full transition-colors relative ${ncIgnoreNull ? 'bg-emerald-500' : 'bg-slate-600'}`}
-                                        >
-                                            <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${ncIgnoreNull ? 'left-7' : 'left-1'}`}></span>
-                                        </button>
-                                    </div>
-
-                                    {/* 🆕 날짜 주기 묶기 */}
-                                    {ncGroupCol && colTypes[ncGroupCol] === 'date' && (
-                                        <div className="p-4 bg-gradient-to-r from-amber-900/30 to-orange-900/20 rounded-xl border border-amber-500/30">
-                                            <label className="text-sm font-bold text-amber-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                                📅 날짜 주기 묶기
-                                            </label>
-                                            <div className="flex gap-2 flex-wrap">
-                                                {[
-                                                    { val: '', label: '원본' },
-                                                    { val: 'day', label: '일별' },
-                                                    { val: 'week', label: '주별' },
-                                                    { val: 'month', label: '월별' },
-                                                    { val: 'quarter', label: '분기별' },
-                                                    { val: 'year', label: '연도별' }
-                                                ].map(opt => (
-                                                    <button
-                                                        key={opt.val}
-                                                        onClick={() => setNcDateRollup(opt.val)}
-                                                        className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${ncDateRollup === opt.val ? 'bg-amber-500 text-white shadow-lg' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
-                                                    >
-                                                        {opt.label}
-                                                    </button>
-                                                ))}
-                                            </div>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar p-5">
+                                    {!isDataReady ? (
+                                        <div className="text-center text-slate-500 text-base mt-10">
+                                            파일을 불러오거나<br />
+                                            <button onClick={() => loadData(Papa.parse(SAMPLE_DATA, { header: true, dynamicTyping: true }).data)} className="mt-4 text-brand-400 underline hover:text-brand-300 text-base">샘플 데이터 로드</button>
                                         </div>
-                                    )}
-
-                                    {/* 🆕 자동 구간화 (Auto-Bucketing) */}
-                                    {ncGroupCol && colTypes[ncGroupCol] === 'number' && (
-                                        <div className="p-4 bg-gradient-to-r from-cyan-900/30 to-blue-900/20 rounded-xl border border-cyan-500/30">
-                                            <label className="text-sm font-bold text-cyan-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                                📊 자동 구간화
-                                            </label>
-                                            <div className="flex gap-2 flex-wrap">
-                                                {[
-                                                    { val: '', label: '사용안함' },
-                                                    { val: '10', label: '10단위' },
-                                                    { val: '100', label: '100단위' },
-                                                    { val: '1000', label: '1000단위' },
-                                                    { val: '10000', label: '10000단위' },
-                                                    { val: 'age', label: '연령대' }
-                                                ].map(opt => (
-                                                    <button
-                                                        key={opt.val}
-                                                        onClick={() => setNcAutoBucket(opt.val)}
-                                                        className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${ncAutoBucket === opt.val ? 'bg-cyan-500 text-white shadow-lg' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
-                                                    >
-                                                        {opt.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <div>
-                                        <label className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3 block">표시 컬럼 ({ncSelectedCols.length})</label>
-                                        <div className="flex flex-wrap gap-2 max-h-[140px] overflow-y-auto custom-scrollbar p-2">
-                                            {allColumns.map(c => (
-                                                <button
-                                                    key={c}
-                                                    onClick={() => setNcSelectedCols(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c])}
-                                                    className={`px-3 py-2 rounded text-sm font-medium transition-colors border ${ncSelectedCols.includes(c) ? 'bg-brand-500/10 text-brand-400 border-brand-500/50' : 'bg-slate-800 text-slate-500 border-slate-700'}`}
-                                                >
-                                                    {c}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <div className="flex justify-between items-center mb-3">
-                                            <label className="text-sm font-bold text-slate-400 uppercase tracking-widest">조건 필터</label>
-                                            <button onClick={() => setNcFilters([...ncFilters, { id: Date.now(), col: ncSelectedCols.length > 0 ? ncSelectedCols[0] : allColumns[0], op: '=', val: '' }])} className="text-sm text-brand-400 flex items-center gap-1">
-                                                <Icons.Plus /> 추가
-                                            </button>
-                                        </div>
-                                        {ncFilters.map(f => (
-                                            <div key={f.id} className="flex gap-2 mb-3">
-                                                <select
-                                                    className="flex-1 bg-slate-950 text-sm text-slate-200 p-3 rounded border border-slate-700 outline-none"
-                                                    value={f.col}
-                                                    onChange={e => setNcFilters(ncFilters.map(i => i.id === f.id ? { ...i, col: e.target.value } : i))}
-                                                >
-                                                    {allColumns.map(c => <option key={c}>{c}</option>)}
-                                                </select>
-                                                <select
-                                                    className="w-[80px] bg-slate-950 text-sm text-slate-200 p-3 rounded border border-slate-700 outline-none"
-                                                    value={f.op}
-                                                    onChange={e => setNcFilters(ncFilters.map(i => i.id === f.id ? { ...i, op: e.target.value } : i))}
-                                                >
-                                                    <option value="=">=</option>
-                                                    <option value="gt">보다 큼</option>
-                                                    <option value="lt">보다 작음</option>
-                                                    <option value="LIKE">포함</option>
-                                                </select>
+                                    ) : leftTab === 'nocode' ? (
+                                        <div className="flex flex-col gap-6">
+                                            {/* 🆕 자연어 필터 (NLP) */}
+                                            <div className="p-4 bg-gradient-to-r from-indigo-900/30 to-purple-900/20 rounded-xl border border-indigo-500/30">
+                                                <label className="text-sm font-bold text-indigo-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                                                    🔍 자연어 필터
+                                                </label>
                                                 <input
                                                     type="text"
-                                                    className="w-[100px] bg-slate-950 text-sm text-slate-200 p-3 rounded border border-slate-700 outline-none"
-                                                    value={f.val}
-                                                    onChange={e => setNcFilters(ncFilters.map(i => i.id === f.id ? { ...i, val: e.target.value } : i))}
+                                                    placeholder="예: revenue 10000 이상 and country USA"
+                                                    value={ncNaturalFilter}
+                                                    onChange={e => setNcNaturalFilter(e.target.value)}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter' && ncNaturalFilter.trim()) {
+                                                            // 자연어를 필터로 변환
+                                                            const text = ncNaturalFilter.toLowerCase();
+                                                            let newFilters = [...ncFilters];
+
+                                                            // 숫자 + 이상/이하 패턴
+                                                            const numMatch = text.match(/(\w+)\s*(\d+以上|이상|초과|이하|미만|小于)?/);
+                                                            if (numMatch) {
+                                                                const col = numMatch[1];
+                                                                const op = text.includes('이상') || text.includes('>=') || text.includes('以上') ? '>=' :
+                                                                    text.includes('초과') || text.includes('>') ? '>' :
+                                                                        text.includes('이하') || text.includes('<=') || text.includes('以下') ? '<=' :
+                                                                            text.includes('미만') || text.includes('<') ? '<' : '=';
+                                                                const val = numMatch[2] ? numMatch[2].replace(/[^0-9]/g, '') : '';
+                                                                if (val && allColumns.includes(col)) {
+                                                                    newFilters.push({ id: Date.now(), col, op, val });
+                                                                    setNcFilters(newFilters);
+                                                                    setNcNaturalFilter('');
+                                                                }
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="w-full bg-slate-900/80 text-slate-200 px-4 py-2.5 text-sm rounded-lg border border-indigo-500/30 outline-none focus:border-indigo-400 placeholder:text-slate-500"
                                                 />
-                                                <button onClick={() => setNcFilters(ncFilters.filter(i => i.id !== f.id))} className="text-red-500">
-                                                    <Icons.Trash />
+                                                <p className="text-[10px] text-indigo-300/60 mt-1">엔터를 누르면 필터에 추가됩니다 (영문 지원)</p>
+                                            </div>
+
+                                            {/* 🆕 결측치 무시 토글 */}
+                                            <div className="flex items-center justify-between bg-slate-800/50 p-3 rounded-lg border border-slate-700">
+                                                <span className="text-sm font-medium text-slate-300">빈 데이터(Null) 무시</span>
+                                                <button
+                                                    onClick={() => setNcIgnoreNull(!ncIgnoreNull)}
+                                                    className={`w-12 h-6 rounded-full transition-colors relative ${ncIgnoreNull ? 'bg-emerald-500' : 'bg-slate-600'}`}
+                                                >
+                                                    <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${ncIgnoreNull ? 'left-7' : 'left-1'}`}></span>
                                                 </button>
                                             </div>
-                                        ))}
-                                    </div>
 
-                                    <div className="p-5 bg-slate-950 border border-slate-800 rounded-xl">
-                                        <label className="text-sm font-bold text-brand-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                            <Icons.Database /> 피벗 / 그룹화
-                                        </label>
-                                        <select
-                                            className="bg-slate-900 text-slate-200 p-3 rounded border border-slate-700 w-full mb-3 text-base outline-none"
-                                            value={ncGroupCol}
-                                            onChange={e => setNcGroupCol(e.target.value)}
-                                        >
-                                            <option value="">-- 사용 안함 --</option>
-                                            {allColumns.map(c => <option key={c} value={c}>{c}</option>)}
-                                        </select>
-                                        {ncGroupCol && (
-                                            <div className="flex gap-2 text-base">
+                                            {/* 🆕 날짜 주기 묶기 */}
+                                            {ncGroupCol && colTypes[ncGroupCol] === 'date' && (
+                                                <div className="p-4 bg-gradient-to-r from-amber-900/30 to-orange-900/20 rounded-xl border border-amber-500/30">
+                                                    <label className="text-sm font-bold text-amber-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                                        📅 날짜 주기 묶기
+                                                    </label>
+                                                    <div className="flex gap-2 flex-wrap">
+                                                        {[
+                                                            { val: '', label: '원본' },
+                                                            { val: 'day', label: '일별' },
+                                                            { val: 'week', label: '주별' },
+                                                            { val: 'month', label: '월별' },
+                                                            { val: 'quarter', label: '분기별' },
+                                                            { val: 'year', label: '연도별' }
+                                                        ].map(opt => (
+                                                            <button
+                                                                key={opt.val}
+                                                                onClick={() => setNcDateRollup(opt.val)}
+                                                                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${ncDateRollup === opt.val ? 'bg-amber-500 text-white shadow-lg' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+                                                            >
+                                                                {opt.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* 🆕 자동 구간화 (Auto-Bucketing) */}
+                                            {ncGroupCol && colTypes[ncGroupCol] === 'number' && (
+                                                <div className="p-4 bg-gradient-to-r from-cyan-900/30 to-blue-900/20 rounded-xl border border-cyan-500/30">
+                                                    <label className="text-sm font-bold text-cyan-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                                        📊 자동 구간화
+                                                    </label>
+                                                    <div className="flex gap-2 flex-wrap">
+                                                        {[
+                                                            { val: '', label: '사용안함' },
+                                                            { val: '10', label: '10단위' },
+                                                            { val: '100', label: '100단위' },
+                                                            { val: '1000', label: '1000단위' },
+                                                            { val: '10000', label: '10000단위' },
+                                                            { val: 'age', label: '연령대' }
+                                                        ].map(opt => (
+                                                            <button
+                                                                key={opt.val}
+                                                                onClick={() => setNcAutoBucket(opt.val)}
+                                                                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${ncAutoBucket === opt.val ? 'bg-cyan-500 text-white shadow-lg' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+                                                            >
+                                                                {opt.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div>
+                                                <label className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3 block">표시 컬럼 ({ncSelectedCols.length})</label>
+                                                <div className="flex flex-wrap gap-2 max-h-[140px] overflow-y-auto custom-scrollbar p-2">
+                                                    {allColumns.map(c => (
+                                                        <button
+                                                            key={c}
+                                                            onClick={() => setNcSelectedCols(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c])}
+                                                            className={`px-3 py-2 rounded text-sm font-medium transition-colors border ${ncSelectedCols.includes(c) ? 'bg-brand-500/10 text-brand-400 border-brand-500/50' : 'bg-slate-800 text-slate-500 border-slate-700'}`}
+                                                        >
+                                                            {c}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <div className="flex justify-between items-center mb-3">
+                                                    <label className="text-sm font-bold text-slate-400 uppercase tracking-widest">조건 필터</label>
+                                                    <button onClick={() => setNcFilters([...ncFilters, { id: Date.now(), col: ncSelectedCols.length > 0 ? ncSelectedCols[0] : allColumns[0], op: '=', val: '' }])} className="text-sm text-brand-400 flex items-center gap-1">
+                                                        <Icons.Plus /> 추가
+                                                    </button>
+                                                </div>
+                                                {ncFilters.map(f => (
+                                                    <div key={f.id} className="flex gap-2 mb-3">
+                                                        <select
+                                                            className="flex-1 bg-slate-950 text-sm text-slate-200 p-3 rounded border border-slate-700 outline-none"
+                                                            value={f.col}
+                                                            onChange={e => setNcFilters(ncFilters.map(i => i.id === f.id ? { ...i, col: e.target.value } : i))}
+                                                        >
+                                                            {allColumns.map(c => <option key={c}>{c}</option>)}
+                                                        </select>
+                                                        <select
+                                                            className="w-[80px] bg-slate-950 text-sm text-slate-200 p-3 rounded border border-slate-700 outline-none"
+                                                            value={f.op}
+                                                            onChange={e => setNcFilters(ncFilters.map(i => i.id === f.id ? { ...i, op: e.target.value } : i))}
+                                                        >
+                                                            <option value="=">=</option>
+                                                            <option value="gt">보다 큼</option>
+                                                            <option value="lt">보다 작음</option>
+                                                            <option value="LIKE">포함</option>
+                                                        </select>
+                                                        <input
+                                                            type="text"
+                                                            className="w-[100px] bg-slate-950 text-sm text-slate-200 p-3 rounded border border-slate-700 outline-none"
+                                                            value={f.val}
+                                                            onChange={e => setNcFilters(ncFilters.map(i => i.id === f.id ? { ...i, val: e.target.value } : i))}
+                                                        />
+                                                        <button onClick={() => setNcFilters(ncFilters.filter(i => i.id !== f.id))} className="text-red-500">
+                                                            <Icons.Trash />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <div className="p-5 bg-slate-950 border border-slate-800 rounded-xl">
+                                                <label className="text-sm font-bold text-brand-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                    <Icons.Database /> 피벗 / 그룹화
+                                                </label>
                                                 <select
-                                                    className="w-1/3 bg-slate-900 text-slate-200 p-3 rounded border border-slate-700 outline-none"
-                                                    value={ncAggFn}
-                                                    onChange={e => setNcAggFn(e.target.value)}
+                                                    className="bg-slate-900 text-slate-200 p-3 rounded border border-slate-700 w-full mb-3 text-base outline-none"
+                                                    value={ncGroupCol}
+                                                    onChange={e => setNcGroupCol(e.target.value)}
                                                 >
-                                                    <option value="SUM">합계</option>
-                                                    <option value="AVG">평균</option>
-                                                    <option value="COUNT">개수</option>
-                                                    <option value="MAX">최대</option>
-                                                    <option value="MIN">최소</option>
-                                                </select>
-                                                <select
-                                                    className="flex-1 bg-slate-900 text-slate-200 p-3 rounded border border-slate-700 outline-none"
-                                                    value={ncAggCol}
-                                                    onChange={e => setNcAggCol(e.target.value)}
-                                                >
+                                                    <option value="">-- 사용 안함 --</option>
                                                     {allColumns.map(c => <option key={c} value={c}>{c}</option>)}
                                                 </select>
+                                                {ncGroupCol && (
+                                                    <div className="flex gap-2 text-base">
+                                                        <select
+                                                            className="w-1/3 bg-slate-900 text-slate-200 p-3 rounded border border-slate-700 outline-none"
+                                                            value={ncAggFn}
+                                                            onChange={e => setNcAggFn(e.target.value)}
+                                                        >
+                                                            <option value="SUM">합계</option>
+                                                            <option value="AVG">평균</option>
+                                                            <option value="COUNT">개수</option>
+                                                            <option value="MAX">최대</option>
+                                                            <option value="MIN">최소</option>
+                                                        </select>
+                                                        <select
+                                                            className="flex-1 bg-slate-900 text-slate-200 p-3 rounded border border-slate-700 outline-none"
+                                                            value={ncAggCol}
+                                                            onChange={e => setNcAggCol(e.target.value)}
+                                                        >
+                                                            {allColumns.map(c => <option key={c} value={c}>{c}</option>)}
+                                                        </select>
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
-                                    </div>
 
-                                    <div className="flex gap-2">
-                                        <select
-                                            className="flex-1 bg-slate-950 text-sm text-slate-200 p-3 rounded border border-slate-700 outline-none"
-                                            value={ncSortCol}
-                                            onChange={e => setNcSortCol(e.target.value)}
-                                        >
-                                            <option value="">-- 정렬 안함 --</option>
-                                            {allColumns.map(c => <option key={c} value={c}>{c}</option>)}
-                                        </select>
-                                        <select
-                                            className="w-28 bg-slate-950 text-sm text-slate-200 p-3 rounded border border-slate-700 outline-none"
-                                            value={ncSortDir}
-                                            onChange={e => setNcSortDir(e.target.value)}
-                                        >
-                                            <option value="ASC">오름차순</option>
-                                            <option value="DESC">내림차순</option>
-                                        </select>
-                                    </div>
+                                            <div className="flex gap-2">
+                                                <select
+                                                    className="flex-1 bg-slate-950 text-sm text-slate-200 p-3 rounded border border-slate-700 outline-none"
+                                                    value={ncSortCol}
+                                                    onChange={e => setNcSortCol(e.target.value)}
+                                                >
+                                                    <option value="">-- 정렬 안함 --</option>
+                                                    {allColumns.map(c => <option key={c} value={c}>{c}</option>)}
+                                                </select>
+                                                <select
+                                                    className="w-28 bg-slate-950 text-sm text-slate-200 p-3 rounded border border-slate-700 outline-none"
+                                                    value={ncSortDir}
+                                                    onChange={e => setNcSortDir(e.target.value)}
+                                                >
+                                                    <option value="ASC">오름차순</option>
+                                                    <option value="DESC">내림차순</option>
+                                                </select>
+                                            </div>
 
-                                    <div>
-                                        <label className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3 block">Limit: {ncLimit}</label>
-                                        <input
-                                            type="range"
-                                            min="10"
-                                            max="10000"
-                                            step="10"
-                                            value={ncLimit}
-                                            onChange={e => setNcLimit(Number(e.target.value))}
-                                            className="w-full"
-                                        />
-                                    </div>
+                                            <div>
+                                                <label className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3 block">Limit: {ncLimit}</label>
+                                                <input
+                                                    type="range"
+                                                    min="10"
+                                                    max="10000"
+                                                    step="10"
+                                                    value={ncLimit}
+                                                    onChange={e => setNcLimit(Number(e.target.value))}
+                                                    className="w-full"
+                                                />
+                                            </div>
 
+                                            <button
+                                                onClick={applyNoCodeBuilder}
+                                                className="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 text-base mt-2"
+                                            >
+                                                <Icons.Play /> 적용
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col h-full gap-4">
+                                            <textarea
+                                                className="w-full h-full bg-[#0d1117] text-[#c9d1d9] p-4 font-mono text-sm rounded-xl border border-slate-700 outline-none resize-none"
+                                                value={query}
+                                                onChange={e => setQuery(e.target.value)}
+                                                spellCheck="false"
+                                            />
+                                            <button
+                                                onClick={() => executeSQL(query)}
+                                                className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 text-base shrink-0"
+                                            >
+                                                <Icons.Play /> 실행
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 오른쪽 메인 콘텐츠 영역 (Flex로 공간 채움) */}
+                        <div className="main-content flex-1 bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-5 overflow-hidden ml-4 h-full flex flex-col">
+                            {loading && (
+                                <div className="absolute inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-2xl">
+                                    <div className="w-14 h-14 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                                    <p className="text-brand-400 font-medium animate-pulse text-lg">{loading}</p>
+                                </div>
+                            )}
+
+                            {!isDataReady && !loading ? (
+                                <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-3xl bg-slate-900/10">
+                                    <div className="bg-slate-800/50 p-8 rounded-full mb-6 text-slate-500">
+                                        <Icons.Upload />
+                                    </div>
+                                    <h2 className="text-2xl font-bold text-slate-200 mb-3">데이터를 불러오세요</h2>
                                     <button
-                                        onClick={applyNoCodeBuilder}
-                                        className="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 text-base mt-2"
+                                        onClick={() => loadData(Papa.parse(SAMPLE_DATA, { header: true, dynamicTyping: true }).data)}
+                                        className="px-8 py-4 bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-xl font-bold border border-slate-700 shadow-xl text-base"
                                     >
-                                        <Icons.Play /> 적용
+                                        테스트 데이터셋 로드
                                     </button>
                                 </div>
                             ) : (
-                                <div className="flex flex-col h-full gap-4">
-                                    <textarea
-                                        className="w-full h-[350px] bg-[#0d1117] text-[#c9d1d9] p-4 font-mono text-sm rounded-xl border border-slate-700 outline-none resize-none"
-                                        value={query}
-                                        onChange={e => setQuery(e.target.value)}
-                                        spellCheck="false"
-                                    />
-                                    <button
-                                        onClick={() => executeSQL(query)}
-                                        className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 text-base"
-                                    >
-                                        <Icons.Play /> 실행
-                                    </button>
+                                <div className="flex-1 flex flex-col h-full overflow-hidden">
+                                    <div className="flex justify-between items-center mb-4 shrink-0">
+                                        <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-900/30 to-yellow-900/20 border border-amber-500/30 rounded-lg mr-4">
+                                            <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                            <span className="text-xs font-bold text-amber-400">📌 {dataSourceName}</span>
+                                        </div>
+
+                                        <div className="flex bg-slate-900 rounded-xl p-1 border border-slate-800 shadow-inner">
+                                            {[
+                                                { id: 'raw', icon: <Icons.Eye />, label: '원본' },
+                                                { id: 'grid', icon: <Icons.Table />, label: '결과 그리드' },
+                                                { id: 'pivot', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>, label: '피벗 테이블' },
+                                                { id: 'chart', icon: <Icons.Chart />, label: '차트' }
+                                            ].map(mode => (
+                                                <button
+                                                    key={mode.id}
+                                                    onClick={() => setViewMode(mode.id)}
+                                                    className={`px-5 py-3 text-base font-semibold rounded-lg transition-all flex items-center gap-2 ${viewMode === mode.id ? 'bg-slate-700 text-white shadow-md' : 'text-slate-500 hover:text-slate-300'}`}
+                                                >
+                                                    {mode.icon} {mode.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            {resultHistory.length > 0 && (
+                                                <button
+                                                    onClick={goBackToPreviousResult}
+                                                    className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 shadow-md"
+                                                    title={`${resultHistory.length}개의 이전 결과로 되돌아가기`}
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                                    </svg>
+                                                    이전 결과로 ({resultHistory.length})
+                                                </button>
+                                            )}
+                                            <div className="text-sm text-slate-500 bg-slate-900 px-5 py-3 rounded-xl border border-slate-800 font-mono">
+                                                <span>ROWS: <b>{viewMode === 'raw' ? originalData.length : data.length}</b></span>
+                                                <span className="mx-2">|</span>
+                                                <span>COLS: <b>{columns.length}</b></span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 overflow-hidden relative">
+                                        {viewMode === 'raw' && <DataGrid data={originalData} columns={Object.keys(originalData[0] || {})} readOnly={true} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} />}
+                                        {viewMode === 'grid' && <DataGrid data={data} columns={columns} onUpdate={handleCellUpdate} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} />}
+                                        {viewMode === 'pivot' && <PivotTable data={data} columns={columns} colTypes={colTypes} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} />}
+                                        {viewMode === 'chart' && <ChartViewer data={data} columns={columns} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} />}
+                                    </div>
                                 </div>
                             )}
                         </div>
                     </div>
-
-                    <div className="main-content bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-5 overflow-hidden">
-                        {loading && (
-                            <div className="absolute inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center">
-                                <div className="w-14 h-14 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                                <p className="text-brand-400 font-medium animate-pulse text-lg">{loading}</p>
-                            </div>
-                        )}
-
-                        {!isDataReady && !loading ? (
-                            <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-3xl bg-slate-900/10">
-                                <div className="bg-slate-800/50 p-8 rounded-full mb-6 text-slate-500">
-                                    <Icons.Upload />
-                                </div>
-                                <h2 className="text-2xl font-bold text-slate-200 mb-3">데이터를 불러오세요</h2>
-                                <button
-                                    onClick={() => loadData(Papa.parse(SAMPLE_DATA, { header: true, dynamicTyping: true }).data)}
-                                    className="px-8 py-4 bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-xl font-bold border border-slate-700 shadow-xl text-base"
-                                >
-                                    테스트 데이터셋 로드
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="flex-1 flex flex-col h-full overflow-hidden">
-                                <div className="flex justify-between items-center mb-4 shrink-0">
-                                    {/* 🆕 데이터 소스 표시 배너 - 파일명에 따라 표시 */}
-                                    <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-900/30 to-yellow-900/20 border border-amber-500/30 rounded-lg mr-4">
-                                        <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                        <span className="text-xs font-bold text-amber-400">📌 {dataSourceName}</span>
-                                    </div>
-
-                                    <div className="flex bg-slate-900 rounded-xl p-1 border border-slate-800 shadow-inner">
-                                        {[
-                                            { id: 'raw', icon: <Icons.Eye />, label: '원본' },
-                                            { id: 'grid', icon: <Icons.Table />, label: '결과 그리드' },
-                                            { id: 'pivot', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>, label: '피벗 테이블' },
-                                            { id: 'chart', icon: <Icons.Chart />, label: '차트' }
-                                        ].map(mode => (
-                                            <button
-                                                key={mode.id}
-                                                onClick={() => setViewMode(mode.id)}
-                                                className={`px-5 py-3 text-base font-semibold rounded-lg transition-all flex items-center gap-2 ${viewMode === mode.id ? 'bg-slate-700 text-white shadow-md' : 'text-slate-500 hover:text-slate-300'}`}
-                                            >
-                                                {mode.icon} {mode.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        {resultHistory.length > 0 && (
-                                            <button
-                                                onClick={goBackToPreviousResult}
-                                                className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 shadow-md"
-                                                title={`${resultHistory.length}개의 이전 결과로 되돌아가기`}
-                                            >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                                                </svg>
-                                                이전 결과로 ({resultHistory.length})
-                                            </button>
-                                        )}
-                                        <div className="text-sm text-slate-500 bg-slate-900 px-5 py-3 rounded-xl border border-slate-800 font-mono">
-                                            <span>ROWS: <b>{viewMode === 'raw' ? originalData.length : data.length}</b></span>
-                                            <span className="mx-2">|</span>
-                                            <span>COLS: <b>{columns.length}</b></span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex-1 overflow-hidden relative">
-                                    {viewMode === 'raw' && <DataGrid data={originalData} columns={Object.keys(originalData[0] || {})} readOnly={true} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} />}
-                                    {viewMode === 'grid' && <DataGrid data={data} columns={columns} onUpdate={handleCellUpdate} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} />}
-                                    {viewMode === 'pivot' && <PivotTable data={data} columns={columns} colTypes={colTypes} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} />}
-                                    {viewMode === 'chart' && <ChartViewer data={data} columns={columns} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} />}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
                 )}
 
-                <CmdPalette 
-                    isOpen={cmdOpen} 
-                    onClose={() => setCmdOpen(false)} 
-                    actions={actions} 
+                <CmdPalette
+                    isOpen={cmdOpen}
+                    onClose={() => setCmdOpen(false)}
+                    actions={actions}
                     isDataReady={isDataReady}
                     columns={columns}
                     colTypes={colTypes}

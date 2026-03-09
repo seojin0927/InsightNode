@@ -3,14 +3,15 @@
 @tailwind utilities;
 
 /* ============================================
-   전체 화면 고정 레이아웃
+   전체 화면 고정 레이아웃 (데스크탑 기본)
    ============================================ */
 html, body {
     margin: 0;
     padding: 0;
-    overflow: hidden;
     height: 100vh;
     width: 100vw;
+    /* 화면 전체 스크롤을 없애고 고정 */
+    overflow: hidden;
     /* 뒷배경이 잘리지 않도록 body에 전체 배경색 적용 */
     background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
     color: #f8fafc;
@@ -32,6 +33,11 @@ html, body {
     display: flex;
     flex-direction: column;
     padding-top: 20px;
+    
+    /* 모바일에서 좌우 스크롤 시 레이아웃이 깨지지 않도록 고정 */
+    position: relative;
+    min-width: 100vw;
+    min-height: 100vh;
 }
 
 /* ============================================
@@ -186,4 +192,54 @@ html, body {
     justify-content: center;
     color: rgba(148, 163, 184, 0.6);
     font-size: 0.75rem; /* 12px */
+}
+
+/* ============================================
+   🔥 [수정됨] 모바일 전용 스타일 (스크롤 문제 해결)
+   ============================================ */
+@media (max-width: 768px) {
+    /* 1. HTML/BODY 스크롤 잠금 해제 */
+    html, body {
+        overflow-y: auto !important; /* 세로 스크롤 허용 (핵심) */
+        overflow-x: hidden !important; /* 가로 스크롤 방지 */
+        height: auto !important; /* 높이 고정 해제하여 내용만큼 늘어나게 함 */
+        min-height: 100vh;
+        position: static !important; /* 고정 위치 해제 */
+        transform: none !important;
+    }
+
+    /* 2. 데스크탑용 축소/고정 래퍼 무력화 */
+    .app-wrapper {
+        width: 100% !important;
+        height: auto !important; /* 내부 콘텐츠 크기에 맞게 높이 조절 */
+        min-height: 100vh !important;
+        transform: none !important; /* 80% 축소 제거 */
+        padding: 0 !important;
+        display: block !important;
+        overflow: visible !important; /* 잘림 방지 */
+    }
+
+    /* 3. 내부 컨텐츠 영역 레이아웃 재설정 */
+    .main-wrapper {
+        display: block !important;
+        height: auto !important;
+        padding: 0 !important;
+        overflow: visible !important;
+    }
+
+    .sidebar, .main-content {
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+    
+    /* 4. 모바일 터치감 개선 및 로고 마진 */
+    .mb-8 {
+        margin-bottom: 1.5rem !important;
+        margin-top: 3rem !important;
+    }
+
+    * {
+        -webkit-tap-highlight-color: transparent; /* 터치 시 파란 박스 제거 */
+    }
 }
