@@ -104,7 +104,7 @@ export default function HomePage({ navigateTo, showAllTools = false }) {
     };
 
     return (
-        <div className="w-full h-full text-slate-100 overflow-y-auto custom-scrollbar" style={{ background: '#060c1a' }}>
+        <div className="w-full h-full text-slate-100 overflow-y-auto custom-scrollbar home-scroll-hidden" style={{ background: '#060c1a' }}>
 
             {/* ══ NAVBAR ══ */}
             <nav className="sticky top-0 z-50 flex items-center justify-between px-8 h-14 border-b border-white/5 backdrop-blur-xl" style={{ background: 'rgba(6,12,26,0.85)' }}>
@@ -116,7 +116,11 @@ export default function HomePage({ navigateTo, showAllTools = false }) {
                     </span>
                 </div>
                 <div className="flex items-center gap-1">
-                    <button onClick={() => navigateTo('main')} className="px-4 py-1.5 rounded-lg text-sm text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all font-medium">
+                    {/* 데이터셋 버튼: 데스크탑 전용 (모바일에서는 숨김) */}
+                    <button
+                        onClick={() => navigateTo('main')}
+                        className="hidden sm:inline-flex items-center justify-center px-4 py-1.5 rounded-lg text-sm text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all font-medium"
+                    >
                         데이터셋
                     </button>
                     <button onClick={() => navigateTo('tools')} className="px-4 py-1.5 rounded-lg text-sm text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all font-medium">
@@ -124,13 +128,6 @@ export default function HomePage({ navigateTo, showAllTools = false }) {
                     </button>
                     <button onClick={() => navigateTo('serviceCenter')} className="px-4 py-1.5 rounded-lg text-sm text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all font-medium">
                         고객센터
-                    </button>
-                    <button
-                        onClick={() => navigateTo('main')}
-                        className="ml-2 px-4 py-1.5 rounded-lg text-sm font-bold text-white transition-all hover:scale-105 active:scale-95"
-                        style={{ background: 'linear-gradient(135deg, #0ea5e9, #6366f1)' }}
-                    >
-                        시작하기 →
                     </button>
                 </div>
             </nav>
@@ -168,9 +165,10 @@ export default function HomePage({ navigateTo, showAllTools = false }) {
 
                         {/* CTA */}
                         <div className="flex items-center justify-center gap-3 flex-wrap">
+                            {/* 데이터셋 열기 버튼: 데스크탑 전용 (모바일에서는 숨김) */}
                             <button
                                 onClick={() => navigateTo('main')}
-                                className="flex items-center gap-2 px-7 py-3 rounded-xl text-sm font-bold text-white shadow-lg transition-all hover:scale-105 active:scale-95"
+                                className="hidden md:inline-flex items-center gap-2 px-7 py-3 rounded-xl text-sm font-bold text-white shadow-lg transition-all hover:scale-105 active:scale-95"
                                 style={{ background: 'linear-gradient(135deg, #0ea5e9, #6366f1)', boxShadow: '0 8px 32px rgba(14,165,233,0.3)' }}
                             >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" /></svg>
@@ -199,44 +197,63 @@ export default function HomePage({ navigateTo, showAllTools = false }) {
 
                 {/* ══ DATASET SECTION ══ */}
                 <section className="mb-14">
-                    <div className="flex items-center justify-between mb-5">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-xl flex items-center justify-center text-base" style={{ background: 'rgba(14,165,233,0.12)', border: '1px solid rgba(14,165,233,0.25)' }}>📊</div>
-                            <div>
-                                <h2 className="text-base font-bold text-slate-100">데이터셋 도구</h2>
-                                <p className="text-xs text-slate-600 mt-0.5">CSV/JSON 파일을 불러와 SQL 쿼리, 피벗, 차트를 즉시 생성</p>
+                    {/* 데스크톱용 데이터셋 카드 */}
+                    <div className="hidden md:block">
+                        <div className="flex items-center justify-between mb-5">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-xl flex items-center justify-center text-base" style={{ background: 'rgba(14,165,233,0.12)', border: '1px solid rgba(14,165,233,0.25)' }}>📊</div>
+                                <div>
+                                    <h2 className="text-base font-bold text-slate-100">데이터셋 도구</h2>
+                                    <p className="text-xs text-slate-600 mt-0.5">CSV/JSON 파일을 불러와 SQL 쿼리, 피벗, 차트를 즉시 생성</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => navigateTo('main')}
+                                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-sky-400 border border-sky-500/25 hover:border-sky-500/50 hover:text-sky-300 transition-all"
+                                style={{ background: 'rgba(14,165,233,0.06)' }}
+                            >
+                                열기
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+                            </button>
+                        </div>
+                        <div
+                            onClick={() => navigateTo('main')}
+                            className="group relative rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:border-sky-500/30"
+                            style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
+                        >
+                            <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" style={{ background: 'linear-gradient(135deg, rgba(14,165,233,0.04), transparent)' }} />
+                            <div className="relative grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                                {DATASET_TOOLS.map((tool, i) => (
+                                    <div key={i} className="flex items-center gap-2.5 p-3 rounded-xl border border-white/[0.04] group-hover:border-sky-500/15 transition-all" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                                        <span className="text-lg shrink-0">{tool.icon}</span>
+                                        <div className="min-w-0">
+                                            <div className="font-semibold text-slate-200 text-xs leading-tight">{tool.title}</div>
+                                            <div className="text-[10px] text-slate-600 mt-0.5 leading-tight truncate">{tool.desc}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="relative mt-4 flex items-center justify-center gap-1.5 text-sky-400/70 text-xs font-medium group-hover:text-sky-400 transition-colors">
+                                <span>클릭하여 데이터셋 도구 열기</span>
+                                <svg className="w-3 h-3 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                             </div>
                         </div>
-                        <button
-                            onClick={() => navigateTo('main')}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-sky-400 border border-sky-500/25 hover:border-sky-500/50 hover:text-sky-300 transition-all"
-                            style={{ background: 'rgba(14,165,233,0.06)' }}
-                        >
-                            열기
-                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
-                        </button>
                     </div>
-                    <div
-                        onClick={() => navigateTo('main')}
-                        className="group relative rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:border-sky-500/30"
-                        style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
-                    >
-                        <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" style={{ background: 'linear-gradient(135deg, rgba(14,165,233,0.04), transparent)' }} />
-                        <div className="relative grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                            {DATASET_TOOLS.map((tool, i) => (
-                                <div key={i} className="flex items-center gap-2.5 p-3 rounded-xl border border-white/[0.04] group-hover:border-sky-500/15 transition-all" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                                    <span className="text-lg shrink-0">{tool.icon}</span>
-                                    <div className="min-w-0">
-                                        <div className="font-semibold text-slate-200 text-xs leading-tight">{tool.title}</div>
-                                        <div className="text-[10px] text-slate-600 mt-0.5 leading-tight truncate">{tool.desc}</div>
-                                    </div>
-                                </div>
-                            ))}
+
+                    {/* 모바일용 안내 배너 */}
+                    <div className="md:hidden rounded-2xl p-4 border border-sky-500/30 bg-sky-500/5 flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xl">📊</span>
+                            <div>
+                                <h2 className="text-sm font-bold text-slate-100">데이터셋 도구 (데스크탑 전용)</h2>
+                                <p className="text-[11px] text-slate-400 mt-0.5">
+                                    PC/노트북 화면에서 SQL, 피벗, 차트 기능을 최적화된 화면으로 이용해 주세요.
+                                </p>
+                            </div>
                         </div>
-                        <div className="relative mt-4 flex items-center justify-center gap-1.5 text-sky-400/70 text-xs font-medium group-hover:text-sky-400 transition-colors">
-                            <span>클릭하여 데이터셋 도구 열기</span>
-                            <svg className="w-3 h-3 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                        </div>
+                        <p className="text-[11px] text-slate-500">
+                            변환 도구와 고객센터는 아래 섹션에서 모바일에서도 바로 사용할 수 있습니다.
+                        </p>
                     </div>
                 </section>
 

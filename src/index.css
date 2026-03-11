@@ -265,6 +265,23 @@ html, body {
     border-radius: 0.25rem;
 }
 
+/* 특정 페이지에서 스크롤바만 숨기고 스크롤은 유지하기 위한 헬퍼 */
+.home-scroll-hidden {
+    scrollbar-width: none; /* Firefox */
+}
+.home-scroll-hidden::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+
+.main-scroll-hidden .custom-scrollbar {
+    scrollbar-width: none;
+}
+.main-scroll-hidden .custom-scrollbar::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+
 /* ============================================
    에드센스 광고 영역
    ============================================ */

@@ -765,9 +765,9 @@ function App() {
 
     return (
         <div className="app-wrapper">
-            <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col">
+            <div className={`max-w-[1800px] mx-auto w-full h-full flex flex-col ${currentPage === 'main' ? 'main-scroll-hidden' : ''}`}>
                 {currentPage !== 'home' && (
-                <header className="app-header flex items-center justify-between px-6 sm:px-8 py-2 sm:py-3 relative z-[100]" style={{ background: 'rgba(6,12,26,0.9)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.05)', borderRadius: '0 0 16px 16px', boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}>
+                <header className="app-header flex items-center justify-between px-3 sm:px-5 relative z-[100]" style={{ background: 'rgba(6,12,26,0.9)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.05)', borderRadius: '0 0 16px 16px', boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}>
                     <div className="flex items-center gap-2.5">
                         <img src="/logo.svg" alt="VaultSheet" className="w-7 h-7 rounded-lg" />
                         <span className="font-bold text-slate-100 tracking-tight text-sm">VaultSheet</span>
