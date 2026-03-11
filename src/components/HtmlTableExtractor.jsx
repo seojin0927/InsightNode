@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx'; // 엑셀 다운로드를 위해 필요 (npm install xlsx)
 
@@ -158,16 +158,16 @@ const HtmlTableStudio = () => {
     };
 
     return (
-        <div className="w-full h-full min-h-[850px] bg-slate-900 rounded-2xl p-6 border border-slate-700 flex flex-col">
+        <div className="w-full h-full p-5 flex flex-col overflow-hidden" style={{ background: '#08101e' }}>
             {/* 1. 헤더 */}
-            <div className="flex items-center justify-between mb-6 flex-shrink-0">
+            <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/[0.06] flex-shrink-0">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/20">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/[0.08]">
                         <Icon path="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-100">Web Table Master Studio</h2>
-                        <p className="text-slate-400 text-sm">HTML 테이블 추출, 편집, 변환 솔루션</p>
+                        <h2 className="text-base font-bold text-slate-100">Web Table Master Studio</h2>
+                        <p className="text-xs text-slate-500">HTML 테이블 추출, 편집, 변환 솔루션</p>
                     </div>
                 </div>
                 
@@ -188,7 +188,7 @@ const HtmlTableStudio = () => {
                 <div className="lg:col-span-4 flex flex-col h-full min-h-0 gap-4">
                     <div className="bg-slate-800 rounded-xl p-4 flex flex-col h-1/2 min-h-0 border border-slate-700">
                         <div className="flex justify-between items-center mb-2">
-                            <span className="text-xs font-bold text-slate-400 uppercase">HTML Input</span>
+                            <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">HTML Input</span>
                             <span className="text-[10px] text-slate-500">Paste code here</span>
                         </div>
                         <textarea
@@ -200,7 +200,7 @@ const HtmlTableStudio = () => {
                         />
                     </div>
 
-                    <div className="bg-slate-800 rounded-xl p-5 flex flex-col h-1/2 min-h-0 border border-slate-700 overflow-y-auto custom-scrollbar">
+                    <div className="bg-slate-900/60 backdrop-blur-sm rounded-xl p-5 flex flex-col h-1/2 min-h-0 border border-slate-700 overflow-y-auto custom-scrollbar">
                         <h3 className="text-xs font-bold text-slate-400 uppercase mb-4">Detection & Options</h3>
                         
                         {/* 테이블 선택 */}
@@ -246,7 +246,7 @@ const HtmlTableStudio = () => {
 
                 {/* 우측: 데이터 그리드 및 액션 (Col 8) */}
                 <div className="lg:col-span-8 flex flex-col h-full min-h-0">
-                    <div className="bg-slate-800 rounded-xl p-5 flex flex-col h-full shadow-inner border border-slate-700/50">
+                    <div className="rounded-xl p-5 flex flex-col h-full" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}>
                         
                         {/* 툴바 */}
                         <div className="flex justify-between items-center mb-4">
@@ -258,7 +258,7 @@ const HtmlTableStudio = () => {
                                         value={filterText}
                                         onChange={(e) => setFilterText(e.target.value)}
                                         placeholder="데이터 검색..." 
-                                        className="bg-slate-900 border border-slate-600 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white outline-none w-48 focus:border-teal-500"
+                                        className="rounded-lg pl-8 pr-3 py-1.5 text-xs text-white outline-none w-48 focus:border-teal-500"
                                     />
                                     <span className="absolute left-2.5 top-1.5 text-slate-500">
                                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
@@ -279,9 +279,9 @@ const HtmlTableStudio = () => {
                                     <table className="w-full text-left text-sm border-collapse">
                                         <thead className="bg-slate-950 sticky top-0 z-10 shadow-sm">
                                             <tr>
-                                                <th className="p-3 font-mono text-xs text-slate-500 border-b border-slate-800 w-10 text-center bg-slate-950">#</th>
+                                                <th className="p-3 font-mono text-xs text-slate-500 border-b border-white/[0.05] w-10 text-center bg-slate-950">#</th>
                                                 {tableData.headers.map((h, i) => (
-                                                    <th key={i} className="p-3 text-xs font-bold text-teal-400 border-b border-slate-800 border-l border-slate-800/50 bg-slate-950 whitespace-nowrap min-w-[100px]">
+                                                    <th key={i} className="p-3 text-xs font-bold text-teal-400 border-b border-white/[0.05] border-l border-white/[0.05]/50 bg-slate-950 whitespace-nowrap min-w-[100px]">
                                                         {h}
                                                     </th>
                                                 ))}
@@ -289,10 +289,10 @@ const HtmlTableStudio = () => {
                                         </thead>
                                         <tbody className="font-mono text-xs text-slate-400">
                                             {filteredRows.map((row, rowIdx) => (
-                                                <tr key={rowIdx} className="hover:bg-slate-800/30 border-b border-slate-800/30 last:border-0 group">
+                                                <tr key={rowIdx} className="hover:bg-slate-800/30 border-b border-white/[0.05]/30 last:border-0 group">
                                                     <td className="p-3 text-slate-600 text-center bg-slate-900/50">{rowIdx + 1}</td>
                                                     {row.map((cell, cellIdx) => (
-                                                        <td key={cellIdx} className="p-0 border-l border-slate-800/30 relative">
+                                                        <td key={cellIdx} className="p-0 border-l border-white/[0.05]/30 relative">
                                                             <input 
                                                                 type="text" 
                                                                 value={cell} 

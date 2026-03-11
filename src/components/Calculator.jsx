@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 
 const SuperCalculator = () => {
     // === 상태 관리 ===
@@ -418,17 +418,17 @@ const SuperCalculator = () => {
     };
 
     return (
-        <div className="w-full h-full min-h-[850px] bg-slate-900 rounded-2xl p-6 border border-slate-700 flex flex-col">
+        <div className="w-full h-full p-5 flex flex-col overflow-hidden" style={{ background: '#08101e' }}>
             {/* 1. 헤더 섹션 */}
-            <div className="flex items-center gap-3 mb-6 flex-shrink-0">
-                <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20">
+            <div className="flex items-center gap-3 mb-5 pb-4 border-b border-white/[0.06] flex-shrink-0">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/[0.08]">
                     <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                     </svg>
                 </div>
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-100">슈퍼 만능 계산기 PRO</h2>
-                    <p className="text-slate-400 text-sm">35가지 기능을 탑재한 올인원 도구</p>
+                    <h2 className="text-base font-bold text-slate-100">슈퍼 만능 계산기 PRO</h2>
+                    <p className="text-xs text-slate-500">35가지 기능을 탑재한 올인원 도구</p>
                 </div>
             </div>
 
@@ -453,7 +453,7 @@ const SuperCalculator = () => {
             <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0">
                 {/* 좌측 패널 */}
                 <div className="flex flex-col h-full min-h-0">
-                    <div className="bg-slate-800 rounded-xl p-5 flex flex-col h-full shadow-inner border border-slate-700/50">
+                    <div className="rounded-xl p-5 flex flex-col h-full" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}>
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-semibold text-slate-200">
                                 {tabs.find(t=>t.id===activeTab)?.label}
@@ -532,12 +532,25 @@ const SuperCalculator = () => {
 
                 {/* 우측 패널 */}
                 <div className="flex flex-col h-full min-h-0">
-                    <div className="bg-slate-800 rounded-xl p-5 flex flex-col h-full shadow-inner border border-slate-700/50">
+                    <div className="rounded-xl p-5 flex flex-col h-full" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}>
                         <div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-2">
                             <h3 className="text-lg font-semibold text-slate-200">
                                 {activeTab === 'general' ? '📜 계산 기록' : '✨ 결과 확인'}
                             </h3>
-                            <button onClick={()=>setHistory([])} className="text-xs text-slate-500 hover:text-red-400 transition-colors">기록 삭제</button>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => {
+                                        if (!history.length) return;
+                                        const csv = 'Expression\n' + history.join('\n');
+                                        const blob = new Blob([csv], { type: 'text/csv' });
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a'); a.href = url; a.download = 'calc_history.csv'; a.click();
+                                    }}
+                                    disabled={!history.length}
+                                    className="text-xs text-slate-500 hover:text-cyan-400 transition-colors disabled:opacity-30"
+                                >CSV 저장</button>
+                                <button onClick={()=>setHistory([])} className="text-xs text-slate-500 hover:text-red-400 transition-colors">기록 삭제</button>
+                            </div>
                         </div>
                         
                         <div className="flex-1 bg-slate-900 rounded-lg p-4 border border-slate-700 overflow-y-auto custom-scrollbar relative">

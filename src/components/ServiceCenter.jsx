@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 
 // 공통 아이콘 컴포넌트
 const Icon = ({ path, className = "w-5 h-5" }) => (
@@ -8,7 +8,9 @@ const Icon = ({ path, className = "w-5 h-5" }) => (
 );
 
 const ServiceCenter = () => {
-    const [activeTab, setActiveTab] = useState('privacy'); // privacy, about, contact
+    const [activeTab, setActiveTab] = useState('privacy');
+    const [contactForm, setContactForm] = useState({ type: '문의', title: '', email: '', message: '' });
+    const [formSent, setFormSent] = useState(false);
 
     // 탭 메뉴 데이터 (아이콘 추가)
     const tabs = [
@@ -18,16 +20,16 @@ const ServiceCenter = () => {
     ];
 
     return (
-        <div className="w-full h-full min-h-[850px] bg-slate-900 rounded-2xl p-6 border border-slate-700 flex flex-col">
+        <div className="w-full h-full p-5 flex flex-col overflow-hidden" style={{ background: '#08101e' }}>
             
             {/* 1. 헤더 */}
-                                <div className="flex items-center gap-3 mb-6 flex-shrink-0">
-                <div className="w-12 h-12 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/20">
+                                <div className="flex items-center gap-3 mb-5 pb-4 border-b border-white/[0.06] flex-shrink-0">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/[0.08]">
                     <Icon path="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0z" className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-100">Service Center</h2>
-                    <p className="text-slate-400 text-sm">약관 · 소개 · 고객지원</p>
+                    <h2 className="text-base font-bold text-slate-100">Service Center</h2>
+                    <p className="text-xs text-slate-500">약관 · 소개 · 고객지원</p>
                 </div>
             </div>
 
@@ -36,7 +38,7 @@ const ServiceCenter = () => {
                 
                 {/* 좌측: 사이드바 메뉴 (Col 3) */}
                                 <div className="lg:col-span-3 flex flex-col h-full min-h-0">
-                    <div className="bg-slate-800 rounded-xl p-3 flex flex-col h-full shadow-inner border border-slate-700/50">
+                    <div className="bg-slate-800 rounded-xl p-3 flex flex-col h-full shadow-inner border border-white/[0.07]">
                         <h3 className="text-xs font-bold text-slate-400 uppercase mb-3 px-2">Menu</h3>
                         <div className="space-y-1">
                             {tabs.map(t => (
@@ -59,7 +61,7 @@ const ServiceCenter = () => {
 
                 {/* 우측: 컨텐츠 영역 (Col 9) */}
                                 <div className="lg:col-span-9 flex flex-col min-h-0">
-                    <div className="flex-1 bg-slate-800 rounded-xl shadow-inner border border-slate-700/50 relative overflow-hidden flex flex-col">
+                    <div className="flex-1 bg-slate-800 rounded-xl shadow-inner border border-white/[0.07] relative overflow-hidden flex flex-col">
                         
                         {/* 배경 패턴 효과 */}
                         <div className="absolute inset-0 opacity-5 pointer-events-none" 
@@ -161,23 +163,29 @@ const ServiceCenter = () => {
 
                             {/* === TAB 3: 고객센터 === */}
                             {activeTab === 'contact' && (
-                                <div className="max-w-4xl mx-auto animate-in slide-in-from-right duration-500">
-                                    <div className="grid md:grid-cols-2 gap-6 mb-10">
+                                <div className="max-w-4xl mx-auto space-y-8">
+                                    <div className="grid md:grid-cols-2 gap-6">
                                         <ContactCard 
                                             title="이메일 문의" 
                                             value="aairavoxx@gmail.com" 
                                             sub="24시간 연중무휴 문의 가능"
                                             icon={<Icon path="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />}
                                         />
+                                        <ContactCard 
+                                            title="응답 시간" 
+                                            value="영업일 1~2일" 
+                                            sub="주말/공휴일 제외"
+                                            icon={<Icon path="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />}
+                                        />
                                     </div>
-
-                                
 
                                     <div>
                                         <h3 className="text-xl font-bold text-white mb-6">자주 묻는 질문 (FAQ)</h3>
                                         <div className="space-y-4">
+                                            <FaqItem q="데이터가 서버로 전송되나요?" a="아니요. VaultSheet의 모든 처리는 브라우저(클라이언트) 내에서만 이루어집니다. SQL 엔진은 WebAssembly(WASM) 기반으로 동작하며 어떠한 데이터도 외부로 전송되지 않습니다." />
                                             <FaqItem q="다른 도구 만들어 주실 수 있나요?" a="당연합니다! 필요한 도구가 있으시면 확인 후 추가해 드리겠습니다." />
-                                            <FaqItem q="OOO 도구에 오류가 있어요!" a="죄송합니다. 해당 도구에 문제가 있는 경우 빠르게 수정하도록 하겠습니다." />
+                                            <FaqItem q="OOO 도구에 오류가 있어요!" a="죄송합니다. 해당 도구에 문제가 있는 경우 빠르게 수정하도록 하겠습니다. 위 문의 양식을 통해 신고해 주세요." />
+                                            <FaqItem q="모바일에서도 사용 가능한가요?" a="일부 도구(QR 생성, PDF 변환 등)는 모바일에서 사용 가능합니다. 데이터 분석 기능은 화면 공간의 제약으로 PC 환경을 권장합니다." />
                                         </div>
                                     </div>
                                 </div>
@@ -202,7 +210,7 @@ const Section = ({ title, children }) => (
 const InfoCard = ({ title, desc }) => (
     <div className="bg-slate-900 border border-slate-700 p-4 rounded-lg flex flex-col gap-1">
         <span className="text-white font-bold">{title}</span>
-        <span className="text-slate-400 text-sm">{desc}</span>
+        <span className="text-xs text-slate-500">{desc}</span>
     </div>
 );
 
@@ -212,7 +220,7 @@ const FeatureCard = ({ icon, title, desc }) => (
             {icon}
         </div>
         <h4 className="text-lg font-bold text-white mb-2">{title}</h4>
-        <p className="text-slate-400 text-sm leading-relaxed">{desc}</p>
+        <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
     </div>
 );
 
@@ -222,7 +230,7 @@ const ContactCard = ({ icon, title, value, sub }) => (
             {icon}
         </div>
         <div>
-            <h4 className="text-slate-400 text-sm font-bold mb-1">{title}</h4>
+            <h4 className="text-xs text-slate-500 font-bold mb-1">{title}</h4>
             <p className="text-xl font-bold text-white mb-1">{value}</p>
             <p className="text-xs text-slate-500">{sub}</p>
         </div>

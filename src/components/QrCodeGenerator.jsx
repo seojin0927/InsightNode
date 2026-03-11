@@ -102,8 +102,9 @@ const QrMasterStudio = () => {
 
         const triggerDownload = () => {
             const link = document.createElement('a');
-            link.download = `code-${Date.now()}.${format}`;
-            link.href = canvas.toDataURL(`image/${format}`);
+            link.download = `code-${Date.now()}.png`;
+            // SVG는 canvas.toDataURL로 출력 불가 - PNG로 대체
+            link.href = canvas.toDataURL('image/png');
             link.click();
         };
     }, [generatedUrl, size, bgColor, logo, mode, format]);
@@ -128,16 +129,16 @@ const QrMasterStudio = () => {
     };
 
     return (
-        <div className="w-full bg-slate-900 rounded-2xl p-6 border border-slate-700 min-h-[800px] flex flex-col font-sans">
+        <div className="w-full h-full p-5 flex flex-col overflow-hidden font-sans">
             {/* 1. 헤더 섹션 */}
-            <div className="flex justify-between items-center mb-8 border-b border-slate-700 pb-6">
+            <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/[0.06] flex-shrink-0">
                 <div className="flex items-center gap-4">
                     <div className="w-14 h-14 bg-teal-500/20 rounded-2xl flex items-center justify-center shadow-lg shadow-teal-900/50">
                         <Icon path="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" className="w-8 h-8 text-teal-400" />
                     </div>
                     <div>
                         <h2 className="text-3xl font-bold text-slate-100 tracking-tight">QR & Barcode Master</h2>
-                        <p className="text-slate-400 text-sm mt-1">생성 · 복구 진단 · 스캔 · 디자인 통합 스튜디오</p>
+                        <p className="text-xs text-slate-500 mt-1">생성 · 복구 진단 · 스캔 · 디자인 통합 스튜디오</p>
                     </div>
                 </div>
                 
@@ -250,7 +251,7 @@ const QrMasterStudio = () => {
                                 <div className="absolute bottom-3 right-3 text-xs text-slate-500">{inputText.length} chars</div>
                             </div>
 
-                            <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700/50">
+                            <div className="bg-slate-900/50 rounded-xl p-4 border border-white/[0.07]">
                                 <h4 className="text-sm font-bold text-slate-300 mb-3 flex items-center gap-2">
                                     <Icon path="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" className="w-4 h-4"/>
                                     고급 옵션
@@ -275,6 +276,10 @@ const QrMasterStudio = () => {
                                     )}
                                     <div><label className="text-[10px] text-slate-400 block mb-1">전경색</label><input type="color" value={fgColor} onChange={(e) => setFgColor(e.target.value)} className="w-full h-8 bg-transparent cursor-pointer"/></div>
                                     <div><label className="text-[10px] text-slate-400 block mb-1">배경색</label><input type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} className="w-full h-8 bg-transparent cursor-pointer"/></div>
+                                    <div className="col-span-2">
+                                        <label className="text-[10px] text-slate-400 block mb-1">크기: {size}px</label>
+                                        <input type="range" min="128" max="512" step="32" value={size} onChange={(e) => setSize(Number(e.target.value))} className="w-full accent-teal-500" />
+                                    </div>
                                 </div>
                             </div>
                             <button onClick={generateCode} className="mt-6 w-full py-4 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-teal-900/30 flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02]">
@@ -349,7 +354,7 @@ const QrMasterStudio = () => {
                                     </div>
                                 </div>
 
-                                <p className="text-center text-xs text-slate-500 mt-8 pt-6 border-t border-slate-700/50">
+                                <p className="text-center text-xs text-slate-500 mt-8 pt-6 border-t border-white/[0.07]">
                                     위 이미지들을 업로드하여 복구 분석을 테스트해보세요.
                                 </p>
                             </div>
@@ -427,7 +432,7 @@ const QrMasterStudio = () => {
                         {/* 하단 히스토리 바 */}
                         <div className="bg-slate-900 border-t border-slate-700 p-4 z-20">
                             <div className="flex justify-between items-center mb-3">
-                                <h5 className="text-xs font-bold text-slate-400 uppercase">Recent History</h5>
+                                <h5 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Recent History</h5>
                                 <button onClick={() => setHistory([])} className="text-xs text-red-400 hover:text-red-300">Clear</button>
                             </div>
                             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-700">

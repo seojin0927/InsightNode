@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+﻿import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { saveAs } from 'file-saver';
 
 // 아이콘 컴포넌트
@@ -120,6 +120,19 @@ const ImageMasterStudio = () => {
         applyEffects();
     }, [applyEffects]);
 
+    // === 메타데이터 삭제 (새 캔버스로 EXIF 제거) ===
+    const handleRemoveMetadata = () => {
+        if (!canvasRef.current || !imageFile) return;
+        // 이미 캔버스에 렌더링된 상태 = EXIF 없는 픽셀만 남아있음
+        canvasRef.current.toBlob((blob) => {
+            saveAs(blob, `no_metadata_${imageFile.name.replace(/\.[^.]+$/, '')}.png`);
+        }, 'image/png');
+        setExifData(prev => prev ? Object.fromEntries(
+            Object.entries(prev).filter(([k]) => ['Name', 'Size', 'Type', 'Dimensions'].includes(k))
+        ) : prev);
+        alert('GPS 등 개인정보 메타데이터가 제거된 PNG로 저장됩니다.');
+    };
+
     // === 다운로드 ===
     const handleDownload = () => {
         if (!canvasRef.current) return;
@@ -131,20 +144,20 @@ const ImageMasterStudio = () => {
 
         canvasRef.current.toBlob((blob) => {
             saveAs(blob, `processed_image.${format}`);
-        }, mimeType, quality / 100);
+        }, mimeType, Number(quality) / 100);
     };
 
     return (
-        <div className="w-full h-full min-h-[850px] bg-slate-900 rounded-2xl p-6 border border-slate-700 flex flex-col">
+        <div className="w-full h-full p-5 flex flex-col overflow-hidden" style={{ background: '#08101e' }}>
             {/* 헤더 */}
-            <div className="flex items-center justify-between mb-6 flex-shrink-0">
+            <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/[0.06] flex-shrink-0">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/[0.08]">
                         <Icon path="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-100">Image Master Studio</h2>
-                        <p className="text-slate-400 text-sm">변환 · 필터 · 워터마크 · 최적화 올인원</p>
+                        <h2 className="text-base font-bold text-slate-100">Image Master Studio</h2>
+                        <p className="text-xs text-slate-500">변환 · 필터 · 워터마크 · 최적화 올인원</p>
                     </div>
                 </div>
                 
@@ -173,7 +186,7 @@ const ImageMasterStudio = () => {
                 
                 {/* 좌측: 컨트롤 패널 */}
                 <div className="lg:col-span-4 flex flex-col h-full min-h-0">
-                    <div className="bg-slate-800 rounded-xl p-5 flex flex-col h-full shadow-inner border border-slate-700/50 overflow-y-auto custom-scrollbar">
+                    <div className="rounded-xl p-5 flex flex-col h-full overflow-y-auto custom-scrollbar">
                         
                         {/* 파일 업로드 (공통) */}
                         <div className="mb-6">
@@ -192,7 +205,7 @@ const ImageMasterStudio = () => {
                         {/* 탭별 컨트롤 */}
                         {activeTab === 'convert' && (
                             <div className="space-y-6 animate-in slide-in-from-left duration-300">
-                                <h3 className="text-xs font-bold text-slate-400 uppercase mb-3">Format & Quality</h3>
+                                <h3 className="text-xs font-bold text-slate-300 uppercase mb-3 tracking-wider">Format & Quality</h3>
                                 <div>
                                     <label className="text-sm text-slate-300 mb-2 block">변환 포맷</label>
                                     <div className="grid grid-cols-3 gap-2">
@@ -222,7 +235,7 @@ const ImageMasterStudio = () => {
 
                         {activeTab === 'filter' && (
                             <div className="space-y-6 animate-in slide-in-from-left duration-300">
-                                <h3 className="text-xs font-bold text-slate-400 uppercase mb-3">Color Correction</h3>
+                                <h3 className="text-xs font-bold text-slate-300 uppercase mb-3 tracking-wider">Color Correction</h3>
                                 {[
                                     { id: 'brightness', label: '밝기', min: 0, max: 200, unit: '%' },
                                     { id: 'contrast', label: '대비', min: 0, max: 200, unit: '%' },
@@ -249,7 +262,7 @@ const ImageMasterStudio = () => {
 
                         {activeTab === 'watermark' && (
                             <div className="space-y-6 animate-in slide-in-from-left duration-300">
-                                <h3 className="text-xs font-bold text-slate-400 uppercase mb-3">Text Watermark</h3>
+                                <h3 className="text-xs font-bold text-slate-300 uppercase mb-3 tracking-wider">Text Watermark</h3>
                                 <input 
                                     type="text" 
                                     placeholder="워터마크 텍스트 입력..." 
@@ -277,11 +290,11 @@ const ImageMasterStudio = () => {
 
                         {activeTab === 'exif' && (
                             <div className="space-y-4 animate-in slide-in-from-left duration-300">
-                                <h3 className="text-xs font-bold text-slate-400 uppercase mb-3">Image Metadata</h3>
+                                <h3 className="text-xs font-bold text-slate-300 uppercase mb-3 tracking-wider">Image Metadata</h3>
                                 {exifData ? (
                                     <div className="bg-slate-900 rounded-lg p-3 space-y-2">
                                         {Object.entries(exifData).map(([k, v]) => (
-                                            <div key={k} className="flex justify-between text-xs border-b border-slate-800 pb-1 last:border-0">
+                                            <div key={k} className="flex justify-between text-xs border-b border-white/[0.05] pb-1 last:border-0">
                                                 <span className="text-slate-500">{k}</span>
                                                 <span className="text-slate-300 text-right truncate w-24">{v}</span>
                                             </div>
@@ -290,7 +303,11 @@ const ImageMasterStudio = () => {
                                 ) : (
                                     <div className="text-xs text-slate-500 text-center py-4">이미지를 불러오면 정보가 표시됩니다.</div>
                                 )}
-                                <button className="w-full py-2 bg-red-500/10 text-red-400 border border-red-500/30 rounded text-xs hover:bg-red-500/20">
+                                <button 
+                                    onClick={handleRemoveMetadata}
+                                    disabled={!imageFile}
+                                    className="w-full py-2 bg-red-500/10 text-red-400 border border-red-500/30 rounded text-xs hover:bg-red-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
                                     개인정보(GPS) 포함 메타데이터 삭제
                                 </button>
                             </div>
@@ -311,7 +328,7 @@ const ImageMasterStudio = () => {
 
                 {/* 우측: 캔버스 영역 */}
                 <div className="lg:col-span-8 flex flex-col h-full min-h-0">
-                    <div className="bg-slate-800 rounded-xl p-8 flex flex-col h-full shadow-inner border border-slate-700/50 items-center justify-center relative overflow-hidden">
+                    <div className="bg-slate-800 rounded-xl p-8 flex flex-col h-full shadow-inner border border-white/[0.07] items-center justify-center relative overflow-hidden">
                         
                         {/* 배경 격자 */}
                         <div className="absolute inset-0 opacity-5 pointer-events-none" 

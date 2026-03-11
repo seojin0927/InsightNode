@@ -1,10 +1,17 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, Suspense, lazy } from 'react';
 import Papa from 'papaparse';
 import DataGrid from './components/DataGrid';
-import ChartViewer from './components/ChartViewer';
-import PivotTable from './components/PivotTable';
-import CmdPalette from './components/CmdPalette';
-import JsonToCsvConverter from './components/JsonToCsvConverter';
+import NocodeEngineeringTools from './components/NocodeEngineeringTools';
+
+const ChartViewer = lazy(() => import('./components/ChartViewer'));
+const PivotTable = lazy(() => import('./components/PivotTable'));
+const CmdPalette = lazy(() => import('./components/CmdPalette'));
+const Calculator = lazy(() => import('./components/Calculator'));
+const QrCodeGenerator = lazy(() => import('./components/QrCodeGenerator'));
+const ImageTools = lazy(() => import('./components/ImageTools'));
+const VideoTools = lazy(() => import('./components/VideoTools'));
+const DigitalStampSignStudio = lazy(() => import('./components/DigitalStampSignStudio'));
+
 import EncodingConverter from './components/EncodingConverter';
 import HtmlTableExtractor from './components/HtmlTableExtractor';
 import TextExtractor from './components/TextExtractor';
@@ -12,9 +19,6 @@ import ListToCommaConverter from './components/ListToCommaConverter';
 import ListComparator from './components/ListComparator';
 import PersonalDataMasker from './components/PersonalDataMasker';
 import MockDataGenerator from './components/MockDataGenerator';
-import QrCodeGenerator from './components/QrCodeGenerator';
-import ColorConverter from './components/ColorConverter';
-import Calculator from './components/Calculator';
 import CodeMinifier from './components/CodeMinifier';
 import ImageCompressor from './components/ImageCompressor';
 import JsonFormatter from './components/JsonFormatter';
@@ -23,16 +27,45 @@ import PdfConverter from './components/PdfConverter';
 import RegexTester from './components/RegexTester';
 import UnitConverter from './components/UnitConverter';
 import UuidGenerator from './components/UuidGenerator';
-import DigitalStampSignStudio from './components/DigitalStampSignStudio';
-import ImageTools from './components/ImageTools';
-import VideoTools from './components/VideoTools';
 import ZipTools from './components/ZipTools';
 import ServiceCenter from './components/ServiceCenter';
-import MobileServiceCenter from './components/MobileServiceCenter';
-import MobilePdfConverter from './components/MobilePdfConverter';
-import MobileQrCodeGenerator from './components/MobileQrCodeGenerator';
 import Icons from './utils/Icons';
+import HomePage from './components/HomePage';
+import CryptoEncoder from './components/CryptoEncoder';
+import NumberBaseConverter from './components/NumberBaseConverter';
+import MorseConverter from './components/MorseConverter';
+import LoremIpsumGenerator from './components/LoremIpsumGenerator';
+import PasswordGenerator from './components/PasswordGenerator';
+import SqlFormatter from './components/SqlFormatter';
+import CsvToSqlInsert from './components/CsvToSqlInsert';
+import XmlJsonConverter from './components/XmlJsonConverter';
+import RomanNumeralConverter from './components/RomanNumeralConverter';
+import CronParser from './components/CronParser';
+import OgTagGenerator from './components/OgTagGenerator';
+import YamlJsonConverter from './components/YamlJsonConverter';
+import HtmlToJsx from './components/HtmlToJsx';
+import JsonFormatterPage from './components/JsonFormatterPage';
+import JsonCsvPage from './components/JsonCsvPage';
+import JsonFormatConvertPage from './components/JsonFormatConvertPage';
+import JsonPathPage from './components/JsonPathPage';
+import JsonToSqlPage from './components/JsonToSqlPage';
+import FileNoticePage from './components/FileNoticePage';
+import ExcelJsonPage from './components/ExcelJsonPage';
+import CsvMergeSplitPage from './components/CsvMergeSplitPage';
 import { initSqlEngine, runQuery, createTableFromData, updateCell, detectColumnTypes, exportToCSV, exportToJSON } from './utils/sqlEngine';
+import ToolsPage from './components/ToolsPage';
+import InsightStudio from './components/InsightStudio';
+import ToolStub from './components/ToolStub';
+const ColorStudio = lazy(() => import('./components/ColorStudio'));
+const DiffChecker = lazy(() => import('./components/DiffChecker'));
+const TextStudio = lazy(() => import('./components/TextStudio'));
+const CSSStudio = lazy(() => import('./components/CSSStudio'));
+const TimeStudio = lazy(() => import('./components/TimeStudio'));
+const UtilStudio = lazy(() => import('./components/UtilStudio'));
+const SecurityStudio = lazy(() => import('./components/SecurityStudio'));
+const DataToolsStudio = lazy(() => import('./components/DataToolsStudio'));
+const MediaStudio = lazy(() => import('./components/MediaStudio'));
+import MobilePage from './components/MobilePage';
 
 // 수정됨: 10번째 줄 데이터 누락값(country, temp_c, rating 등)을 채워 18개 컬럼 수에 맞게 정렬했습니다.
 const SAMPLE_DATA = `id,date,time,department,employee,email,phone,card_no,revenue,cost,satisfaction,is_active,tags,description,ip_address,country,temp_c,rating
@@ -54,28 +87,84 @@ function App() {
     const [leftTab, setLeftTab] = useState('nocode');
     const [viewMode, setViewMode] = useState('grid');
     // URL 해시를 사용하여 페이지 라우팅 (새 페이지로 연결되는 효과)
+    // ── 통합 스튜디오 및 구현 완료 도구 ──
+    const STUDIO_PAGES = ['colorStudio','textStudio','cssStudio','timeStudio','utilStudio','diffChecker','securityStudio','dataToolsStudio','mediaStudio'];
+    // ── 이전 경로 → 스튜디오 리다이렉트 맵 ──
+    const PAGE_REDIRECTS = {
+        wordCounter:'textStudio', textStatistics:'textStudio', caseConverter:'textStudio', textToSlug:'textStudio', numberToWords:'textStudio', textTemplate:'textStudio', htmlEncoder:'textStudio',
+        shadowGenerator:'cssStudio', glassmorphism:'cssStudio', borderRadius:'cssStudio', flexboxHelper:'cssStudio', animationBuilder:'cssStudio',
+        jwtDecoder:'codeMinifier', httpStatus:'codeMinifier', semverHelper:'codeMinifier', cssUnit:'codeMinifier', randomToken:'codeMinifier', apiTester:'codeMinifier', curlConverter:'codeMinifier', cronParser:'codeMinifier',
+        worldClock:'timeStudio', pomodoro:'timeStudio', countdownTimer:'timeStudio', calendarTool:'timeStudio', timestampConverter:'timeStudio',
+        hashGenerator:'utilStudio', loanCalculator:'utilStudio', currencyConverter:'utilStudio', passwordGenerator:'utilStudio', fileHasher:'utilStudio',
+        jsonFormatter:'jsonFormatterPage', xmlJson:'jsonFormatConvertPage', yamlJson:'jsonFormatConvertPage', tomlJson:'jsonFormatConvertPage', jsonFlattener:'jsonFormatConvertPage', jsonPathTester:'jsonPathPage', jsonToCsv:'jsonCsvPage',
+        colorConverter:'colorStudio', colorPalette:'colorStudio', gradientGenerator:'colorStudio',
+        twoFactorAuth:'securityStudio', permissionCalc:'securityStudio', secureNote:'securityStudio',
+        excelToJson:'dataToolsStudio', csvMerger:'dataToolsStudio', dataValidator:'dataToolsStudio', schemaBuilder:'dataToolsStudio', csvDiff:'dataToolsStudio', dataTranspose:'dataToolsStudio',
+        svgOptimizer:'mediaStudio', faviconGenerator:'mediaStudio', imageResizer:'mediaStudio', colorExtractor:'mediaStudio', watermarkTool:'mediaStudio',
+    };
+    const STUB_TOOL_PAGES = ['jsonToExcel','csvPivot','csvColumnMapper','barcodeGenerator'];
+    const VALID_PAGES = ['home', 'tools', 'mobile', 'main', 'mainZoom', 'fileNotice', 'insight', 'encoding', 'htmlTable', 'textExtractor', 'listToComma', 'listComparator', 'personalDataMasker', 'mockDataGenerator', 'qrCode', 'calculator', 'codeMinifier', 'imageCompressor', 'markdownEditor', 'pdfConverter', 'regexTester', 'unitConverter', 'uuidGenerator','digitalStampSignStudio','imageTools','videoTools','zipTools','serviceCenter','cryptoEncoder','numberBase','morseConverter','loremIpsum','sqlFormatter','csvToSql','romanNumeral','ogTagGenerator','htmlToJsx','jsonFormatterPage','jsonCsvPage','jsonFormatConvertPage','jsonPathPage','jsonToSqlPage','excelJsonPage','csvMergeSplitPage', ...STUDIO_PAGES, ...Object.keys(PAGE_REDIRECTS), ...STUB_TOOL_PAGES];
     const getInitialPage = () => {
         const hash = window.location.hash.replace('#', '');
-        const validPages = ['main', 'jsonToCsv', 'encoding', 'htmlTable', 'textExtractor', 'listToComma', 'listComparator', 'personalDataMasker', 'mockDataGenerator', 'qrCode', 'colorConverter', 'calculator', 'codeMinifier', 'imageCompressor', 'jsonFormatter', 'markdownEditor', 'pdfConverter', 'regexTester', 'unitConverter', 'uuidGenerator','digitalStampSignStudio','imageTools','videoTools','zipTools','serviceCenter'];
-        return validPages.includes(hash) ? hash : 'main';
+        return VALID_PAGES.includes(hash) ? hash : 'home';
     };
     const [currentPage, setCurrentPage] = useState(getInitialPage());
+    const [fileNoticeInfo, setFileNoticeInfo] = useState(null);
+    const [fileNoticeType, setFileNoticeType] = useState(null);
     
-    // 해시 변경 시 페이지 업데이트
+    // ── 브라우저 스크롤 복원 비활성화 (hash 라우팅 + scale 트릭 충돌 방지) ──
+    useEffect(() => {
+        if ('scrollRestoration' in window.history) {
+            window.history.scrollRestoration = 'manual';
+        }
+    }, []);
+
+    // 해시 변경 시 페이지 업데이트 (리다이렉트 포함)
     useEffect(() => {
         const handleHashChange = () => {
             const hash = window.location.hash.replace('#', '');
-            const validPages = ['main', 'jsonToCsv', 'encoding', 'htmlTable', 'textExtractor', 'listToComma', 'listComparator', 'personalDataMasker', 'mockDataGenerator', 'qrCode', 'colorConverter', 'calculator', 'codeMinifier', 'imageCompressor', 'jsonFormatter', 'markdownEditor', 'pdfConverter', 'regexTester', 'unitConverter', 'uuidGenerator','digitalStampSignStudio','imageTools','videoTools','zipTools','serviceCenter'];
-            setCurrentPage(validPages.includes(hash) ? hash : 'main');
+            const redirectTarget = PAGE_REDIRECTS[hash];
+            if (redirectTarget) {
+                window.location.hash = redirectTarget;
+                setCurrentPage(redirectTarget);
+            } else {
+                setCurrentPage(VALID_PAGES.includes(hash) ? hash : 'home');
+            }
         };
         window.addEventListener('hashchange', handleHashChange);
         return () => window.removeEventListener('hashchange', handleHashChange);
     }, []);
+
+    // ── 페이지 전환 시 레이아웃 리셋 ──
+    // 모달/다이얼로그가 body.overflow를 변경했거나, 스크롤 컨테이너가 남은 위치를
+    // 유지하면 화면이 위로 밀리는 버그가 발생함. 페이지 변경마다 강제 초기화.
+    useEffect(() => {
+        document.body.style.overflow = '';
+        document.body.style.overflowY = '';
+        document.documentElement.style.overflow = '';
+        window.scrollTo(0, 0);
+        document.querySelectorAll('.overflow-y-auto, .overflow-auto, .custom-scrollbar').forEach(el => {
+            el.scrollTop = 0;
+        });
+    }, [currentPage]);
     
-    // 페이지 변경 시 해시 업데이트
+    // 페이지 히스토리 (뒤로가기 지원)
+    const pageHistoryRef = React.useRef([]);
     const navigateTo = (page) => {
+        pageHistoryRef.current = [...pageHistoryRef.current, currentPage];
         window.location.hash = page;
     };
+    const goBack = () => {
+        const history = pageHistoryRef.current;
+        if (history.length > 0) {
+            const prev = history[history.length - 1];
+            pageHistoryRef.current = history.slice(0, -1);
+            window.location.hash = prev;
+        } else {
+            window.location.hash = 'tools';
+        }
+    };
+    const canGoBack = pageHistoryRef.current.length > 0 || currentPage !== 'home';
     const [originalData, setOriginalData] = useState([]);
     const [columns, setColumns] = useState([]);
     const [allColumns, setAllColumns] = useState([]);
@@ -84,6 +173,10 @@ function App() {
     const [cmdOpen, setCmdOpen] = useState(false);
     const [isSharing, setIsSharing] = useState(false);
     const [colTypes, setColTypes] = useState({});
+    const numericColumns = useMemo(
+        () => allColumns.filter(col => colTypes[col] === 'number'),
+        [allColumns, colTypes]
+    );
 
     const [ncFilters, setNcFilters] = useState([]);
     const [ncSortCol, setNcSortCol] = useState('');
@@ -102,6 +195,42 @@ function App() {
     const [ncAutoBucket, setNcAutoBucket] = useState(''); // 자동 구간화
     const [ncIgnoreNull, setNcIgnoreNull] = useState(true); // 결측치 무시
     const [ncNaturalFilter, setNcNaturalFilter] = useState(''); // 자연어 필터
+    // 🆕 혁신 기능 상태들
+    const [ncFindCol, setNcFindCol] = useState('');
+    const [ncFindVal, setNcFindVal] = useState('');
+    const [ncReplaceVal, setNcReplaceVal] = useState('');
+    const [ncSplitCol, setNcSplitCol] = useState('');
+    const [ncSplitDelim, setNcSplitDelim] = useState(',');
+    const [ncMergeCol1, setNcMergeCol1] = useState('');
+    const [ncMergeCol2, setNcMergeCol2] = useState('');
+    const [ncMergeSep, setNcMergeSep] = useState(' ');
+    const [ncMergeNewName, setNcMergeNewName] = useState('');
+    const [ncRenameFrom, setNcRenameFrom] = useState('');
+    const [ncRenameTo, setNcRenameTo] = useState('');
+    const [ncFillCol, setNcFillCol] = useState('');
+    const [ncFillVal, setNcFillVal] = useState('');
+    const [ncCorr1, setNcCorr1] = useState('');
+    const [ncCorr2, setNcCorr2] = useState('');
+    const [ncCorrResult, setNcCorrResult] = useState(null);
+    const [ncNewColName, setNcNewColName] = useState('');
+    const [ncNewColFormula, setNcNewColFormula] = useState('');
+    const [ncSampleN, setNcSampleN] = useState(100);
+    const [ncRegexCol, setNcRegexCol] = useState('');
+    const [ncRegexPattern, setNcRegexPattern] = useState('');
+    const [ncProfileCol, setNcProfileCol] = useState('');
+    const [ncProfileResult, setNcProfileResult] = useState(null);
+    const [ncOutlierCol, setNcOutlierCol] = useState('');
+    const [ncOutlierResult, setNcOutlierResult] = useState(null);
+    const [ncTypeCol, setNcTypeCol] = useState('');
+    const [ncTargetType, setNcTargetType] = useState('TEXT');
+    const [ncDateRangeCol, setNcDateRangeCol] = useState('');
+    const [ncDateRangeStart, setNcDateRangeStart] = useState('');
+    const [ncDateRangeEnd, setNcDateRangeEnd] = useState('');
+    const [ncDedupCols, setNcDedupCols] = useState([]);
+    const [ncTransposeActive, setNcTransposeActive] = useState(false);
+    const [ncExpandJsonCol, setNcExpandJsonCol] = useState('');
+    const [ncReverseRows, setNcReverseRows] = useState(false);
+    const [ncOpenSection, setNcOpenSection] = useState(null); // 열린 아코디언 섹션
 
     // 🆕 현재 데이터 소스 이름 (파일명 또는 샘플)
     const [dataSourceName, setDataSourceName] = useState('데모 데이터 (샘플)');
@@ -143,21 +272,7 @@ function App() {
     // 결과 기록 관리 (이전 결과로 되돌리기 기능)
     const [resultHistory, setResultHistory] = useState([]);
 
-    // 모바일 감지
-    const [isMobile, setIsMobile] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    
-    useEffect(() => {
-        const checkIsMobile = () => {
-            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-            const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
-            const isSmallScreen = window.innerWidth <= 768;
-            setIsMobile(isMobileDevice || isSmallScreen);
-        };
-        checkIsMobile();
-        window.addEventListener('resize', checkIsMobile);
-        return () => window.removeEventListener('resize', checkIsMobile);
-    }, []);
 
     // 🆕 앱 로드 시 자동으로 샘플 데이터 로드
     useEffect(() => {
@@ -298,32 +413,40 @@ function App() {
 
     const processFile = (file) => {
         if (!file) return;
-        
-        // 🆕 JSON 파일인 경우 sessionStorage에 저장 후 jsonToCsv 페이지로 이동
-        if (file.name.toLowerCase().endsWith('.json')) {
+        const name = file.name || '';
+        const lowerName = name.toLowerCase();
+
+        // JSON 파일인 경우: 안내 페이지로 이동
+        if (lowerName.endsWith('.json')) {
             const reader = new FileReader();
             reader.onload = (e) => {
                 const content = e.target.result;
                 try {
-                    // sessionStorage에 JSON 파일 내용 저장
-                    sessionStorage.setItem('pendingJsonFile', JSON.stringify({
-                        name: file.name,
-                        content: content
-                    }));
-                    // 사용자에게 알려주고 페이지 이동
-                    alert('JSON 파일은 데이터 분석이 불가능합니다.\nCSV 파일로 변환 후 사용해 주세요.\n\nJSON to CSV 변환 페이지로 이동합니다.');
-                    navigateTo('jsonToCsv');
+                    sessionStorage.setItem('pendingJsonFile', JSON.stringify({ name: file.name, content }));
+                    setFileNoticeInfo({ name: file.name, size: file.size, type: file.type });
+                    setFileNoticeType('json');
+                    pageHistoryRef.current = [...pageHistoryRef.current, currentPage];
+                    window.location.hash = 'fileNotice';
+                    setCurrentPage('fileNotice');
                 } catch (err) {
                     alert('파일 읽기 오류: ' + err.message);
                 }
             };
-            reader.onerror = () => {
-                alert('파일을 읽는 중 오류가 발생했습니다.');
-            };
+            reader.onerror = () => { alert('파일을 읽는 중 오류가 발생했습니다.'); };
             reader.readAsText(file);
             return;
         }
-        
+
+        // CSV 이외의 파일: 지원되지 않는 형식 안내 페이지로 이동
+        if (!lowerName.endsWith('.csv')) {
+            setFileNoticeInfo({ name: file.name, size: file.size, type: file.type });
+            setFileNoticeType('invalid');
+            pageHistoryRef.current = [...pageHistoryRef.current, currentPage];
+            window.location.hash = 'fileNotice';
+            setCurrentPage('fileNotice');
+            return;
+        }
+
         setLoading(`${file.name} 파싱 중...`);
         Papa.parse(file, {
             header: true,
@@ -641,42 +764,57 @@ function App() {
     const isDataReady = allColumns.length > 0;
 
     return (
-        <div className="app-wrapper bg-slate-950">
+        <div className="app-wrapper">
             <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col">
-                {!isMobile && (
-                <header className="app-header border border-slate-700/50 bg-slate-900/80 backdrop-blur-md rounded-2xl flex items-center justify-between px-6 shadow-2xl relative z-[100]">
-                    <div className="flex items-center gap-3">
-                        <img src="/logo.svg" alt="VaultSheet" className="w-10 h-10 rounded-lg shadow-lg" />
-                            <div>
-                                <h1 className="text-lg font-bold text-slate-100 tracking-tight">VaultSheet</h1>
-                                <div className="flex items-center gap-4">
-                                    <p className="text-sm text-slate-400 flex items-center gap-1"><Icons.Shield /> <span className="hidden md:inline">100% Offline WASM Engine</span></p>
-                                    <p className="text-sm text-emerald-400 flex items-center gap-1 hidden md:block">
-                                        🔒 내 데이터가 서버로 넘어갈까 걱정되나요? 개인의 대외비 데이터가 절대 외부로 유출되지 않습니다.
-                                    </p>
-                                </div>
-                            </div>
+                {currentPage !== 'home' && (
+                <header className="app-header flex items-center justify-between px-6 sm:px-8 py-2 sm:py-3 relative z-[100]" style={{ background: 'rgba(6,12,26,0.9)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.05)', borderRadius: '0 0 16px 16px', boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}>
+                    <div className="flex items-center gap-2.5">
+                        <img src="/logo.svg" alt="VaultSheet" className="w-7 h-7 rounded-lg" />
+                        <span className="font-bold text-slate-100 tracking-tight text-sm">VaultSheet</span>
+                        <span className="hidden md:inline px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider text-sky-400" style={{ background: 'rgba(14,165,233,0.08)', border: '1px solid rgba(14,165,233,0.2)' }}>
+                            OFFLINE
+                        </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        {/* 메인 페이지로 돌아가기 버튼 (서브 페이지에서만 표시) */}
-                        {currentPage !== 'main' ? (
-                            <button
-                                onClick={() => navigateTo('main')}
-                                className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold border transition-all shadow-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600 hover:border-emerald-500"
-                            >
-                                <Icons.ArrowLeft /> 메인으로
-                            </button>
-                        ) : (
-                            /* 도구 버튼들 - 매직 도구함을 포함한 통합 도구 모음 */
-                            <div className="flex items-center gap-2">
-                                {/* 변환 도구 모음 드롭다운 */}
-                                <div className="relative group">
-                                    <button
-                                        className="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold border transition-all shadow-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600 hover:border-brand-500"
-                                    >
-                                        <Icons.Grid /> <span className="hidden md:inline">변환 도구</span> <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                                    </button>
-                                    <div className="absolute top-full left-0 mt-2 w-[500px] bg-slate-800 border border-slate-600/50 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100]">
+                    <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5">
+                            {currentPage !== 'home' && currentPage !== 'main' && (
+                                <button
+                                    onClick={goBack}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all"
+                                >
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                                    이전
+                                </button>
+                            )}
+                        {currentPage === 'tools' ? (
+                            /* 변환도구 페이지 브레드크럼 */
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-slate-700 text-xs">/</span>
+                                <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-violet-400" style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)' }}>
+                                    <Icons.Grid /> 변환 도구 모음
+                                </span>
+                            </div>
+                        ) : currentPage === 'main' ? (
+                            /* 도구 버튼들 */
+                            <div className="flex items-center gap-1.5">
+                                {/* 이전 페이지 버튼 */}
+                                <button
+                                    onClick={goBack}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all"
+                                >
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                                    <span className="hidden md:inline">이전</span>
+                                </button>
+                                {/* 변환 도구 페이지 버튼 */}
+                                <button
+                                    onClick={() => navigateTo('tools')}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-all"
+                                >
+                                    <Icons.Grid /> <span className="hidden md:inline">변환 도구</span>
+                                </button>
+                                {/* 레거시 드롭다운 (숨김 처리) */}
+                                <div className="hidden">
+                                    <div className="absolute top-full left-0 mt-2 w-[480px] rounded-xl shadow-2xl opacity-0 invisible z-[100]" style={{ background: 'rgba(6,12,26,0.97)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.08)' }}>
                                         <div className="grid grid-cols-2 gap-1 p-2">
                                             <button
                                                 onClick={() => navigateTo('serviceCenter')}
@@ -957,31 +1095,57 @@ function App() {
                                                 </div>
                                             </button>
                                         </div>
+                                        {/* 🆕 신규 도구 섹션 */}
+                                        <div className="px-3 pt-2 pb-1" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                                            <div className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-2 px-1">🆕 신규 도구</div>
+                                            <div className="grid grid-cols-2 gap-1">
+                                                {[
+                                                    { page: 'timestampConverter', icon: '⏱️', label: '타임스탬프 변환', color: 'cyan' },
+                                                    { page: 'numberBase', icon: '🔢', label: '진법 변환기', color: 'purple' },
+                                                    { page: 'morseConverter', icon: '📡', label: '모스 부호', color: 'amber' },
+                                                    { page: 'loremIpsum', icon: '📝', label: 'Lorem Ipsum', color: 'green' },
+                                                    { page: 'passwordGenerator', icon: '🔐', label: '비밀번호 생성', color: 'red' },
+                                                    { page: 'sqlFormatter', icon: '🗄️', label: 'SQL 포맷터', color: 'cyan' },
+                                                    { page: 'csvToSql', icon: '🔄', label: 'CSV → SQL', color: 'orange' },
+                                                    { page: 'xmlJson', icon: '🔄', label: 'XML ↔ JSON', color: 'blue' },
+                                                    { page: 'gradientGenerator', icon: '🎨', label: '그라데이션', color: 'pink' },
+                                                    { page: 'colorPalette', icon: '🎨', label: '컬러 팔레트', color: 'violet' },
+                                                    { page: 'romanNumeral', icon: '🏛️', label: '로마 숫자', color: 'amber' },
+                                                    { page: 'cronParser', icon: '⏰', label: 'Cron 파서', color: 'cyan' },
+                                                    { page: 'ogTagGenerator', icon: '🔗', label: 'OG 태그 생성', color: 'sky' },
+                                                    { page: 'yamlJson', icon: '⚙️', label: 'YAML ↔ JSON', color: 'green' },
+                                                    { page: 'htmlToJsx', icon: '⚛️', label: 'HTML → JSX', color: 'orange' },
+                                                ].map(t => (
+                                                    <button key={t.page} onClick={() => navigateTo(t.page)}
+                                                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-300 hover:text-white transition-all text-left"
+                                                        style={{ background: 'rgba(255,255,255,0.03)' }}>
+                                                        <span className="text-sm">{t.icon}</span>
+                                                        <span className="text-xs font-medium truncate">{t.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 
                                 {/* 벽(구분선) */}
                                 <div className="h-8 w-px bg-slate-600 mx-1"></div>
                                 
-                                {/* 매직 지능형 도구함 버튼 - 디자인 동일하게 수정 */}
+                                <div className="h-4 w-px mx-1" style={{ background: 'rgba(255,255,255,0.1)' }}></div>
+                                
+                                {/* 데이터 열기 버튼 */}
                                 <button
-                                    onClick={() => setCmdOpen(true)}
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold border transition-all shadow-lg ${isDataReady ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600 hover:border-brand-500' : 'bg-slate-900/50 text-slate-500 border-slate-800 cursor-not-allowed'}`}
+                                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold text-white transition-all hover:scale-105 active:scale-95"
+                                    style={{ background: 'linear-gradient(135deg, #0ea5e9, #6366f1)', boxShadow: '0 2px 12px rgba(14,165,233,0.3)' }}
+                                    onClick={() => document.getElementById('file-in').click()}
                                 >
-                                    <Icons.Magic /> <span className="hidden md:inline">매직 도구함</span> <span className="hidden md:inline font-mono opacity-50 ml-1">Ctrl+K</span>
-                                </button>
-                                
-                                {/* 벽(구분선) */}
-                                <div className="h-8 w-px bg-slate-600 mx-1"></div>
-                                
-                                {/* 데이터 열기 버튼 - 변환도구, 매직도구함과 같은 크기로 수정 */}
-                                <button className="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2 rounded-md text-base font-medium transition-colors" onClick={() => document.getElementById('file-in').click()}>
                                     <span className="hidden md:inline">데이터 열기</span>
                                     <span className="md:hidden">+</span>
                                 </button>
                                 <input type="file" id="file-in" className="hidden" accept=".csv,.json" onChange={e => processFile(e.target.files[0])} />
                             </div>
-                        )}
+                        ) : null}
+                        </div>
                     </div>
                 </header>
                 )}
@@ -1046,10 +1210,25 @@ function App() {
                 </div>
 
                 {/* 🆕 페이지에 따른 메인 컨텐츠 렌더링 */}
-                {currentPage === 'jsonToCsv' ? (
-                    <div className="main-wrapper">
-                        <JsonToCsvConverter />
+                <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-500">로딩 중...</div>}>
+                {currentPage === 'home' ? (
+                    <div className="flex-1 overflow-y-auto">
+                        <HomePage navigateTo={navigateTo} />
                     </div>
+                ) : currentPage === 'tools' ? (
+                    <div className="flex-1 overflow-y-auto">
+                        <ToolsPage navigateTo={navigateTo} />
+                    </div>
+                ) : currentPage === 'jsonCsvPage' ? (
+                    <div className="main-wrapper flex flex-col overflow-hidden"><JsonCsvPage /></div>
+                ) : currentPage === 'jsonFormatterPage' ? (
+                    <div className="main-wrapper flex flex-col overflow-hidden"><JsonFormatterPage /></div>
+                ) : currentPage === 'jsonFormatConvertPage' ? (
+                    <div className="main-wrapper flex flex-col overflow-hidden"><JsonFormatConvertPage /></div>
+                ) : currentPage === 'jsonPathPage' ? (
+                    <div className="main-wrapper flex flex-col overflow-hidden"><JsonPathPage /></div>
+                ) : currentPage === 'jsonToSqlPage' ? (
+                    <div className="main-wrapper flex flex-col overflow-hidden"><JsonToSqlPage /></div>
                 ) : currentPage === 'encoding' ? (
                     <div className="main-wrapper">
                         <EncodingConverter />
@@ -1080,12 +1259,10 @@ function App() {
                     </div>
                 ) : currentPage === 'qrCode' ? (
                     <div className="main-wrapper">
-                        {isMobile ? <MobileQrCodeGenerator /> : <QrCodeGenerator />}
+                        <QrCodeGenerator />
                     </div>
-                ) : currentPage === 'colorConverter' ? (
-                    <div className="main-wrapper">
-                        <ColorConverter />
-                    </div>
+                ) : currentPage === 'colorStudio' ? (
+                    <div className="main-wrapper flex flex-col overflow-hidden"><Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-500">로딩 중...</div>}><ColorStudio /></Suspense></div>
                 ) : currentPage === 'calculator' ? (
                     <div className="main-wrapper">
                         <Calculator />
@@ -1108,7 +1285,7 @@ function App() {
                     </div>
                 ) : currentPage === 'pdfConverter' ? (
                     <div className="main-wrapper">
-                        {isMobile ? <MobilePdfConverter /> : <PdfConverter />}
+                        <PdfConverter />
                     </div>
                 ) : currentPage === 'regexTester' ? (
                     <div className="main-wrapper">
@@ -1134,154 +1311,150 @@ function App() {
                     <div className="main-wrapper">
                         <VideoTools />
                     </div>
+                ) : currentPage === 'excelJsonPage' ? (
+                    <div className="main-wrapper flex flex-col overflow-hidden"><ExcelJsonPage /></div>
+                ) : currentPage === 'csvMergeSplitPage' ? (
+                    <div className="main-wrapper flex flex-col overflow-hidden"><CsvMergeSplitPage /></div>
+                ) : currentPage === 'mainZoom' ? (
+                    <div className="main-wrapper flex flex-col overflow-hidden">
+                        <div className="flex-1 flex flex-col min-h-0 p-4">
+                            <div className="flex-1 flex flex-col min-h-0">
+                                <div className="flex-1 rounded-2xl border border-slate-700 bg-slate-900/80 p-3 overflow-hidden">
+                                    <div className="w-full h-full">
+                                        {viewMode === 'raw' && (
+                                            <DataGrid data={originalData} columns={Object.keys(originalData[0] || {})} readOnly={true}
+                                                watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} hideToolbar={true} />
+                                        )}
+                                        {viewMode === 'grid' && (
+                                            <DataGrid data={data} columns={columns} onUpdate={handleCellUpdate}
+                                                watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} hideToolbar={true} />
+                                        )}
+                                        {viewMode === 'insight' && (
+                                            <InsightStudio data={data} columns={columns} colTypes={colTypes} />
+                                        )}
+                                        <Suspense fallback={<div className="flex items-center justify-center h-full text-slate-500 text-sm">로딩 중...</div>}>
+                                            {viewMode === 'pivot' && (
+                                                <PivotTable data={data} columns={columns} colTypes={colTypes} hideToolbar={true} />
+                                            )}
+                                            {viewMode === 'chart' && (
+                                                <ChartViewer data={data} columns={columns}
+                                                    watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} hideToolbar={true} />
+                                            )}
+                                        </Suspense>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ) : currentPage === 'fileNotice' ? (
+                    <div className="main-wrapper">
+                        <FileNoticePage
+                            fileInfo={fileNoticeInfo}
+                            noticeType={fileNoticeType}
+                            onBack={() => { window.location.hash = 'main'; setCurrentPage('main'); }}
+                            onContinueJson={() => { navigateTo('jsonCsvPage'); }}
+                            onGoTools={() => { navigateTo('tools'); }}
+                        />
+                    </div>
                 ) : currentPage === 'zipTools' ? (
                     <div className="main-wrapper">
                         <ZipTools />
                     </div>
                 ) : currentPage === 'serviceCenter' ? (
                     <div className="main-wrapper">
-                        {isMobile ? <MobileServiceCenter /> : <ServiceCenter />}
+                        <ServiceCenter />
                     </div>
-                ) : isMobile ? (
-                    /* ============================================================
-                       📱 모바일 전용 뷰 (Mobile Version)
-                       - 모바일에서 데이터 분석 기능은 숨기고, 유용한 도구만 보여줍니다.
-                       - 상단 바를 완전히 숨깁니다.
-                       ============================================================ */
-                    <div className="w-full min-h-screen bg-[#020617] flex flex-col items-center justify-center p-5 font-sans selection:bg-emerald-500/30">
-  {/* 다이나믹 배경 레이어 */}
-  <div className="fixed inset-0 overflow-hidden pointer-events-none">
-    <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-emerald-600/20 rounded-full blur-[120px] animate-pulse"></div>
-    <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-600/20 rounded-full blur-[120px] animate-pulse delay-1000"></div>
-    <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")' }}></div>
-  </div>
-
-  {/* 헤더 섹션 */}
-  <div className="z-10 flex flex-col items-center mb-10 transition-all">
-    <div className="relative group">
-      <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
-      <div className="relative w-20 h-20 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-center shadow-2xl">
-        <img src="/logo.svg" alt="VaultSheet" className="w-12 h-12 drop-shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
-      </div>
-    </div>
-    <div className="mt-5 text-center">
-      <h1 className="text-4xl font-black tracking-tighter text-white">
-        Vault<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Sheet</span>
-      </h1>
-      <div className="flex items-center gap-2 mt-1">
-        <span className="h-[1px] w-4 bg-slate-700"></span>
-        <p className="text-[10px] text-slate-500 font-bold tracking-[0.2em] uppercase">Intelligence Hub</p>
-        <span className="h-[1px] w-4 bg-slate-700"></span>
-      </div>
-    </div>
-  </div>
-
-  {/* 메인 컨테이너 (Bento Grid) */}
-  <div className="w-full max-w-[360px] z-10 space-y-4">
-    
-    {/* 알림 배너 - 플로팅 스타일 */}
-    <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800/50 rounded-2xl p-4 flex items-center gap-4 shadow-xl">
-      <div className="flex-shrink-0 w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-500 border border-amber-500/20">
-        <Icons.Alert size={20} />
-      </div>
-      <div>
-        <p className="text-xs font-bold text-slate-200">데이터 분석은 PC 환경 권장</p>
-        <p className="text-[10px] text-slate-500 mt-0.5">대량의 데이터 그리드는 PC에서 최적화됩니다.</p>
-      </div>
-    </div>
-
-    {/* 그리드 메뉴 */}
-    <div className="grid grid-cols-2 gap-4">
-      {/* QR 생성 카드 */}
-      <button
-        onClick={() => navigateTo('qrCode')}
-        className="group relative h-40 bg-slate-900/50 backdrop-blur-sm border border-slate-800 hover:border-emerald-500/50 rounded-[2rem] p-5 transition-all duration-300 active:scale-95 flex flex-col justify-between overflow-hidden"
-      >
-        <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-150 duration-700"></div>
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
-          <Icons.QrCode size={24} />
-        </div>
-        <div className="relative">
-          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">Tool 01</p>
-          <p className="text-lg font-bold text-white">QR 생성</p>
-        </div>
-      </button>
-
-      {/* PDF 변환 카드 */}
-      <button
-        onClick={() => navigateTo('pdfConverter')}
-        className="group relative h-40 bg-slate-900/50 backdrop-blur-sm border border-slate-800 hover:border-red-500/50 rounded-[2rem] p-5 transition-all duration-300 active:scale-95 flex flex-col justify-between overflow-hidden"
-      >
-        <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/5 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-150 duration-700"></div>
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500/20 to-red-500/5 flex items-center justify-center text-red-400 group-hover:scale-110 transition-transform">
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-          </svg>
-        </div>
-        <div className="relative">
-          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">Tool 02</p>
-          <p className="text-lg font-bold text-white">이미지 PDF 변환</p>
-        </div>
-      </button>
-
-      {/* 고객센터 (Full Width 프리미엄 카드) */}
-      <button
-        onClick={() => navigateTo('serviceCenter')}
-        className="col-span-2 group relative overflow-hidden rounded-[2rem] p-6 transition-all duration-300 active:scale-[0.98]"
-      >
-        {/* 프리미엄 배경 그라데이션 */}
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-800 to-slate-900 group-hover:from-slate-700 group-hover:to-slate-800 transition-colors"></div>
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-emerald-500/10 to-transparent"></div>
-        
-        {/* 장식용 서클 */}
-        <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all duration-500"></div>
-
-        <div className="relative flex items-center justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span className="text-[10px] font-bold text-emerald-400 tracking-widest uppercase">Direct Support</span>
-            </div>
-            <h3 className="text-xl font-bold text-white">서비스 소개</h3>
-            <p className="text-xs text-slate-400">개인정보 처리방침, 서비스 소개, 고객센터</p>
-          </div>
-          <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white group-hover:translate-x-1 transition-transform">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-        </div>
-      </button>
-    </div>
-  </div>
-
-  {/* 푸터 하단 바 - 모바일 감성 */}
-  <div className="mt-auto pt-10 pb-4 text-slate-600 text-[10px] font-medium tracking-widest uppercase z-10">
-    © 2024 VAULTSHEET CORE
-  </div>
-</div>
+                ) : currentPage === 'cryptoEncoder' ? (
+                    <div className="main-wrapper">
+                        <CryptoEncoder />
+                    </div>
+                ) : currentPage === 'numberBase' ? (
+                    <div className="main-wrapper"><NumberBaseConverter /></div>
+                ) : currentPage === 'morseConverter' ? (
+                    <div className="main-wrapper"><MorseConverter /></div>
+                ) : currentPage === 'loremIpsum' ? (
+                    <div className="main-wrapper"><LoremIpsumGenerator /></div>
+                ) : currentPage === 'passwordGenerator' ? (
+                    <div className="main-wrapper"><PasswordGenerator /></div>
+                ) : currentPage === 'sqlFormatter' ? (
+                    <div className="main-wrapper"><SqlFormatter /></div>
+                ) : currentPage === 'csvToSql' ? (
+                    <div className="main-wrapper"><CsvToSqlInsert /></div>
+                ) : currentPage === 'xmlJson' ? (
+                    <div className="main-wrapper"><XmlJsonConverter /></div>
+                ) : currentPage === 'romanNumeral' ? (
+                    <div className="main-wrapper"><RomanNumeralConverter /></div>
+                ) : currentPage === 'cronParser' ? (
+                    <div className="main-wrapper"><CronParser /></div>
+                ) : currentPage === 'ogTagGenerator' ? (
+                    <div className="main-wrapper"><OgTagGenerator /></div>
+                ) : currentPage === 'yamlJson' ? (
+                    <div className="main-wrapper"><YamlJsonConverter /></div>
+                ) : currentPage === 'htmlToJsx' ? (
+                    <div className="main-wrapper"><HtmlToJsx /></div>
+                ) : currentPage === 'jsonFormatterPage' ? (
+                    <div className="main-wrapper flex flex-col overflow-hidden"><JsonFormatterPage /></div>
+                ) : currentPage === 'jsonCsvPage' ? (
+                    <div className="main-wrapper flex flex-col overflow-hidden"><JsonCsvPage /></div>
+                ) : currentPage === 'jsonFormatConvertPage' ? (
+                    <div className="main-wrapper flex flex-col overflow-hidden"><JsonFormatConvertPage /></div>
+                ) : currentPage === 'jsonPathPage' ? (
+                    <div className="main-wrapper flex flex-col overflow-hidden"><JsonPathPage /></div>
+                ) : currentPage === 'jsonToSqlPage' ? (
+                    <div className="main-wrapper flex flex-col overflow-hidden"><JsonToSqlPage /></div>
+                ) : currentPage === 'colorStudio' ? (
+                    <div className="main-wrapper flex flex-col overflow-hidden"><Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-500">로딩 중...</div>}><ColorStudio /></Suspense></div>
+                ) : currentPage === 'diffChecker' ? (
+                    <div className="main-wrapper flex flex-col overflow-hidden"><Suspense fallback={null}><DiffChecker /></Suspense></div>
+                ) : currentPage === 'textStudio' ? (
+                    <div className="main-wrapper flex flex-col overflow-hidden"><Suspense fallback={null}><TextStudio /></Suspense></div>
+                ) : currentPage === 'cssStudio' ? (
+                    <div className="main-wrapper flex flex-col overflow-hidden"><Suspense fallback={null}><CSSStudio /></Suspense></div>
+                ) : currentPage === 'timeStudio' ? (
+                    <div className="main-wrapper flex flex-col overflow-hidden"><Suspense fallback={null}><TimeStudio /></Suspense></div>
+                ) : currentPage === 'utilStudio' ? (
+                    <div className="main-wrapper flex flex-col overflow-hidden"><Suspense fallback={null}><UtilStudio /></Suspense></div>
+                ) : currentPage === 'securityStudio' ? (
+                    <div className="main-wrapper flex flex-col overflow-hidden"><Suspense fallback={null}><SecurityStudio /></Suspense></div>
+                ) : currentPage === 'dataToolsStudio' ? (
+                    <div className="main-wrapper flex flex-col overflow-hidden"><Suspense fallback={null}><DataToolsStudio /></Suspense></div>
+                ) : currentPage === 'mediaStudio' ? (
+                    <div className="main-wrapper flex flex-col overflow-hidden"><Suspense fallback={null}><MediaStudio /></Suspense></div>
+                ) : currentPage === 'mobile' ? (
+                    <div className="main-wrapper flex flex-col overflow-hidden"><MobilePage navigateTo={navigateTo} /></div>
+                ) : STUB_TOOL_PAGES.includes(currentPage) || Object.keys(PAGE_REDIRECTS).includes(currentPage) ? (
+                    <div className="main-wrapper flex flex-col overflow-y-auto" style={{ minHeight: '100%' }}>
+                        <ToolStub page={currentPage} />
+                    </div>
                 ) : (
-                    /* ============================================================
-                       🖥️ 데스크탑 뷰 (Desktop Version) - 수정됨
-                       - 부모 div에 'flex' 클래스를 추가하여 사이드바와 메인화면을 가로로 배치
-                       ============================================================ */
-                    <div className="main-wrapper w-full h-full relative">
-                        {/* 왼쪽 사이드바 영역 */}
-                        <div className="h-full shrink-0">
-                            <div className={`sidebar bg-slate-900/80 backdrop-blur-sm border border-slate-700/50 rounded-2xl flex flex-col z-10 shadow-xl overflow-hidden transition-all duration-300 ${isZoomed ? 'hidden' : 'w-[420px] h-full'}`}>
-                                <div className="flex text-sm font-semibold border-b border-slate-800 bg-slate-950">
+                    <div className="main-wrapper">
+                        {/* 모바일: 우측 패널 토글 버튼 */}
+                        <button
+                            onClick={() => setIsMobileMenuOpen(v => !v)}
+                            className="md:hidden fixed bottom-5 right-5 z-[200] w-12 h-12 rounded-full flex items-center justify-center shadow-2xl text-white"
+                            style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)', boxShadow: '0 4px 20px rgba(99,102,241,0.5)' }}
+                        >
+                            {isMobileMenuOpen ? <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            : <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>}
+                        </button>
+
+                        {/* ── 오른쪽 Tools 패널 (노코드 빌더 + SQL) ── */}
+                        <div className={`h-full shrink-0 order-2 ${isMobileMenuOpen ? 'fixed right-0 inset-y-0 z-[150] md:relative' : 'hidden md:flex md:flex-col'}`}>
+                            {isMobileMenuOpen && <div className="fixed inset-0 bg-black/60 md:hidden" style={{ backdropFilter: 'blur(4px)' }} onClick={() => setIsMobileMenuOpen(false)} />}
+                            <div className={`flex flex-col z-10 overflow-hidden transition-all duration-300 rounded-2xl h-full ${isZoomed ? 'hidden' : 'w-[380px] max-w-[90vw]'}`}
+                                style={{ background: 'rgba(8,14,28,0.97)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '-4px 0 24px rgba(0,0,0,0.3), inset 1px 0 0 rgba(255,255,255,0.04)', position: 'relative' }}>
+                                <div className="flex shrink-0 p-2 gap-1" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                                     <button
                                         onClick={() => setLeftTab('nocode')}
-                                        className={`flex-1 py-4 flex items-center justify-center gap-2 ${leftTab === 'nocode' ? 'text-brand-400 border-b-2 border-brand-500 bg-slate-900' : 'text-slate-500 hover:text-slate-300'}`}
+                                        className={`flex-1 py-2 flex items-center justify-center gap-2 text-sm font-semibold rounded-xl transition-all ${leftTab === 'nocode' ? 'text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                                        style={leftTab === 'nocode' ? { background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 2px 12px rgba(99,102,241,0.3)' } : {}}
                                     >
                                         <Icons.Wand /> 노코드 빌더
                                     </button>
                                     <button
                                         onClick={() => setLeftTab('sql')}
-                                        className={`flex-1 py-4 flex items-center justify-center gap-2 ${leftTab === 'sql' ? 'text-brand-400 border-b-2 border-brand-500 bg-slate-900' : 'text-slate-500 hover:text-slate-300'}`}
+                                        className={`flex-1 py-2 flex items-center justify-center gap-2 text-sm font-semibold rounded-xl transition-all ${leftTab === 'sql' ? 'text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                                        style={leftTab === 'sql' ? { background: 'linear-gradient(135deg, #0ea5e9, #06b6d4)', boxShadow: '0 2px 12px rgba(14,165,233,0.3)' } : {}}
                                     >
                                         <Icons.Code /> SQL 작성
                                     </button>
@@ -1294,238 +1467,288 @@ function App() {
                                             <button onClick={() => loadData(Papa.parse(SAMPLE_DATA, { header: true, dynamicTyping: true }).data)} className="mt-4 text-brand-400 underline hover:text-brand-300 text-base">샘플 데이터 로드</button>
                                         </div>
                                     ) : leftTab === 'nocode' ? (
-                                        <div className="flex flex-col gap-6">
-                                            {/* 🆕 자연어 필터 (NLP) */}
-                                            <div className="p-4 bg-gradient-to-r from-indigo-900/30 to-purple-900/20 rounded-xl border border-indigo-500/30">
-                                                <label className="text-sm font-bold text-indigo-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                                                    🔍 자연어 필터
+                                        <div className="flex flex-col gap-4">
+
+                                            {/* ── 스마트 변환 허브 ── */}
+                                            <div className="rounded-xl overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.1), rgba(99,102,241,0.06))', border: '1px solid rgba(139,92,246,0.25)' }}>
+                                                <div className="flex items-center justify-between px-3 py-2.5">
+                                                    <div className="flex items-center gap-2">
+                                                        <span>✨</span>
+                                                        <span className="text-xs font-bold text-violet-300">스마트 변환 허브</span>
+                                                        <span className="text-[10px] text-slate-600">60+ 작업</span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => setCmdOpen(true)}
+                                                        disabled={!isDataReady}
+                                                        className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${isDataReady ? 'text-white hover:scale-105 active:scale-95' : 'text-slate-600 cursor-not-allowed opacity-40'}`}
+                                                        style={isDataReady ? { background: 'linear-gradient(135deg, #7c3aed, #6366f1)', boxShadow: '0 2px 8px rgba(124,58,237,0.35)' } : {}}
+                                                    >
+                                                        <Icons.Magic /> 열기
+                                                    </button>
+                                                </div>
+                                                <div className="px-3 pb-3 flex flex-wrap gap-1">
+                                                    {['🧹 정제', '📝 텍스트', '🔢 수학', '📅 날짜', '📊 통계', '🔒 보안', '💼 직장인'].map(chip => (
+                                                        <button key={chip} onClick={() => { if (isDataReady) setCmdOpen(true); }} disabled={!isDataReady}
+                                                            className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all ${isDataReady ? 'text-slate-400 hover:text-white hover:bg-white/10' : 'text-slate-700 cursor-not-allowed'}`}
+                                                            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                                                            {chip}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* ── 자연어 필터 ── */}
+                                            <div className="p-3 rounded-xl" style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)' }}>
+                                                <label className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                                                    자연어 필터
                                                 </label>
                                                 <input
                                                     type="text"
-                                                    placeholder="예: revenue 10000 이상 and country USA"
+                                                    placeholder="예: revenue 10000 이상 and country Korea"
                                                     value={ncNaturalFilter}
                                                     onChange={e => setNcNaturalFilter(e.target.value)}
                                                     onKeyDown={e => {
                                                         if (e.key === 'Enter' && ncNaturalFilter.trim()) {
-                                                            // 자연어를 필터로 변환
                                                             const text = ncNaturalFilter.toLowerCase();
                                                             let newFilters = [...ncFilters];
-
-                                                            // 숫자 + 이상/이하 패턴
                                                             const numMatch = text.match(/(\w+)\s*(\d+以上|이상|초과|이하|미만|小于)?/);
                                                             if (numMatch) {
                                                                 const col = numMatch[1];
-                                                                const op = text.includes('이상') || text.includes('>=') || text.includes('以上') ? '>=' :
-                                                                    text.includes('초과') || text.includes('>') ? '>' :
-                                                                        text.includes('이하') || text.includes('<=') || text.includes('以下') ? '<=' :
-                                                                            text.includes('미만') || text.includes('<') ? '<' : '=';
+                                                                const op = text.includes('이상') || text.includes('>=') ? '>=' : text.includes('초과') || text.includes('>') ? '>' : text.includes('이하') || text.includes('<=') ? '<=' : text.includes('미만') || text.includes('<') ? '<' : '=';
                                                                 const val = numMatch[2] ? numMatch[2].replace(/[^0-9]/g, '') : '';
-                                                                if (val && allColumns.includes(col)) {
-                                                                    newFilters.push({ id: Date.now(), col, op, val });
-                                                                    setNcFilters(newFilters);
-                                                                    setNcNaturalFilter('');
-                                                                }
+                                                                if (val && allColumns.includes(col)) { newFilters.push({ id: Date.now(), col, op, val }); setNcFilters(newFilters); setNcNaturalFilter(''); }
                                                             }
                                                         }
                                                     }}
-                                                    className="w-full bg-slate-900/80 text-slate-200 px-4 py-2.5 text-sm rounded-lg border border-indigo-500/30 outline-none focus:border-indigo-400 placeholder:text-slate-500"
+                                                    className="w-full bg-slate-900/80 text-slate-200 px-3 py-2 text-xs rounded-lg border border-indigo-500/25 outline-none focus:border-indigo-400 placeholder:text-slate-600"
                                                 />
-                                                <p className="text-[10px] text-indigo-300/60 mt-1">엔터를 누르면 필터에 추가됩니다 (영문 지원)</p>
+                                                <p className="text-[10px] text-slate-700 mt-1">엔터로 필터 추가</p>
                                             </div>
 
-                                            {/* 🆕 결측치 무시 토글 */}
-                                            <div className="flex items-center justify-between bg-slate-800/50 p-3 rounded-lg border border-slate-700">
-                                                <span className="text-sm font-medium text-slate-300">빈 데이터(Null) 무시</span>
-                                                <button
-                                                    onClick={() => setNcIgnoreNull(!ncIgnoreNull)}
-                                                    className={`w-12 h-6 rounded-full transition-colors relative ${ncIgnoreNull ? 'bg-emerald-500' : 'bg-slate-600'}`}
-                                                >
-                                                    <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${ncIgnoreNull ? 'left-7' : 'left-1'}`}></span>
-                                                </button>
+                                            {/* ── 고급 엔지니어링 도구 ── */}
+                                            <NocodeEngineeringTools
+                                                allColumns={allColumns}
+                                                colTypes={colTypes}
+                                                db={db}
+                                                data={data}
+                                                setData={setData}
+                                                query={query}
+                                                executeSQL={executeSQL}
+                                                saveHistoryBeforeMutation={saveHistoryBeforeMutation}
+                                                setAllColumns={setAllColumns}
+                                                showAlert={showAlert}
+                                                isDataReady={isDataReady}
+                                                ncFindCol={ncFindCol} setNcFindCol={setNcFindCol}
+                                                ncFindVal={ncFindVal} setNcFindVal={setNcFindVal}
+                                                ncReplaceVal={ncReplaceVal} setNcReplaceVal={setNcReplaceVal}
+                                                ncSplitCol={ncSplitCol} setNcSplitCol={setNcSplitCol}
+                                                ncSplitDelim={ncSplitDelim} setNcSplitDelim={setNcSplitDelim}
+                                                ncMergeCol1={ncMergeCol1} setNcMergeCol1={setNcMergeCol1}
+                                                ncMergeCol2={ncMergeCol2} setNcMergeCol2={setNcMergeCol2}
+                                                ncMergeSep={ncMergeSep} setNcMergeSep={setNcMergeSep}
+                                                ncMergeNewName={ncMergeNewName} setNcMergeNewName={setNcMergeNewName}
+                                                ncRenameFrom={ncRenameFrom} setNcRenameFrom={setNcRenameFrom}
+                                                ncRenameTo={ncRenameTo} setNcRenameTo={setNcRenameTo}
+                                                ncFillCol={ncFillCol} setNcFillCol={setNcFillCol}
+                                                ncFillVal={ncFillVal} setNcFillVal={setNcFillVal}
+                                                ncCorr1={ncCorr1} setNcCorr1={setNcCorr1}
+                                                ncCorr2={ncCorr2} setNcCorr2={setNcCorr2}
+                                                ncCorrResult={ncCorrResult} setNcCorrResult={setNcCorrResult}
+                                                ncNewColName={ncNewColName} setNcNewColName={setNcNewColName}
+                                                ncNewColFormula={ncNewColFormula} setNcNewColFormula={setNcNewColFormula}
+                                                ncSampleN={ncSampleN} setNcSampleN={setNcSampleN}
+                                                ncRegexCol={ncRegexCol} setNcRegexCol={setNcRegexCol}
+                                                ncRegexPattern={ncRegexPattern} setNcRegexPattern={setNcRegexPattern}
+                                                ncProfileCol={ncProfileCol} setNcProfileCol={setNcProfileCol}
+                                                ncProfileResult={ncProfileResult} setNcProfileResult={setNcProfileResult}
+                                                ncOutlierCol={ncOutlierCol} setNcOutlierCol={setNcOutlierCol}
+                                                ncOutlierResult={ncOutlierResult} setNcOutlierResult={setNcOutlierResult}
+                                                ncTypeCol={ncTypeCol} setNcTypeCol={setNcTypeCol}
+                                                ncTargetType={ncTargetType} setNcTargetType={setNcTargetType}
+                                                ncDateRangeCol={ncDateRangeCol} setNcDateRangeCol={setNcDateRangeCol}
+                                                ncDateRangeStart={ncDateRangeStart} setNcDateRangeStart={setNcDateRangeStart}
+                                                ncDateRangeEnd={ncDateRangeEnd} setNcDateRangeEnd={setNcDateRangeEnd}
+                                                ncDedupCols={ncDedupCols} setNcDedupCols={setNcDedupCols}
+                                                ncExpandJsonCol={ncExpandJsonCol} setNcExpandJsonCol={setNcExpandJsonCol}
+                                                ncOpenSection={ncOpenSection} setNcOpenSection={setNcOpenSection}
+                                            />
+
+                                            {/* ── 기본 설정 그룹 ── */}
+                                            <div className="rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+
+                                                {/* Null 무시 토글 */}
+                                                <div className="flex items-center justify-between px-3 py-2.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                    <span className="text-xs font-medium text-slate-400">빈 데이터(Null) 무시</span>
+                                                    <button onClick={() => setNcIgnoreNull(!ncIgnoreNull)}
+                                                        className={`w-10 h-5 rounded-full transition-colors relative flex-shrink-0 ${ncIgnoreNull ? 'bg-emerald-500' : 'bg-slate-700'}`}>
+                                                        <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform shadow ${ncIgnoreNull ? 'left-5.5 translate-x-0.5' : 'left-0.5'}`}></span>
+                                                    </button>
+                                                </div>
+
+                                                {/* DISTINCT 토글 */}
+                                                <div className="flex items-center justify-between px-3 py-2.5">
+                                                    <span className="text-xs font-medium text-slate-400">중복 제거 (DISTINCT)</span>
+                                                    <button onClick={() => setNcDistinct(!ncDistinct)}
+                                                        className={`w-10 h-5 rounded-full transition-colors relative flex-shrink-0 ${ncDistinct ? 'bg-violet-500' : 'bg-slate-700'}`}>
+                                                        <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform shadow ${ncDistinct ? 'left-5.5 translate-x-0.5' : 'left-0.5'}`}></span>
+                                                    </button>
+                                                </div>
                                             </div>
 
-                                            {/* 🆕 날짜 주기 묶기 */}
-                                            {ncGroupCol && colTypes[ncGroupCol] === 'date' && (
-                                                <div className="p-4 bg-gradient-to-r from-amber-900/30 to-orange-900/20 rounded-xl border border-amber-500/30">
-                                                    <label className="text-sm font-bold text-amber-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                                        📅 날짜 주기 묶기
-                                                    </label>
-                                                    <div className="flex gap-2 flex-wrap">
-                                                        {[
-                                                            { val: '', label: '원본' },
-                                                            { val: 'day', label: '일별' },
-                                                            { val: 'week', label: '주별' },
-                                                            { val: 'month', label: '월별' },
-                                                            { val: 'quarter', label: '분기별' },
-                                                            { val: 'year', label: '연도별' }
-                                                        ].map(opt => (
-                                                            <button
-                                                                key={opt.val}
-                                                                onClick={() => setNcDateRollup(opt.val)}
-                                                                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${ncDateRollup === opt.val ? 'bg-amber-500 text-white shadow-lg' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
-                                                            >
-                                                                {opt.label}
-                                                            </button>
-                                                        ))}
+                                            {/* ── 표시 컬럼 선택 ── */}
+                                            <div className="rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                                                <div className="flex items-center justify-between px-3 py-2.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">표시 컬럼</span>
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="text-[10px] text-slate-600">{ncSelectedCols.length}/{allColumns.length}</span>
+                                                        <button onClick={() => setNcSelectedCols(allColumns)} className="text-[10px] text-sky-400 hover:text-sky-300 px-1.5 py-0.5 rounded" style={{ background: 'rgba(14,165,233,0.08)' }}>전체</button>
                                                     </div>
                                                 </div>
-                                            )}
-
-                                            {/* 🆕 자동 구간화 (Auto-Bucketing) */}
-                                            {ncGroupCol && colTypes[ncGroupCol] === 'number' && (
-                                                <div className="p-4 bg-gradient-to-r from-cyan-900/30 to-blue-900/20 rounded-xl border border-cyan-500/30">
-                                                    <label className="text-sm font-bold text-cyan-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                                        📊 자동 구간화
-                                                    </label>
-                                                    <div className="flex gap-2 flex-wrap">
-                                                        {[
-                                                            { val: '', label: '사용안함' },
-                                                            { val: '10', label: '10단위' },
-                                                            { val: '100', label: '100단위' },
-                                                            { val: '1000', label: '1000단위' },
-                                                            { val: '10000', label: '10000단위' },
-                                                            { val: 'age', label: '연령대' }
-                                                        ].map(opt => (
-                                                            <button
-                                                                key={opt.val}
-                                                                onClick={() => setNcAutoBucket(opt.val)}
-                                                                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${ncAutoBucket === opt.val ? 'bg-cyan-500 text-white shadow-lg' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
-                                                            >
-                                                                {opt.label}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            <div>
-                                                <label className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3 block">표시 컬럼 ({ncSelectedCols.length})</label>
-                                                <div className="flex flex-wrap gap-2 max-h-[140px] overflow-y-auto custom-scrollbar p-2">
+                                                <div className="flex flex-wrap gap-1.5 p-3 max-h-[130px] overflow-y-auto custom-scrollbar">
                                                     {allColumns.map(c => (
-                                                        <button
-                                                            key={c}
+                                                        <button key={c}
                                                             onClick={() => setNcSelectedCols(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c])}
-                                                            className={`px-3 py-2 rounded text-sm font-medium transition-colors border ${ncSelectedCols.includes(c) ? 'bg-brand-500/10 text-brand-400 border-brand-500/50' : 'bg-slate-800 text-slate-500 border-slate-700'}`}
-                                                        >
+                                                            className={`px-2 py-1 rounded text-xs font-medium transition-colors ${ncSelectedCols.includes(c) ? 'text-sky-300' : 'text-slate-600'}`}
+                                                            style={{
+                                                                background: ncSelectedCols.includes(c) ? 'rgba(14,165,233,0.1)' : 'rgba(255,255,255,0.03)',
+                                                                border: `1px solid ${ncSelectedCols.includes(c) ? 'rgba(14,165,233,0.3)' : 'rgba(255,255,255,0.06)'}`
+                                                            }}>
                                                             {c}
                                                         </button>
                                                     ))}
                                                 </div>
                                             </div>
 
-                                            <div>
-                                                <div className="flex justify-between items-center mb-3">
-                                                    <label className="text-sm font-bold text-slate-400 uppercase tracking-widest">조건 필터</label>
-                                                    <button onClick={() => setNcFilters([...ncFilters, { id: Date.now(), col: ncSelectedCols.length > 0 ? ncSelectedCols[0] : allColumns[0], op: '=', val: '' }])} className="text-sm text-brand-400 flex items-center gap-1">
+                                            {/* ── 조건 필터 ── */}
+                                            <div className="rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                                                <div className="flex items-center justify-between px-3 py-2.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">조건 필터</span>
+                                                    <button onClick={() => setNcFilters([...ncFilters, { id: Date.now(), col: allColumns[0] || '', op: '=', val: '' }])}
+                                                        className="flex items-center gap-1 text-[10px] text-sky-400 hover:text-sky-300 px-1.5 py-0.5 rounded transition-colors"
+                                                        style={{ background: 'rgba(14,165,233,0.08)' }}>
                                                         <Icons.Plus /> 추가
                                                     </button>
                                                 </div>
-                                                {ncFilters.map(f => (
-                                                    <div key={f.id} className="flex gap-2 mb-3">
-                                                        <select
-                                                            className="flex-1 bg-slate-950 text-sm text-slate-200 p-3 rounded border border-slate-700 outline-none"
-                                                            value={f.col}
-                                                            onChange={e => setNcFilters(ncFilters.map(i => i.id === f.id ? { ...i, col: e.target.value } : i))}
-                                                        >
-                                                            {allColumns.map(c => <option key={c}>{c}</option>)}
-                                                        </select>
-                                                        <select
-                                                            className="w-[80px] bg-slate-950 text-sm text-slate-200 p-3 rounded border border-slate-700 outline-none"
-                                                            value={f.op}
-                                                            onChange={e => setNcFilters(ncFilters.map(i => i.id === f.id ? { ...i, op: e.target.value } : i))}
-                                                        >
-                                                            <option value="=">=</option>
-                                                            <option value="gt">보다 큼</option>
-                                                            <option value="lt">보다 작음</option>
-                                                            <option value="LIKE">포함</option>
-                                                        </select>
-                                                        <input
-                                                            type="text"
-                                                            className="w-[100px] bg-slate-950 text-sm text-slate-200 p-3 rounded border border-slate-700 outline-none"
-                                                            value={f.val}
-                                                            onChange={e => setNcFilters(ncFilters.map(i => i.id === f.id ? { ...i, val: e.target.value } : i))}
-                                                        />
-                                                        <button onClick={() => setNcFilters(ncFilters.filter(i => i.id !== f.id))} className="text-red-500">
-                                                            <Icons.Trash />
-                                                        </button>
-                                                    </div>
-                                                ))}
+                                                <div className="p-3 space-y-2">
+                                                    {ncFilters.length === 0 && <p className="text-[11px] text-slate-700 text-center py-1">필터 없음</p>}
+                                                    {ncFilters.map(f => (
+                                                        <div key={f.id} className="flex gap-1.5 items-center">
+                                                            <select className="flex-1 min-w-0 bg-slate-950 text-xs text-slate-200 px-2 py-1.5 rounded border border-slate-700 outline-none"
+                                                                value={f.col} onChange={e => setNcFilters(ncFilters.map(i => i.id === f.id ? { ...i, col: e.target.value } : i))}>
+                                                                {allColumns.map(c => <option key={c}>{c}</option>)}
+                                                            </select>
+                                                            <select className="w-16 bg-slate-950 text-xs text-slate-200 px-1 py-1.5 rounded border border-slate-700 outline-none"
+                                                                value={f.op} onChange={e => setNcFilters(ncFilters.map(i => i.id === f.id ? { ...i, op: e.target.value } : i))}>
+                                                                <option value="=">=</option>
+                                                                <option value="gt">&gt;</option>
+                                                                <option value="lt">&lt;</option>
+                                                                <option value="LIKE">포함</option>
+                                                                <option value="NOT LIKE">제외</option>
+                                                            </select>
+                                                            <input type="text" className="w-20 bg-slate-950 text-xs text-slate-200 px-2 py-1.5 rounded border border-slate-700 outline-none"
+                                                                value={f.val} onChange={e => setNcFilters(ncFilters.map(i => i.id === f.id ? { ...i, val: e.target.value } : i))} />
+                                                            <button onClick={() => setNcFilters(ncFilters.filter(i => i.id !== f.id))} className="text-red-500 hover:text-red-400 flex-shrink-0">
+                                                                <Icons.Trash />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
 
-                                            <div className="p-5 bg-slate-950 border border-slate-800 rounded-xl">
-                                                <label className="text-sm font-bold text-brand-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                                    <Icons.Database /> 피벗 / 그룹화
-                                                </label>
-                                                <select
-                                                    className="bg-slate-900 text-slate-200 p-3 rounded border border-slate-700 w-full mb-3 text-base outline-none"
-                                                    value={ncGroupCol}
-                                                    onChange={e => setNcGroupCol(e.target.value)}
-                                                >
-                                                    <option value="">-- 사용 안함 --</option>
-                                                    {allColumns.map(c => <option key={c} value={c}>{c}</option>)}
-                                                </select>
-                                                {ncGroupCol && (
-                                                    <div className="flex gap-2 text-base">
-                                                        <select
-                                                            className="w-1/3 bg-slate-900 text-slate-200 p-3 rounded border border-slate-700 outline-none"
-                                                            value={ncAggFn}
-                                                            onChange={e => setNcAggFn(e.target.value)}
-                                                        >
-                                                            <option value="SUM">합계</option>
-                                                            <option value="AVG">평균</option>
-                                                            <option value="COUNT">개수</option>
-                                                            <option value="MAX">최대</option>
-                                                            <option value="MIN">최소</option>
-                                                        </select>
-                                                        <select
-                                                            className="flex-1 bg-slate-900 text-slate-200 p-3 rounded border border-slate-700 outline-none"
-                                                            value={ncAggCol}
-                                                            onChange={e => setNcAggCol(e.target.value)}
-                                                        >
-                                                            {allColumns.map(c => <option key={c} value={c}>{c}</option>)}
-                                                        </select>
+                                            {/* ── 피벗 / 그룹화 ── */}
+                                            <div className="rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                                                <div className="px-3 py-2.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                    <div className="flex items-center gap-1.5 mb-2">
+                                                        <Icons.Database />
+                                                        <span className="text-xs font-bold text-sky-400 uppercase tracking-wider">피벗 / 그룹화</span>
+                                                    </div>
+                                                    <select className="bg-slate-900 text-xs text-slate-200 px-2 py-2 rounded border border-slate-700 w-full outline-none"
+                                                        value={ncGroupCol} onChange={e => setNcGroupCol(e.target.value)}>
+                                                        <option value="">-- GROUP BY 사용 안함 --</option>
+                                                        {allColumns.map(c => <option key={c} value={c}>{c}</option>)}
+                                                    </select>
+                                                    {ncGroupCol && (
+                                                        <div className="flex gap-1.5 mt-2">
+                                                            <select className="w-1/3 bg-slate-900 text-xs text-slate-200 px-2 py-1.5 rounded border border-slate-700 outline-none"
+                                                                value={ncAggFn} onChange={e => setNcAggFn(e.target.value)}>
+                                                                <option value="SUM">합계</option>
+                                                                <option value="AVG">평균</option>
+                                                                <option value="COUNT">개수</option>
+                                                                <option value="MAX">최대</option>
+                                                                <option value="MIN">최소</option>
+                                                            </select>
+                                                            <select className="flex-1 bg-slate-900 text-xs text-slate-200 px-2 py-1.5 rounded border border-slate-700 outline-none"
+                                                                value={ncAggCol} onChange={e => setNcAggCol(e.target.value)}>
+                                                                {allColumns.map(c => <option key={c} value={c}>{c}</option>)}
+                                                            </select>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* 날짜 주기 묶기 */}
+                                                {ncGroupCol && colTypes[ncGroupCol] === 'date' && (
+                                                    <div className="px-3 py-2.5" style={{ borderBottom: '1px solid rgba(245,158,11,0.15)', background: 'rgba(245,158,11,0.04)' }}>
+                                                        <div className="text-[10px] font-bold text-amber-400 mb-2">📅 날짜 주기 묶기</div>
+                                                        <div className="flex gap-1 flex-wrap">
+                                                            {[{val:'',label:'원본'},{val:'day',label:'일'},{val:'week',label:'주'},{val:'month',label:'월'},{val:'quarter',label:'분기'},{val:'year',label:'연도'}].map(opt => (
+                                                                <button key={opt.val} onClick={() => setNcDateRollup(opt.val)}
+                                                                    className={`px-2 py-1 text-[10px] font-bold rounded transition-all ${ncDateRollup === opt.val ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-500 hover:bg-slate-700'}`}>
+                                                                    {opt.label}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* 자동 구간화 */}
+                                                {ncGroupCol && colTypes[ncGroupCol] === 'number' && (
+                                                    <div className="px-3 py-2.5" style={{ borderBottom: '1px solid rgba(6,182,212,0.15)', background: 'rgba(6,182,212,0.04)' }}>
+                                                        <div className="text-[10px] font-bold text-cyan-400 mb-2">📊 자동 구간화</div>
+                                                        <div className="flex gap-1 flex-wrap">
+                                                            {[{val:'',label:'없음'},{val:'10',label:'10단위'},{val:'100',label:'100단위'},{val:'1000',label:'1K단위'},{val:'age',label:'연령대'}].map(opt => (
+                                                                <button key={opt.val} onClick={() => setNcAutoBucket(opt.val)}
+                                                                    className={`px-2 py-1 text-[10px] font-bold rounded transition-all ${ncAutoBucket === opt.val ? 'bg-cyan-500 text-white' : 'bg-slate-800 text-slate-500 hover:bg-slate-700'}`}>
+                                                                    {opt.label}
+                                                                </button>
+                                                            ))}
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
 
-                                            <div className="flex gap-2">
-                                                <select
-                                                    className="flex-1 bg-slate-950 text-sm text-slate-200 p-3 rounded border border-slate-700 outline-none"
-                                                    value={ncSortCol}
-                                                    onChange={e => setNcSortCol(e.target.value)}
-                                                >
-                                                    <option value="">-- 정렬 안함 --</option>
-                                                    {allColumns.map(c => <option key={c} value={c}>{c}</option>)}
-                                                </select>
-                                                <select
-                                                    className="w-28 bg-slate-950 text-sm text-slate-200 p-3 rounded border border-slate-700 outline-none"
-                                                    value={ncSortDir}
-                                                    onChange={e => setNcSortDir(e.target.value)}
-                                                >
-                                                    <option value="ASC">오름차순</option>
-                                                    <option value="DESC">내림차순</option>
-                                                </select>
+                                            {/* ── 정렬 & Limit ── */}
+                                            <div className="rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                                                <div className="px-3 py-2.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">정렬</div>
+                                                    <div className="flex gap-1.5">
+                                                        <select className="flex-1 bg-slate-950 text-xs text-slate-200 px-2 py-1.5 rounded border border-slate-700 outline-none"
+                                                            value={ncSortCol} onChange={e => setNcSortCol(e.target.value)}>
+                                                            <option value="">-- 정렬 안함 --</option>
+                                                            {allColumns.map(c => <option key={c} value={c}>{c}</option>)}
+                                                        </select>
+                                                        <select className="w-20 bg-slate-950 text-xs text-slate-200 px-1 py-1.5 rounded border border-slate-700 outline-none"
+                                                            value={ncSortDir} onChange={e => setNcSortDir(e.target.value)}>
+                                                            <option value="ASC">오름차순</option>
+                                                            <option value="DESC">내림차순</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div className="px-3 py-2.5">
+                                                    <div className="flex items-center justify-between mb-1.5">
+                                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Limit</span>
+                                                        <span className="text-xs font-bold text-sky-400 font-mono">{ncLimit.toLocaleString()}</span>
+                                                    </div>
+                                                    <input type="range" min="10" max="10000" step="10" value={ncLimit}
+                                                        onChange={e => setNcLimit(Number(e.target.value))} className="w-full accent-sky-500" />
+                                                </div>
                                             </div>
 
-                                            <div>
-                                                <label className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3 block">Limit: {ncLimit}</label>
-                                                <input
-                                                    type="range"
-                                                    min="10"
-                                                    max="10000"
-                                                    step="10"
-                                                    value={ncLimit}
-                                                    onChange={e => setNcLimit(Number(e.target.value))}
-                                                    className="w-full"
-                                                />
-                                            </div>
-
-                                            <button
-                                                onClick={applyNoCodeBuilder}
-                                                className="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 text-base mt-2"
-                                            >
-                                                <Icons.Play /> 적용
+                                            {/* ── 쿼리 실행 버튼 ── */}
+                                            <button onClick={applyNoCodeBuilder}
+                                                className="w-full py-2.5 text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 text-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                                style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 4px 16px rgba(99,102,241,0.35)' }}>
+                                                <Icons.Play /> 쿼리 실행
                                             </button>
                                         </div>
                                     ) : (
@@ -1548,78 +1771,122 @@ function App() {
                             </div>
                         </div>
 
-                        {/* 오른쪽 메인 콘텐츠 영역 (Flex로 공간 채움) */}
-                        <div className="main-content flex-1 bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-5 overflow-hidden ml-4 h-full flex flex-col">
+                        {/* ── 왼쪽 데이터 워크스페이스 (메인 콘텐츠) ── */}
+                        <div className="main-content order-1 flex-1 rounded-2xl overflow-hidden h-full flex flex-col relative"
+                            style={{
+                                background: 'rgba(10,16,30,0.9)',
+                                border: '1px solid rgba(255,255,255,0.07)',
+                                boxShadow: '0 0 0 1px rgba(99,102,241,0.05), inset 0 1px 0 rgba(255,255,255,0.05)',
+                            }}>
                             {loading && (
-                                <div className="absolute inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-2xl">
-                                    <div className="w-14 h-14 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                                    <p className="text-brand-400 font-medium animate-pulse text-lg">{loading}</p>
+                                <div className="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center rounded-2xl">
+                                    <div className="w-12 h-12 border-[3px] border-brand-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+                                    <p className="text-brand-400 font-semibold animate-pulse text-sm">{loading}</p>
                                 </div>
                             )}
 
                             {!isDataReady && !loading ? (
-                                <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-3xl bg-slate-900/10">
-                                    <div className="bg-slate-800/50 p-8 rounded-full mb-6 text-slate-500">
-                                        <Icons.Upload />
+                                <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden">
+                                    {/* 배경 장식 */}
+                                    <div className="absolute inset-0 pointer-events-none">
+                                        <div className="absolute top-1/3 left-1/4 w-[500px] h-[500px] rounded-full blur-[140px] opacity-[0.07]" style={{ background: 'radial-gradient(circle, #6366f1, transparent)' }} />
+                                        <div className="absolute bottom-1/3 right-1/4 w-[400px] h-[400px] rounded-full blur-[120px] opacity-[0.05]" style={{ background: 'radial-gradient(circle, #0ea5e9, transparent)' }} />
+                                        <div className="absolute inset-0 opacity-[0.012]" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
                                     </div>
-                                    <h2 className="text-2xl font-bold text-slate-200 mb-3">데이터를 불러오세요</h2>
-                                    <button
-                                        onClick={() => loadData(Papa.parse(SAMPLE_DATA, { header: true, dynamicTyping: true }).data)}
-                                        className="px-8 py-4 bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-xl font-bold border border-slate-700 shadow-xl text-base"
-                                    >
-                                        테스트 데이터셋 로드
-                                    </button>
+                                    <div className="relative z-10 flex flex-col items-center gap-8 max-w-lg px-8 text-center">
+                                        {/* 아이콘 배지 */}
+                                        <div className="relative">
+                                            <div className="w-24 h-24 rounded-3xl flex items-center justify-center text-indigo-300" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(14,165,233,0.08))', border: '1px solid rgba(99,102,241,0.18)', boxShadow: '0 12px 40px rgba(99,102,241,0.12)' }}>
+                                                <svg className="w-11 h-11" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                            </div>
+                                            <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-indigo-500 border-2 border-slate-900 animate-pulse" />
+                                        </div>
+                                        {/* 텍스트 */}
+                                        <div>
+                                            <h2 className="text-2xl font-black text-slate-100 mb-2 tracking-tight">데이터를 불러오세요</h2>
+                                            <p className="text-sm text-slate-500 leading-relaxed">CSV / JSON 파일을 드래그하거나,<br />샘플 데이터로 모든 기능을 체험해보세요.</p>
+                                        </div>
+                                        {/* 샘플 데이터 버튼 */}
+                                        <button
+                                            onClick={() => loadData(Papa.parse(SAMPLE_DATA, { header: true, dynamicTyping: true }).data)}
+                                            className="group px-8 py-3 text-sm font-bold text-white rounded-2xl transition-all hover:scale-[1.03] active:scale-95 flex items-center gap-2.5"
+                                            style={{ background: 'linear-gradient(135deg, #6366f1, #0ea5e9)', boxShadow: '0 4px 28px rgba(99,102,241,0.35)' }}
+                                        >
+                                            <svg className="w-4 h-4 transition-transform group-hover:rotate-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                            샘플 데이터셋 로드
+                                        </button>
+                                        {/* 지원 포맷 */}
+                                        <div className="flex items-center gap-3">
+                                            {['CSV', 'JSON', 'XLSX'].map(f => (
+                                                <span key={f} className="px-2.5 py-1 rounded-lg text-[10px] font-black text-slate-500 uppercase tracking-wider"
+                                                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>{f}</span>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="flex-1 flex flex-col h-full overflow-hidden">
-                                    <div className="flex justify-between items-center mb-4 shrink-0">
-                                        <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-900/30 to-yellow-900/20 border border-amber-500/30 rounded-lg mr-4">
-                                            <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                            <span className="text-xs font-bold text-amber-400">📌 {dataSourceName}</span>
+                                    {/* ── 데이터 뷰 툴바 ── */}
+                                    <div className="flex items-center gap-2 px-4 py-3.5 shrink-0 flex-wrap" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
+                                        {/* 데이터 소스 배지 */}
+                                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg shrink-0" style={{ background: 'rgba(251,191,36,0.07)', border: '1px solid rgba(251,191,36,0.18)' }}>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                                            <span className="text-xs font-semibold text-amber-400/90 truncate max-w-[130px]">{dataSourceName}</span>
                                         </div>
 
-                                        <div className="flex bg-slate-900 rounded-xl p-1 border border-slate-800 shadow-inner">
+                                        {/* 뷰 모드 탭 */}
+                                        <div className="flex flex-1 rounded-xl p-1 gap-0.5 min-w-0" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
                                             {[
-                                                { id: 'raw', icon: <Icons.Eye />, label: '원본' },
-                                                { id: 'grid', icon: <Icons.Table />, label: '결과 그리드' },
-                                                { id: 'pivot', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>, label: '피벗 테이블' },
-                                                { id: 'chart', icon: <Icons.Chart />, label: '차트' }
+                                                { id: 'raw',     icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>, label: '원본' },
+                                                { id: 'grid',    icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18M10 3v18M14 3v18M3 3h18v18H3z" /></svg>, label: '결과 그리드' },
+                                                { id: 'pivot',   icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" /></svg>, label: '피벗' },
+                                                { id: 'chart',   icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>, label: '차트' },
+                                                { id: 'insight', icon: <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>, label: '인사이트', accent: true },
                                             ].map(mode => (
-                                                <button
-                                                    key={mode.id}
-                                                    onClick={() => setViewMode(mode.id)}
-                                                    className={`px-5 py-3 text-base font-semibold rounded-lg transition-all flex items-center gap-2 ${viewMode === mode.id ? 'bg-slate-700 text-white shadow-md' : 'text-slate-500 hover:text-slate-300'}`}
-                                                >
-                                                    {mode.icon} {mode.label}
+                                                <button key={mode.id} onClick={() => setViewMode(mode.id)}
+                                                    className={`flex-1 px-2.5 py-2 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${viewMode === mode.id ? 'text-white' : 'text-slate-600 hover:text-slate-300'}`}
+                                                    style={viewMode === mode.id ? {
+                                                        background: mode.accent ? 'linear-gradient(135deg, rgba(139,92,246,0.3), rgba(99,102,241,0.2))' : 'linear-gradient(135deg, rgba(99,102,241,0.25), rgba(14,165,233,0.15))',
+                                                        boxShadow: mode.accent ? '0 1px 8px rgba(139,92,246,0.3), inset 0 1px 0 rgba(255,255,255,0.1)' : '0 1px 8px rgba(99,102,241,0.2), inset 0 1px 0 rgba(255,255,255,0.1)',
+                                                        border: mode.accent ? '1px solid rgba(139,92,246,0.35)' : '1px solid rgba(99,102,241,0.25)',
+                                                    } : {}}>
+                                                    {mode.icon}
+                                                    <span className="hidden lg:inline">{mode.label}</span>
+                                                    {mode.accent && viewMode !== mode.id && <span className="hidden xl:inline-block w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />}
                                                 </button>
                                             ))}
                                         </div>
-                                        <div className="flex items-center gap-3">
+
+                                        {/* 통계 + 이전결과 버튼 */}
+                                        <div className="flex items-center gap-2 shrink-0">
                                             {resultHistory.length > 0 && (
-                                                <button
-                                                    onClick={goBackToPreviousResult}
-                                                    className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 shadow-md"
-                                                    title={`${resultHistory.length}개의 이전 결과로 되돌아가기`}
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                                                    </svg>
-                                                    이전 결과로 ({resultHistory.length})
+                                                <button onClick={goBackToPreviousResult}
+                                                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all hover:scale-105 active:scale-95"
+                                                    style={{ background: 'rgba(251,191,36,0.07)', border: '1px solid rgba(251,191,36,0.18)', color: '#fbbf24' }}
+                                                    title={`${resultHistory.length}개 이전 결과로 되돌리기`}>
+                                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
+                                                    <span>되돌리기</span>
+                                                    <span className="font-mono opacity-60">({resultHistory.length})</span>
                                                 </button>
                                             )}
-                                            <div className="text-sm text-slate-500 bg-slate-900 px-5 py-3 rounded-xl border border-slate-800 font-mono">
-                                                <span>ROWS: <b>{viewMode === 'raw' ? originalData.length : data.length}</b></span>
-                                                <span className="mx-2">|</span>
-                                                <span>COLS: <b>{columns.length}</b></span>
+                                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg font-mono text-xs" style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                                <span className="text-slate-600">ROWS</span>
+                                                <span className="font-bold text-sky-400">{(viewMode === 'raw' ? originalData.length : data.length).toLocaleString()}</span>
+                                                <span className="text-slate-700 mx-0.5">·</span>
+                                                <span className="text-slate-600">COLS</span>
+                                                <span className="font-bold text-violet-400">{columns.length}</span>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="flex-1 overflow-hidden relative">
-                                        {viewMode === 'raw' && <DataGrid data={originalData} columns={Object.keys(originalData[0] || {})} readOnly={true} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} />}
-                                        {viewMode === 'grid' && <DataGrid data={data} columns={columns} onUpdate={handleCellUpdate} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} />}
-                                        {viewMode === 'pivot' && <PivotTable data={data} columns={columns} colTypes={colTypes} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} />}
-                                        {viewMode === 'chart' && <ChartViewer data={data} columns={columns} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} />}
+                                    <div className="flex-1 overflow-hidden relative p-3">
+                                        {viewMode === 'raw' && <DataGrid data={originalData} columns={Object.keys(originalData[0] || {})} readOnly={true} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} onRequestZoom={() => navigateTo('mainZoom')} />}
+                                        {viewMode === 'grid' && <DataGrid data={data} columns={columns} onUpdate={handleCellUpdate} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} onRequestZoom={() => navigateTo('mainZoom')} />}
+                                        {viewMode === 'insight' && <InsightStudio data={data} columns={columns} colTypes={colTypes} />}
+                                        <Suspense fallback={<div className="flex items-center justify-center h-full text-slate-500 text-sm">로딩 중...</div>}>
+                                            {viewMode === 'pivot' && <PivotTable data={data} columns={columns} colTypes={colTypes} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} onRequestZoom={() => navigateTo('mainZoom')} />}
+                                            {viewMode === 'chart' && <ChartViewer data={data} columns={columns} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} onRequestZoom={() => navigateTo('mainZoom')} />}
+                                        </Suspense>
                                     </div>
                                 </div>
                             )}
@@ -1627,15 +1894,19 @@ function App() {
                     </div>
                 )}
 
-                <CmdPalette
-                    isOpen={cmdOpen}
-                    onClose={() => setCmdOpen(false)}
-                    actions={actions}
-                    isDataReady={isDataReady}
-                    columns={columns}
-                    colTypes={colTypes}
-                    previewData={data.slice(0, 5)}
-                />
+                </Suspense>
+
+                <Suspense fallback={null}>
+                    <CmdPalette
+                        isOpen={cmdOpen}
+                        onClose={() => setCmdOpen(false)}
+                        actions={actions}
+                        isDataReady={isDataReady}
+                        columns={columns}
+                        colTypes={colTypes}
+                        previewData={data.slice(0, 5)}
+                    />
+                </Suspense>
             </div>
         </div>
     );

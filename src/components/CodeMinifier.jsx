@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+﻿import React, { useState, useCallback, useEffect } from 'react';
 
 const CodeMinifier = () => {
     // === 상태 관리 ===
@@ -11,6 +11,7 @@ const CodeMinifier = () => {
         gzipOriginal: 0, gzipMinified: 0 
     });
     const [meta, setMeta] = useState({ lines: 0, chars: 0 });
+    const [showDiff, setShowDiff] = useState(false);
 
     // === 샘플 데이터 ===
     const samples = {
@@ -196,21 +197,28 @@ function hello(name) {
     }, [mode]);
 
     return (
-        <div className="w-full h-full min-h-[850px] bg-slate-900 rounded-2xl p-6 border border-slate-700 flex flex-col">
+        <div className="w-full h-full p-5 flex flex-col overflow-hidden" style={{ background: '#08101e' }}>
             {/* 1. 헤더 */}
-            <div className="flex items-center justify-between mb-6 flex-shrink-0">
+            <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/[0.06] flex-shrink-0">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/[0.08]">
                         <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                         </svg>
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-100">Dev Code Studio</h2>
-                        <p className="text-slate-400 text-sm">압축, 정렬, 변환, 분석을 한 곳에서</p>
+                        <h2 className="text-base font-bold text-slate-100">Dev Code Studio</h2>
+                        <p className="text-xs text-slate-500">압축, 정렬, 변환, 분석을 한 곳에서</p>
                     </div>
                 </div>
                 
+                <div className="flex gap-2">
+                <button
+                    onClick={() => setShowDiff(v => !v)}
+                    className={`px-3 py-2 rounded-lg text-sm font-bold border transition-all ${showDiff ? 'bg-amber-500/20 border-amber-500/40 text-amber-400' : 'bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700'}`}
+                >
+                    ⚡ Diff 뷰
+                </button>
                 {/* 파일 업로드 버튼 */}
                 <label className="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-slate-600 flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -219,6 +227,7 @@ function hello(name) {
                     파일 열기
                     <input type="file" className="hidden" onChange={handleFileUpload} />
                 </label>
+                </div>
             </div>
 
             {/* 2. 툴바 (언어 및 액션 선택) */}
@@ -262,6 +271,33 @@ function hello(name) {
             </div>
 
             {/* 3. 메인 에디터 (Grid Layout - Full Height) */}
+            {showDiff && input && output ? (
+            <div className="flex-1 flex flex-col min-h-0">
+                <div className="flex items-center justify-between mb-2 px-1">
+                    <span className="text-sm font-semibold text-amber-400">Diff View — 원본 vs 결과</span>
+                    <span className="text-xs text-slate-500">빨간=원본, 초록=결과</span>
+                </div>
+                <div className="flex-1 bg-slate-950 rounded-xl border border-white/[0.05] overflow-y-auto custom-scrollbar font-mono text-xs p-4">
+                    {(() => {
+                        const origLines = input.split('\n');
+                        const newLines = output.split('\n');
+                        const maxLen = Math.max(origLines.length, newLines.length);
+                        const rows = [];
+                        for (let i = 0; i < maxLen; i++) {
+                            const a = origLines[i];
+                            const b = newLines[i];
+                            if (a === b) {
+                                rows.push(<div key={i} className="text-slate-600 px-2 py-0.5 leading-relaxed">&nbsp; {a ?? ''}</div>);
+                            } else {
+                                if (a !== undefined) rows.push(<div key={`a${i}`} className="bg-red-900/20 text-red-400 px-2 py-0.5 leading-relaxed border-l-2 border-red-500/50">- {a}</div>);
+                                if (b !== undefined) rows.push(<div key={`b${i}`} className="bg-green-900/20 text-green-400 px-2 py-0.5 leading-relaxed border-l-2 border-green-500/50">+ {b}</div>);
+                            }
+                        }
+                        return rows;
+                    })()}
+                </div>
+            </div>
+            ) : (
             <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0">
                 {/* 좌측: 입력 */}
                 <div className="flex flex-col h-full min-h-0">
@@ -308,10 +344,11 @@ function hello(name) {
                         value={output}
                         readOnly
                         placeholder="// Result will appear here..."
-                        className="flex-1 w-full bg-slate-950 text-amber-50 text-opacity-90 p-4 rounded-xl border border-slate-800 focus:outline-none font-mono text-sm resize-none shadow-inner"
+                        className="flex-1 w-full bg-slate-950 text-amber-50 text-opacity-90 p-4 rounded-xl border border-white/[0.05] focus:outline-none font-mono text-sm resize-none shadow-inner"
                     />
                 </div>
             </div>
+            )}
 
             {/* 4. 하단 통계 및 상태바 */}
             <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 flex-shrink-0">

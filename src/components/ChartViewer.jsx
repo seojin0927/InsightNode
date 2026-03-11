@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import Chart from 'chart.js/auto';
 import 'chartjs-plugin-datalabels';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
@@ -6,29 +7,36 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 // Chart.js v3+에서 datalabels 플러그인 등록
 Chart.register(ChartDataLabels);
 
-const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = false, watermarkText: propWatermarkText = 'CONFIDENTIAL', watermarkDesign: propWatermarkDesign = 'single', onZoomChange }) => {
+const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = false, watermarkText: propWatermarkText = 'CONFIDENTIAL', watermarkDesign: propWatermarkDesign = 'single', onZoomChange, onRequestZoom, hideToolbar = false }) => {
     
     // 로컬 상태 (App에서 전달된 props가 없거나 활성화된 경우 사용)
-    const [localWatermarkEnabled, setLocalWatermarkEnabled] = useState(false);
-    const [localWatermarkText, setLocalWatermarkText] = useState('CONFIDENTIAL');
-    const [localWatermarkDesign, setLocalWatermarkDesign] = useState('single');
-    const [localWatermarkColor, setLocalWatermarkColor] = useState('#dc2626'); // 워터마크 색상
-    const [watermarkGridSize, setWatermarkGridSize] = useState(8); // 2x2, 3x3, 4x4... 최대 16x16
-    const [watermarkFontSize, setWatermarkFontSize] = useState(48); // 워터마크 글자크기
+    const [localWatermarkEnabled, setLocalWatermarkEnabled] = useState(Boolean(propWatermarkEnabled));
+    const [localWatermarkText, setLocalWatermarkText] = useState(propWatermarkText || 'CONFIDENTIAL');
+    const [localWatermarkDesign, setLocalWatermarkDesign] = useState(propWatermarkDesign || 'single');
+    const [localWatermarkColor, setLocalWatermarkColor] = useState('#dc2626');
+    const [watermarkGridSize, setWatermarkGridSize] = useState(3);
+    const [watermarkFontSize, setWatermarkFontSize] = useState(48);
+    const [watermarkOpacity, setWatermarkOpacity] = useState(0.12);
+    const [watermarkPosition, setWatermarkPosition] = useState('center'); // center | top-left | top-right | bottom-left | bottom-right | all-corners
+    const [watermarkAngle, setWatermarkAngle] = useState(-45);
     
-    // props가 제공되면 이를 사용, 그렇지 않으면 로컬 상태 사용
-    // 디자인 선택은 local 상태를 우선 사용 (사용자 선택 적용)
-    const watermarkEnabled = propWatermarkEnabled || localWatermarkEnabled;
-    const watermarkText = propWatermarkEnabled ? propWatermarkText : localWatermarkText;
-    const watermarkDesign = localWatermarkDesign; // 로컬 상태를 우선 사용
-    const watermarkColor = localWatermarkColor; // 워터마크 색상
-    
-    // 로컬 상태를 업데이트하는 함수 (App에서 props를 전달하지 않은 경우 사용)
-    const updateLocalWatermark = (setter) => (value) => {
-        if (!propWatermarkEnabled) {
-            setter(value);
-        }
-    };
+    // 부모에서 값이 바뀌면 초기값처럼 동기화하되, 이후 UI 제어는 로컬에서 일관되게 처리한다.
+    useEffect(() => {
+        setLocalWatermarkEnabled(Boolean(propWatermarkEnabled));
+    }, [propWatermarkEnabled]);
+
+    useEffect(() => {
+        setLocalWatermarkText(propWatermarkText || 'CONFIDENTIAL');
+    }, [propWatermarkText]);
+
+    useEffect(() => {
+        setLocalWatermarkDesign(propWatermarkDesign || 'single');
+    }, [propWatermarkDesign]);
+
+    const watermarkEnabled = localWatermarkEnabled;
+    const watermarkText = localWatermarkText;
+    const watermarkDesign = localWatermarkDesign;
+    const watermarkColor = localWatermarkColor;
     const canvasRef = useRef(null);
     const chartRef = useRef(null);
     const containerRef = useRef(null);
@@ -46,9 +54,16 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
     const [title, setTitle] = useState('');
     const [aggregationType, setAggregationType] = useState('sum'); 
     
-    // 💡 획기적 기능: 상위 N개 외 '기타' 자동 묶기 (실무 필수)
+    // 상위 N개 외 '기타' 자동 묶기
     const [groupOthers, setGroupOthers] = useState(false);
     const [topNCount, setTopNCount] = useState(5);
+    
+    // 트렌드 라인 (선형 회귀)
+    const [showTrendLine, setShowTrendLine] = useState(false);
+    // 데이터 테이블 표시
+    const [showDataTable, setShowDataTable] = useState(false);
+    // 누적 % 보기 (폭포/파레토)
+    const [showCumulativeLine, setShowCumulativeLine] = useState(false);
 
     // ================= 디자인 & 포맷 상태 =================
     const [valueFormat, setValueFormat] = useState('none'); 
@@ -99,6 +114,30 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
     const [targetValue, setTargetValue] = useState('');
     const [activeDesignTab, setActiveDesignTab] = useState('data');
     const [showDataSettings, setShowDataSettings] = useState(false);
+    const [showChartPanel, setShowChartPanel] = useState(false);
+    const [chartPanelTab, setChartPanelTab] = useState('data');
+    const [chartPanelPos, setChartPanelPos] = useState({ top: 0, right: 0 });
+    const chartSettingsBtnRef = useRef(null);
+
+    const openChartPanel = (tab = 'data') => {
+        if (chartSettingsBtnRef.current) {
+            const rect = chartSettingsBtnRef.current.getBoundingClientRect();
+            setChartPanelPos({ top: rect.bottom + 6, right: Math.max(8, window.innerWidth - rect.right) });
+        }
+        setChartPanelTab(tab);
+        setShowChartPanel(v => !v);
+    };
+
+    useEffect(() => {
+        const handleClose = (e) => {
+            if (showChartPanel && chartSettingsBtnRef.current && !chartSettingsBtnRef.current.contains(e.target)) {
+                const panel = document.getElementById('chart-floating-panel');
+                if (panel && !panel.contains(e.target)) setShowChartPanel(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClose);
+        return () => document.removeEventListener('mousedown', handleClose);
+    }, [showChartPanel]);
 
     // 배경색 변경 시 격자 그물색상 자동 조정
     useEffect(() => {
@@ -227,13 +266,10 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
             setBorderRadius(2);
             setShowDataLabels(true);
             setDataLabelPosition('top');
-            // 대외비(워터마크) 자동 활성화 - 문서/보고서용에서만 적용
-            if (!propWatermarkEnabled) {
-                setLocalWatermarkEnabled(true);
-                setLocalWatermarkText('CONFIDENTIAL');
-                setLocalWatermarkDesign('single');
-            }
-            alert('인쇄/문서용(Report) 템플릿이 적용되었습니다. (대외비 워터마크 자동 적용)');
+            setLocalWatermarkEnabled(true);
+            setLocalWatermarkText('CONFIDENTIAL');
+            setLocalWatermarkDesign('single');
+            setWatermarkPosition('center');
         } else if (type === 'pitch') {
             setBackgroundColor('transparent'); // PPT 배경에 스며들도록
             setColorTheme('corporate');
@@ -247,11 +283,7 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
             setBorderRadius(8);
             setShowDataLabels(true);
             setDataLabelPosition('center');
-            // 다크/발표용에서는 워터마크 비활성화
-            if (!propWatermarkEnabled) {
-                setLocalWatermarkEnabled(false);
-            }
-            alert('프레젠테이션(Pitch) 템플릿이 적용되었습니다. (배경 투명화 됨)');
+            setLocalWatermarkEnabled(false);
         }
     };
 
@@ -386,35 +418,47 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
     };
 
     // 워터마크 캔버스에 그리기
-    const drawWatermark = (ctx, width, height, design, text, gridSize = 2, color = '#dc2626', fontSize = 48) => {
-        // 색상에서 rgb 추출하여 투명도 적용
+    const drawWatermark = (ctx, width, height, design, text, gridSize = 3, color = '#dc2626', fontSize = 48, opacity = 0.12, position = 'center', angle = -45) => {
         const hexToRgba = (hex, alpha) => {
             const r = parseInt(hex.slice(1, 3), 16);
             const g = parseInt(hex.slice(3, 5), 16);
             const b = parseInt(hex.slice(5, 7), 16);
             return `rgba(${r}, ${g}, ${b}, ${alpha})`;
         };
-        
+        const rad = (angle * Math.PI) / 180;
+        const getPosXY = (pos) => {
+            const pad = 40;
+            const map = {
+                'center': [width / 2, height / 2],
+                'top-left': [pad, pad + fontSize / 2],
+                'top-right': [width - pad, pad + fontSize / 2],
+                'bottom-left': [pad, height - pad],
+                'bottom-right': [width - pad, height - pad],
+            };
+            return map[pos] || map['center'];
+        };
+
         if (design === 'single') {
+            const [x, y] = getPosXY(position);
             ctx.save();
-            ctx.translate(width / 2, height / 2);
-            ctx.rotate(-Math.PI / 4);
+            ctx.translate(x, y);
+            ctx.rotate(rad);
             ctx.font = `bold ${fontSize}px sans-serif`;
-            ctx.fillStyle = hexToRgba(color, 0.08);
+            ctx.fillStyle = hexToRgba(color, opacity);
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(text, 0, 0);
             ctx.restore();
         } else if (design === 'multiple') {
-            // 그리드 크기에 따라 글자 크기 자동 조절 (최대 fontSize, 최소 12px)
-            const adjustedFontSize = Math.max(12, Math.min(fontSize, fontSize - gridSize * 2));
+            const n = Math.max(1, gridSize);
+            const adjustedFontSize = Math.max(10, Math.round(fontSize / Math.sqrt(n)));
             ctx.font = `bold ${adjustedFontSize}px sans-serif`;
-            ctx.fillStyle = hexToRgba(color, 0.06);
-            for (let i = 0; i < gridSize; i++) {
-                for (let j = 0; j < gridSize; j++) {
+            ctx.fillStyle = hexToRgba(color, opacity * 0.7);
+            for (let i = 0; i < n; i++) {
+                for (let j = 0; j < n; j++) {
                     ctx.save();
-                    ctx.translate(j * width / gridSize + width / (gridSize * 2), i * height / gridSize + height / (gridSize * 2));
-                    ctx.rotate(-Math.PI / 4);
+                    ctx.translate(j * width / n + width / (n * 2), i * height / n + height / (n * 2));
+                    ctx.rotate(rad);
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(text, 0, 0);
@@ -422,22 +466,18 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
                 }
             }
         } else if (design === 'corner') {
-            // 4코너 배치 - 글자 크기의 60% 크기
-            const cornerFontSize = Math.max(24, fontSize * 0.6);
+            const cornerFontSize = Math.max(16, fontSize * 0.55);
             ctx.font = `bold ${cornerFontSize}px sans-serif`;
-            ctx.fillStyle = hexToRgba(color, 0.12);
-            // 우상단
-            ctx.textAlign = 'right';
-            ctx.fillText(text, width - 30, 50);
-            // 좌하단
-            ctx.textAlign = 'left';
-            ctx.fillText(text, 30, height - 30);
-            // 좌상단
-            ctx.textAlign = 'left';
-            ctx.fillText(text, 30, 50);
-            // 우하단
-            ctx.textAlign = 'right';
-            ctx.fillText(text, width - 30, height - 30);
+            ctx.fillStyle = hexToRgba(color, opacity + 0.05);
+            const pad = 30;
+            [['right', width - pad, pad + cornerFontSize / 2],
+             ['left',  pad,         pad + cornerFontSize / 2],
+             ['left',  pad,         height - pad],
+             ['right', width - pad, height - pad]].forEach(([align, x, y]) => {
+                ctx.textAlign = align;
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, x, y);
+            });
         }
     };
 
@@ -455,7 +495,7 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
 
         // 워터마크 그리기
         if (watermarkEnabled) {
-            drawWatermark(ctx, tempCanvas.width, tempCanvas.height, watermarkDesign, watermarkText, watermarkGridSize, watermarkColor, watermarkFontSize);
+            drawWatermark(ctx, tempCanvas.width, tempCanvas.height, watermarkDesign, watermarkText, watermarkGridSize, watermarkColor, watermarkFontSize, watermarkOpacity, watermarkPosition, watermarkAngle);
         }
 
         textOverlays.forEach(textObj => {
@@ -660,6 +700,23 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
             });
         }
 
+        // 트렌드 라인 (선형 회귀)
+        if (showTrendLine && !isPie && vals.length >= 2) {
+            const n = vals.length;
+            const xSum = vals.reduce((s, _, i) => s + i, 0);
+            const ySum = vals.reduce((s, v) => s + v, 0);
+            const xySum = vals.reduce((s, v, i) => s + i * v, 0);
+            const x2Sum = vals.reduce((s, _, i) => s + i * i, 0);
+            const slope = (n * xySum - xSum * ySum) / (n * x2Sum - xSum * xSum) || 0;
+            const intercept = (ySum - slope * xSum) / n;
+            const trendData = vals.map((_, i) => parseFloat((slope * i + intercept).toFixed(2)));
+            datasets.push({
+                type: 'line', label: '추세선', data: trendData,
+                borderColor: 'rgba(99,102,241,0.9)', borderWidth: 2, borderDash: [8, 4],
+                pointRadius: 0, fill: false, datalabels: { display: false }
+            });
+        }
+
         // 워터마크를 차트에 실시간으로 그리기 위한 플러그인
         const watermarkPlugin = {
             id: 'watermarkPlugin',
@@ -668,7 +725,7 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
                 const ctx = chart.ctx;
                 const width = chart.width;
                 const height = chart.height;
-                drawWatermark(ctx, width, height, watermarkDesign, watermarkText, watermarkGridSize, watermarkColor, watermarkFontSize);
+                drawWatermark(ctx, width, height, watermarkDesign, watermarkText, watermarkGridSize, watermarkColor, watermarkFontSize, watermarkOpacity, watermarkPosition, watermarkAngle);
             }
         };
 
@@ -735,7 +792,7 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
 
         chartRef.current = new Chart(ctx, config);
         return () => { if (chartRef.current) chartRef.current.destroy(); };
-    }, [chartDataObj, chartType, title, showLegend, legendPosition, colorTheme, backgroundColor, showGrid, barThickness, borderRadius, lineWidth, fontFamily, fonts, xAxisLabel, yAxisLabel, showHorizontal, showDataLabels, beginAtZero, gridColor, labelColor, titleColor, stacked, cutoutPercent, valueFormat, showAverageLine, customColors, autoHighlight, highlightNegative, enableGradient, dataLabelPosition, lineStyle, yMin, yMax, showPiePercent, chartPadding, watermarkEnabled, watermarkText, watermarkDesign, watermarkGridSize, watermarkFontSize]);
+    }, [chartDataObj, chartType, title, showLegend, legendPosition, colorTheme, backgroundColor, showGrid, barThickness, borderRadius, lineWidth, fontFamily, fonts, xAxisLabel, yAxisLabel, showHorizontal, showDataLabels, beginAtZero, gridColor, labelColor, titleColor, stacked, cutoutPercent, valueFormat, showAverageLine, customColors, autoHighlight, highlightNegative, enableGradient, dataLabelPosition, lineStyle, yMin, yMax, showPiePercent, chartPadding, watermarkEnabled, watermarkText, watermarkDesign, watermarkGridSize, watermarkFontSize, watermarkOpacity, watermarkPosition, watermarkAngle, showTrendLine]);
 
     const activeTabClass = "px-4 py-3 text-sm font-bold text-brand-400 border-b-2 border-brand-500 bg-slate-800/80 transition-colors";
     const inactiveTabClass = "px-4 py-3 text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 transition-colors";
@@ -743,119 +800,334 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
     return (
         <div className="flex flex-col h-full bg-slate-900/50 border border-slate-800 rounded-lg overflow-hidden font-sans" ref={containerRef}>
             
-            {/* 2층 툴바: 데이터 설정, 템플릿, AI, 내보내기 */}
-            <div className="flex flex-wrap items-center gap-2 p-2.5 bg-slate-900 border-b border-slate-800 shrink-0 z-10">
-                <div className="flex items-center gap-1.5 bg-slate-800/50 p-1.5 rounded-lg border border-slate-700">
-                    <span className="text-[10px] text-slate-400 font-bold ml-1">🪄 퀵 템플릿:</span>
-                    <button onClick={() => applyTemplate('report')} className="px-3 py-1 bg-white text-slate-800 text-xs font-bold rounded hover:bg-slate-200 transition-colors shadow-sm">문서/보고서용</button>
-                    <button onClick={() => applyTemplate('pitch')} className="px-3 py-1 bg-slate-950 text-brand-400 border border-slate-700 text-xs font-bold rounded hover:bg-slate-900 transition-colors shadow-sm">다크/발표용</button>
+            {/* ── 통합 툴바 ── */}
+            {!hideToolbar && <div className="flex items-center gap-2 px-3 py-2 bg-slate-900 border-b border-slate-800 shrink-0">
+                {/* 차트 타입 빠른 선택 (텍스트) */}
+                <div className="flex items-center gap-0.5 bg-slate-800/40 p-1 rounded-lg border border-slate-700/50">
+                    {[
+                        { type: 'bar', label: '막대' }, { type: 'line', label: '꺾선' }, { type: 'area', label: '영역' },
+                        { type: 'pie', label: '파이' }, { type: 'doughnut', label: '도넛' }, { type: 'radar', label: '레이더' },
+                        { type: 'combo', label: '복합' }, { type: 'polarArea', label: '폴라' },
+                    ].map(t => (
+                        <button key={t.type} onClick={() => setChartType(t.type)}
+                            className={`px-2 py-1 rounded text-[10px] font-bold transition-all ${chartType === t.type ? 'bg-brand-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-700'}`}>
+                            {t.label}
+                        </button>
+                    ))}
                 </div>
 
-                <div className="flex items-center gap-2 ml-auto">
-                    {/* 데이터 설정 버튼 - 별도 패널 */}
-                <button 
-                    onClick={() => {
-                        document.getElementById('data-settings-panel').classList.toggle('hidden');
-                    }} 
-                    className={`px-3 py-1.5 text-xs rounded font-bold transition-all flex items-center gap-1 ${showDataSettings ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'}`}
-                >
-                    📊 데이터 설정
+                <div className="flex items-center gap-1.5 ml-auto">
+                    {/* ⚙️ 설정 버튼 */}
+                    <button ref={chartSettingsBtnRef} onClick={() => openChartPanel(chartPanelTab)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-semibold transition-all hover:scale-105"
+                        style={{ background: showChartPanel ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.04)', border: `1px solid ${showChartPanel ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.1)'}`, color: showChartPanel ? '#a5b4fc' : '#94a3b8' }}>
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                        </svg>
+                        디자인
                 </button>
+                    {/* 내보내기 버튼들 */}
+                    <button onClick={copyToClipboard} disabled={!chartDataObj.labels.length} className="px-2.5 py-1.5 text-xs rounded-lg font-semibold hover:scale-105 transition-all disabled:opacity-30" style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.22)', color: '#a78bfa' }}>복사</button>
+                    <button onClick={exportAsPNG} disabled={!chartDataObj.labels.length} className="px-2.5 py-1.5 text-xs rounded-lg font-semibold hover:scale-105 transition-all disabled:opacity-30" style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.22)', color: '#c4b5fd' }}>PNG</button>
+                    <button onClick={() => {
+                        if (!chartDataObj.labels.length) return;
+                        const total = chartDataObj.vals.reduce((a,b)=>a+b,0);
+                        const rows = [['항목','값','비율(%)'], ...chartDataObj.labels.map((l,i)=>[l,chartDataObj.vals[i],((chartDataObj.vals[i]/total)*100).toFixed(2)+'%'])];
+                        const blob = new Blob(['\uFEFF'+rows.map(r=>r.join(',')).join('\n')],{type:'text/csv;charset=utf-8;'});
+                        const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`chart_${Date.now()}.csv`; a.click();
+                    }} disabled={!chartDataObj.labels.length} className="px-2.5 py-1.5 text-xs rounded-lg font-semibold hover:scale-105 transition-all disabled:opacity-30" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.22)', color: '#34d399' }}>CSV</button>
+                    {/* 전체화면 */}
+                    <button onClick={() => {
+                        if (onRequestZoom) { onRequestZoom(); return; }
+                        if (!containerRef.current) return;
+                        if (!isFullscreen) { ['position','top','left','right','bottom','width','height','zIndex','background'].forEach((k,i) => { containerRef.current.style[k] = ['fixed','0','0','0','0','100%','100%','9999','#0f172a'][i]; }); }
+                        else { ['position','top','left','right','bottom','width','height','zIndex','background'].forEach(k => { containerRef.current.style[k] = ''; }); }
+                        setIsFullscreen(!isFullscreen); if (onZoomChange) onZoomChange(!isFullscreen);
+                    }} className="p-1.5 rounded-lg transition-all hover:scale-105" style={{ background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.2)', color: '#22d3ee' }} title={isFullscreen ? '원래 크기로' : '전체화면'}>
+                        {isFullscreen ? <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>}
+                    </button>
+                </div>
+            </div>}
 
-                {/* 세부 디자인 버튼 - 색상/조건부서식 탭이 기본, 토글 가능 */}
-                <button 
-                    onClick={() => {
-                        const panel = document.getElementById('chart-design-panel');
-                        if (panel.classList.contains('hidden')) {
-                            panel.classList.remove('hidden');
-                            setActiveDesignTab('theme'); // 색상/조건부서식을 기본으로
-                        } else {
-                            panel.classList.add('hidden');
-                        }
-                    }} 
-                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded font-bold transition-colors flex items-center gap-1"
-                >
-                    🎨 세부 디자인
+            {/* ── Portal: 플로팅 차트 설정 패널 ── */}
+            {showChartPanel && createPortal(
+                <div id="chart-floating-panel"
+                    className="flex flex-col rounded-2xl shadow-2xl overflow-hidden"
+                    style={{ position: 'fixed', top: chartPanelPos.top, right: chartPanelPos.right, width: 340, maxHeight: '82vh', zIndex: 9999, background: 'rgba(5,10,24,0.98)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(24px)' }}>
+                    {/* 헤더 */}
+                    <div className="flex items-center gap-2 px-4 py-3 border-b border-white/8">
+                        <span className="text-sm font-bold text-slate-200 flex-1">차트 설정</span>
+                        <button onClick={() => setShowChartPanel(false)} className="p-1 rounded-lg hover:bg-white/10 text-slate-500 hover:text-white transition-colors">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
-                    <button onClick={() => {setIsAddingText(!isAddingText); setOverlayType('text');}} className={`px-3 py-1.5 text-xs rounded font-bold transition-all ${isAddingText ? 'bg-amber-600 text-white shadow-lg' : 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'}`}>T 텍스트 추가</button>
-                    <div className="w-px h-5 bg-slate-700 mx-1"></div>
-                    <button onClick={copyToClipboard} disabled={!chartDataObj.labels.length} className="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 disabled:bg-slate-800 text-white text-xs rounded font-bold transition-colors">복사 (클립보드)</button>
-                    <button onClick={exportAsPNG} disabled={!chartDataObj.labels.length} className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 text-white text-xs rounded font-bold transition-colors">PNG 저장</button>
-                    {/* 🆕 집계 데이터 CSV 내보내기 */}
-                    <button 
-                        onClick={() => {
-                            if (!chartDataObj.labels.length) return;
-                            const csvRows = [['항목', '값', '비율(%)']];
-                            const total = chartDataObj.vals.reduce((a, b) => a + b, 0);
-                            chartDataObj.labels.forEach((label, i) => {
-                                const val = chartDataObj.vals[i];
-                                const percent = ((val / total) * 100).toFixed(2);
-                                csvRows.push([label, val, percent + '%']);
-                            });
-                            const csvContent = csvRows.map(r => r.join(',')).join('\n');
-                            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                            const link = document.createElement('a');
-                            link.href = URL.createObjectURL(blob);
-                            link.download = `chart_data_${Date.now()}.csv`;
-                            link.click();
-                        }}
-                        disabled={!chartDataObj.labels.length}
-                        className="px-3 py-1.5 bg-orange-600 hover:bg-orange-500 disabled:bg-slate-800 text-white text-xs rounded font-bold transition-colors flex items-center gap-1"
-                    >
-                        📊 CSV 내보내기
+                    </div>
+                    {/* 탭 */}
+                    <div className="flex border-b border-white/8 shrink-0">
+                        {[['data','📊 데이터'],['feature','✨ 기능'],['style','🎨 스타일'],['advanced','🔒 고급']].map(([id,label]) => (
+                            <button key={id} onClick={() => setChartPanelTab(id)}
+                                className={`flex-1 py-2.5 text-[10px] font-bold transition-colors ${chartPanelTab === id ? 'text-indigo-400 border-b-2 border-indigo-500' : 'text-slate-500 hover:text-slate-300'}`}>
+                                {label}
                     </button>
-                    {/* 🆕 확대/축소 버튼 */}
-                    <button 
-                        onClick={() => {
-                            if (!containerRef.current) return;
-                            if (!isFullscreen) {
-                                // 확대: 현재 div 박스를 확장 (화면 전체 100%)
-                                containerRef.current.style.position = 'fixed';
-                                containerRef.current.style.top = '0';
-                                containerRef.current.style.left = '0';
-                                containerRef.current.style.right = '0';
-                                containerRef.current.style.bottom = '0';
-                                containerRef.current.style.width = '100%';
-                                containerRef.current.style.height = '100%';
-                                containerRef.current.style.zIndex = '9999';
-                                containerRef.current.style.background = '#0f172a';
-                            } else {
-                                // 축소: 원래 상태로 복원
-                                containerRef.current.style.position = '';
-                                containerRef.current.style.top = '';
-                                containerRef.current.style.left = '';
-                                containerRef.current.style.right = '';
-                                containerRef.current.style.bottom = '';
-                                containerRef.current.style.width = '';
-                                containerRef.current.style.height = '';
-                                containerRef.current.style.zIndex = '';
-                                containerRef.current.style.background = '';
-                            }
-                            setIsFullscreen(!isFullscreen);
-                            if (onZoomChange) onZoomChange(!isFullscreen);
-                        }}
-                        className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs rounded font-bold transition-colors flex items-center gap-1"
-                    >
-                        {isFullscreen ? (
-                            <>
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                                닫기
-                            </>
-                        ) : (
-                            <>
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                                </svg>
-                                확대
-                            </>
-                        )}
+                        ))}
+                    </div>
+                    {/* 콘텐츠 */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        {chartPanelTab === 'data' && (<>
+                            <div>
+                                <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">차트 타입</label>
+                                <select value={chartType} onChange={e => setChartType(e.target.value)} className="w-full bg-slate-900/80 text-slate-200 px-3 py-2 text-xs rounded-lg border border-slate-700 outline-none">
+                                    <option value="bar">막대 차트</option>
+                                    <option value="line">꺾은선 차트</option>
+                                    <option value="area">영역 차트</option>
+                                    <option value="combo">복합 차트</option>
+                                    <option value="pie">파이 차트</option>
+                                    <option value="doughnut">도넛 차트</option>
+                                    <option value="radar">레이더 차트</option>
+                                    <option value="polarArea">폴라 차트</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">차트 제목</label>
+                                <input type="text" placeholder="차트 제목..." value={title} onChange={e => setTitle(e.target.value)} className="w-full bg-slate-900/80 text-slate-200 px-3 py-2 text-xs rounded-lg border border-slate-700 outline-none" />
+                            </div>
+                            <div className="flex gap-2">
+                                <div className="flex-1">
+                                    <label className="text-[10px] text-blue-400 font-bold uppercase tracking-wider block mb-1.5">X축 (그룹)</label>
+                                    <select value={xAxis} onChange={e => setXAxis(e.target.value)} className="w-full bg-slate-900/80 text-slate-200 px-2 py-2 text-xs rounded-lg border border-blue-500/25 outline-none">
+                                        {columns.map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+                                </div>
+                                <button onClick={swapAxes} className="mt-5 p-2 bg-blue-600/20 text-blue-400 hover:bg-blue-600 rounded-lg transition-all shrink-0" title="스왑">⇄</button>
+                                <div className="flex-1">
+                                    <label className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block mb-1.5">Y축 (수치)</label>
+                                    <select value={yAxis} onChange={e => setYAxis(e.target.value)} className="w-full bg-slate-900/80 text-slate-200 px-2 py-2 text-xs rounded-lg border border-emerald-500/25 outline-none">
+                                        {numericColumns.map(c => <option key={c} value={c}>{c}</option>)}
+                                        {!numericColumns.length && columns.map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                            {chartType === 'combo' && (
+                                <div>
+                                    <label className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider block mb-1.5">보조 Y축 (라인)</label>
+                                    <select value={yAxis2} onChange={e => setYAxis2(e.target.value)} className="w-full bg-slate-900/80 text-indigo-300 px-3 py-2 text-xs rounded-lg border border-indigo-500/25 outline-none">
+                                        {numericColumns.map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+                                </div>
+                            )}
+                            <div>
+                                <label className="text-[10px] text-amber-400 font-bold uppercase tracking-wider block mb-1.5">집계 방식</label>
+                                <div className="grid grid-cols-5 gap-1">
+                                    {[['sum','합계'],['avg','평균'],['count','개수'],['max','최대'],['min','최소']].map(([v,l]) => (
+                                        <button key={v} onClick={() => setAggregationType(v)} className={`py-1.5 text-[10px] font-bold rounded transition-all ${aggregationType === v ? 'bg-amber-600 text-white' : 'bg-slate-900/60 text-slate-400 border border-slate-700/50 hover:text-white'}`}>{l}</button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">정렬</label>
+                                <div className="flex gap-1">
+                                    {[['desc','내림차순'],['asc','오름차순'],['none','원본']].map(([v,l]) => (
+                                        <button key={v} onClick={() => setSortData(v)} className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-all ${sortData === v ? 'bg-indigo-600 text-white' : 'bg-slate-900/60 text-slate-400 border border-slate-700/50 hover:text-white'}`}>{l}</button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">값 서식</label>
+                                <select value={valueFormat} onChange={e => setValueFormat(e.target.value)} className="w-full bg-slate-900/80 text-slate-200 px-3 py-2 text-xs rounded-lg border border-slate-700 outline-none">
+                                    <option value="none">원본</option>
+                                    <option value="comma">천단위 콤마</option>
+                                    <option value="krw">₩ 원화</option>
+                                    <option value="usd">$ 달러</option>
+                                    <option value="percent">% 퍼센트</option>
+                                    <option value="compact">축약 (1.2만)</option>
+                                </select>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <label className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-xs transition-all ${groupOthers ? 'bg-purple-500/15 border-purple-500/40 text-purple-300' : 'bg-slate-900/60 border-slate-700 text-slate-400'}`}>
+                                    <input type="checkbox" checked={groupOthers} onChange={e => setGroupOthers(e.target.checked)} className="accent-purple-500" /> 상위 N개 → 기타
+                                </label>
+                                {groupOthers && <input type="number" value={topNCount} onChange={e => setTopNCount(Number(e.target.value))} className="w-16 bg-slate-900/80 text-slate-200 px-2 py-2 text-xs rounded-lg border border-slate-700 outline-none text-center" min="1" />}
+                            </div>
+                        </>)}
+                        {chartPanelTab === 'feature' && (<>
+                            <div className="space-y-2">
+                                {[
+                                    [showTrendLine, setShowTrendLine, '추세선 표시', ['pie','doughnut','radar','polarArea'].includes(chartType)],
+                                    [showDataTable, setShowDataTable, '데이터표 표시', false],
+                                    [isAddingText, (v) => { setIsAddingText(v); setOverlayType('text'); }, 'T 텍스트 오버레이', false],
+                                    [showLegend ?? true, setShowLegend, '범례 표시', false],
+                                    [showDataLabels, setShowDataLabels, '데이터 라벨 표시', false],
+                                    [beginAtZero, setBeginAtZero, 'Y축 0부터 시작', false],
+                                    [showGrid ?? true, setShowGrid, '그리드 표시', false],
+                                    [enableGradient, setEnableGradient, '그라데이션 효과', ['pie','doughnut','radar','polarArea'].includes(chartType)],
+                                    [stacked, setStacked, '누적 차트', !['bar','area','combo'].includes(chartType)],
+                                    [showHorizontal, setShowHorizontal, '수평 차트', chartType !== 'bar'],
+                                    [autoHighlight, (v) => { setAutoHighlight(v); if(v) { setHighlightNegative(false); setCustomColors({}); } }, '스마트 강조 (최대/최소)', false],
+                                    [highlightNegative, (v) => { setHighlightNegative(v); if(v) { setAutoHighlight(false); setCustomColors({}); } }, '음수 강조', false],
+                                    [showAverageLine, setShowAverageLine, '평균선 표시', ['pie','doughnut'].includes(chartType)],
+                                ].map(([val, setter, label, disabled]) => (
+                                    <label key={label} className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-xs transition-all ${disabled ? 'opacity-40 cursor-not-allowed' : ''} ${val && !disabled ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300' : 'bg-slate-900/60 border-slate-700 text-slate-400'}`}>
+                                        <input type="checkbox" checked={!!val} onChange={e => !disabled && setter(e.target.checked)} disabled={disabled} className="accent-indigo-500" /> {label}
+                                    </label>
+                                ))}
+                            </div>
+                            <div>
+                                <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">데이터 라벨 위치</label>
+                                <div className="flex gap-1">
+                                    {[['top','위'],['center','중앙']].map(([v,l]) => (
+                                        <button key={v} onClick={() => setDataLabelPosition(v)} className={`flex-1 py-1.5 text-xs font-bold rounded transition-all ${dataLabelPosition === v ? 'bg-indigo-600 text-white' : 'bg-slate-900/60 text-slate-400 border border-slate-700/50 hover:text-white'}`}>{l}</button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-xs transition-all ${showTargetLine ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300' : 'bg-slate-900/60 border-slate-700 text-slate-400'}`}>
+                                    <input type="checkbox" checked={showTargetLine} onChange={e => setShowTargetLine(e.target.checked)} className="accent-emerald-500" /> 목표선 표시
+                                </label>
+                                {showTargetLine && <input type="number" placeholder="목표 수치" value={targetValue} onChange={e => setTargetValue(e.target.value)} className="mt-2 w-full bg-slate-900/80 text-emerald-300 px-3 py-2 text-xs rounded-lg border border-emerald-500/30 outline-none" />}
+                            </div>
+                            <div>
+                                <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">Y축 범위</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <span className="text-[10px] text-slate-600 block mb-1">최소</span>
+                                        <input type="number" placeholder="자동" value={yMin} onChange={e => setYMin(e.target.value)} className="w-full bg-slate-900/80 text-slate-200 px-2 py-2 text-xs rounded-lg border border-slate-700 outline-none" />
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] text-slate-600 block mb-1">최대</span>
+                                        <input type="number" placeholder="자동" value={yMax} onChange={e => setYMax(e.target.value)} className="w-full bg-slate-900/80 text-slate-200 px-2 py-2 text-xs rounded-lg border border-slate-700 outline-none" />
+                                    </div>
+                                </div>
+                            </div>
+                        </>)}
+                        {chartPanelTab === 'style' && (<>
+                            <div>
+                                <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-2">색상 테마</label>
+                                <div className="grid grid-cols-2 gap-1.5">
+                                    {Object.keys(colorThemes).map(theme => (
+                                        <button key={theme} onClick={() => { setColorTheme(theme); setAutoHighlight(false); setHighlightNegative(false); setCustomColors({}); }}
+                                            className={`px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-2 ${colorTheme === theme && !autoHighlight && !highlightNegative ? 'bg-indigo-500/20 border border-indigo-500/50 text-white' : 'bg-slate-900/60 text-slate-400 border border-slate-700/50 hover:text-white'}`}>
+                                            <div className="flex gap-0.5">
+                                                <div className="w-3 h-3 rounded-full" style={{background: colorThemes[theme].bg[0]}}></div>
+                                                <div className="w-3 h-3 rounded-full" style={{background: colorThemes[theme].bg[1]}}></div>
+                                            </div>
+                                            {theme === 'corporate' ? '신뢰도' : theme === 'mckinsey' ? '컨설팅' : theme === 'pastel' ? '파스텔' : '무채색'}
                     </button>
+                                    ))}
                 </div>
             </div>
+                            <div>
+                                <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-2">차트 배경</label>
+                                <div className="grid grid-cols-3 gap-1.5">
+                                    {[['transparent','투명'],['#0f172a','다크'],['#1e293b','슬레이트'],['#000000','블랙'],['#ffffff','화이트'],['#f8fafc','라이트']].map(([color,label]) => (
+                                        <button key={color} onClick={() => setBackgroundColor(color)}
+                                            className={`py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 justify-center ${backgroundColor === color ? 'border-2 border-indigo-500 text-white' : 'border border-slate-700/50 text-slate-400 hover:text-white'}`}
+                                            style={{ background: color === 'transparent' ? 'repeating-linear-gradient(45deg,#334155 0,#334155 2px,#1e293b 0,#1e293b 8px)' : color }}>
+                                            <span style={{ color: ['#ffffff','#f8fafc'].includes(color) ? '#1e293b' : 'inherit' }}>{label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">글꼴</label>
+                                <select value={fontFamily} onChange={e => setFontFamily(e.target.value)} className="w-full bg-slate-900/80 text-slate-200 px-3 py-2 text-xs rounded-lg border border-slate-700 outline-none">
+                                    <option value="'Pretendard', sans-serif">Pretendard</option>
+                                    <option value="'Noto Sans KR', sans-serif">Noto Sans KR</option>
+                                    <option value="'Malgun Gothic', sans-serif">맑은 고딕</option>
+                                    <option value="Inter">Inter</option>
+                                </select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                {[['title','타이틀',12,40],['axis','축 라벨',8,24],['legend','범례',8,24],['dataLabel','데이터 수치',8,30]].map(([key,label,min,max]) => (
+                                    <div key={key}>
+                                        <div className="flex justify-between mb-1"><label className="text-[10px] text-slate-500 font-bold">{label}</label><span className="text-[10px] text-slate-400 font-mono">{fonts[key]}px</span></div>
+                                        <input type="range" min={min} max={max} value={fonts[key]} onChange={e => updateFont(key, e.target.value)} className="w-full accent-indigo-500 h-1.5" />
+                                    </div>
+                                ))}
+                            </div>
+                            {(chartType === 'bar' || chartType === 'combo') && (
+                                <div>
+                                    <div className="flex justify-between mb-1"><label className="text-[10px] text-slate-500 font-bold">막대 두께</label><span className="text-[10px] text-slate-400 font-mono">{barThickness}px</span></div>
+                                    <input type="range" min="5" max="80" value={barThickness} onChange={e => setBarThickness(Number(e.target.value))} className="w-full accent-indigo-500 h-1.5" />
+                                </div>
+                            )}
+                            {chartDataObj.labels.length > 0 && (
+                                <div>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">항목별 색상</label>
+                                        <button onClick={() => setCustomColors({})} className="text-[10px] text-slate-500 hover:text-red-400 px-2 py-0.5 rounded border border-slate-700 hover:border-red-500/30 transition-colors">초기화</button>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2 max-h-28 overflow-y-auto">
+                                        {chartDataObj.labels.map((label, idx) => {
+                                            const defaultCol = colors.bg[idx % colors.bg.length];
+                                            const cv = customColors[label] || defaultCol;
+                                            return (
+                                                <div key={label} className="flex items-center gap-1.5 bg-slate-900/80 px-2 py-1.5 rounded-lg border border-slate-700/50">
+                                                    <input type="color" value={cv.startsWith('#') ? cv : '#475569'} onChange={e => { setCustomColors(prev => ({...prev, [label]: e.target.value})); setAutoHighlight(false); setHighlightNegative(false); }} className="w-5 h-5 border-0 bg-transparent p-0 cursor-pointer rounded" />
+                                                    <span className="text-[10px] text-slate-400 truncate max-w-[60px]" title={label}>{label}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </>)}
+                        {chartPanelTab === 'advanced' && (<>
+                            <div className="p-3 rounded-xl border border-red-500/20 bg-red-500/5 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-red-300">🔒 워터마크 (대외비)</span>
+                                    <label className="flex items-center gap-2 text-xs cursor-pointer">
+                                        <input type="checkbox" checked={watermarkEnabled} onChange={e => setLocalWatermarkEnabled(e.target.checked)} className="accent-red-500" />
+                                        <span className={watermarkEnabled ? 'text-red-300 font-bold' : 'text-slate-500'}>{watermarkEnabled ? '켜짐' : '꺼짐'}</span>
+                                    </label>
+                                </div>
+                                {watermarkEnabled && (<>
+                                    <input type="text" value={watermarkText} onChange={e => setLocalWatermarkText(e.target.value)} placeholder="워터마크 텍스트..." className="w-full bg-slate-900/80 text-red-300 px-3 py-2 text-xs rounded-lg border border-red-500/30 outline-none" />
+                                    <div>
+                                        <label className="text-[10px] text-red-300 font-bold block mb-1.5">배치 방식</label>
+                                        <div className="grid grid-cols-3 gap-1">
+                                            {[['single','가운데'],['multiple','격자'],['corner','4코너']].map(([v,l]) => (
+                                                <button key={v} onClick={() => setLocalWatermarkDesign(v)} className={`py-1.5 text-[10px] font-bold rounded transition-all ${localWatermarkDesign===v ? 'bg-red-700 text-white' : 'bg-slate-900/60 text-slate-400 border border-slate-700/50'}`}>{l}</button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    {localWatermarkDesign === 'multiple' && (
+                                        <div>
+                                            <label className="text-[10px] text-red-300 font-bold block mb-1">격자 수: {watermarkGridSize}×{watermarkGridSize}</label>
+                                            <input type="range" min="2" max="8" value={watermarkGridSize} onChange={e => setWatermarkGridSize(Number(e.target.value))} className="w-full accent-red-500 h-1.5" />
+                                        </div>
+                                    )}
+                                    <div>
+                                        <label className="text-[10px] text-red-300 font-bold block mb-1">크기: {watermarkFontSize}px</label>
+                                        <input type="range" min="12" max="120" value={watermarkFontSize} onChange={e => setWatermarkFontSize(Number(e.target.value))} className="w-full accent-red-500 h-1.5" />
+                                    </div>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {['#dc2626','#ea580c','#ca8a04','#16a34a','#2563eb','#7c3aed','#4b5563','#0f172a'].map(color => (
+                                            <button key={color} onClick={() => setLocalWatermarkColor(color)} className={`w-6 h-6 rounded-full border-2 transition-all ${localWatermarkColor === color ? 'border-white scale-110' : 'border-transparent'}`} style={{background: color}} />
+                                        ))}
+                                    </div>
+                                </>)}
+                            </div>
+                            <div>
+                                <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-2">퀵 템플릿</label>
+                                {[
+                                    { id: 'report', label: '📄 문서·보고서용', desc: '화이트 배경, 깔끔한 스타일' },
+                                    { id: 'pitch', label: '🌙 다크·발표용', desc: '진한 배경, 선명한 색상' },
+                                ].map(t => (
+                                    <button key={t.id} onClick={() => { applyTemplate(t.id); setShowChartPanel(false); }}
+                                        className="w-full flex items-center gap-3 p-2.5 rounded-xl text-left hover:bg-white/5 border border-white/5 transition-all mb-1.5 hover:border-indigo-500/30">
+                                        <div>
+                                            <div className="text-xs font-bold text-slate-200">{t.label}</div>
+                                            <div className="text-[10px] text-slate-500">{t.desc}</div>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </>)}
+                    </div>
+                </div>,
+                document.body
+            )}
 
-            {/* 데이터 설정 패널 - 별도 */}
+            {/* 데이터 설정 패널 - 별도 (레거시 숨김) */}
             <div id="data-settings-panel" className="hidden border-b border-slate-700 p-4 bg-slate-900 shrink-0">
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
                     {/* X/Y축 선택 */}
@@ -901,6 +1173,8 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
                             <option value="combo">🔀 복합 차트</option>
                             <option value="pie">🥧 파이 차트</option>
                             <option value="doughnut">🍩 도넛 차트</option>
+                            <option value="radar">🕸️ 레이더 차트</option>
+                            <option value="polarArea">🎯 폴라 차트</option>
                         </select>
                         <input type="text" placeholder="차트 제목..." value={title} onChange={e => setTitle(e.target.value)} className="w-full bg-slate-900 text-slate-200 px-3 py-2 text-xs rounded-lg border border-slate-700 outline-none focus:border-purple-500" />
                     </div>
@@ -1370,9 +1644,7 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
                                             type="text" 
                                             value={watermarkText}
                                             onChange={(e) => {
-                                                if (!propWatermarkEnabled) {
-                                                    setLocalWatermarkText(e.target.value);
-                                                }
+                                                setLocalWatermarkText(e.target.value);
                                             }}
                                             placeholder="예: CONFIDENTIAL"
                                             className="w-full bg-slate-950/80 text-slate-200 px-4 py-2.5 text-sm font-medium rounded-xl border border-slate-700/50 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all"
@@ -1397,9 +1669,7 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
                                                 <button 
                                                     key={color}
                                                     onClick={() => {
-                                                        if (!propWatermarkEnabled) {
-                                                            setLocalWatermarkColor(color);
-                                                        }
+                                                        setLocalWatermarkColor(color);
                                                     }}
                                                     disabled={!watermarkEnabled}
                                                     className={`w-6 h-6 rounded-full border-2 hover:border-white transition-all disabled:opacity-50 ${localWatermarkColor === color ? 'border-white scale-110 shadow-lg' : 'border-slate-600'}`}
@@ -1533,6 +1803,34 @@ const ChartViewer = ({ data, columns, watermarkEnabled: propWatermarkEnabled = f
                             <button onClick={() => removeText(text.id)} className="text-slate-400 hover:text-red-400 bg-slate-800 hover:bg-slate-700 rounded-full w-5 h-5 flex items-center justify-center font-bold">✕</button>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* 데이터 테이블 */}
+            {showDataTable && chartDataObj.labels.length > 0 && (
+                <div className="shrink-0 border-t border-slate-700 bg-slate-900/80 overflow-x-auto max-h-[160px]">
+                    <table className="w-full text-xs">
+                        <thead>
+                            <tr className="border-b border-slate-700">
+                                <th className="px-3 py-2 text-left text-slate-400 font-bold sticky left-0 bg-slate-900">{xAxis}</th>
+                                {chartDataObj.labels.map((l, i) => (
+                                    <th key={i} className="px-3 py-2 text-right text-slate-400 font-bold whitespace-nowrap">{l}</th>
+                                ))}
+                                <th className="px-3 py-2 text-right text-sky-400 font-bold">합계</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td className="px-3 py-1.5 text-slate-300 font-semibold sticky left-0 bg-slate-900">{yAxis}</td>
+                                {chartDataObj.vals.map((v, i) => (
+                                    <td key={i} className="px-3 py-1.5 text-right text-slate-200 tabular-nums">{typeof v === 'number' ? v.toLocaleString() : v}</td>
+                                ))}
+                                <td className="px-3 py-1.5 text-right text-sky-300 font-bold tabular-nums">
+                                    {chartDataObj.vals.reduce((a, b) => a + (typeof b === 'number' ? b : 0), 0).toLocaleString()}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             )}
 

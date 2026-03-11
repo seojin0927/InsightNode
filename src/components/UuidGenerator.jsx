@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 
 // UUID 생성 로직 (외부 라이브러리 없이 구현)
 const generateUUID = (version = 4) => {
@@ -104,17 +104,17 @@ const IdStudio = () => {
     };
 
     return (
-        <div className="w-full h-full min-h-[850px] bg-slate-900 rounded-2xl p-6 border border-slate-700 flex flex-col">
+        <div className="w-full h-full p-5 flex flex-col overflow-hidden" style={{ background: '#08101e' }}>
             {/* 1. 헤더 */}
-            <div className="flex items-center gap-3 mb-6 flex-shrink-0">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20">
+            <div className="flex items-center gap-3 mb-5 pb-4 border-b border-white/[0.06] flex-shrink-0">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/[0.08]">
                     <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                     </svg>
                 </div>
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-100">ID Master Studio</h2>
-                    <p className="text-slate-400 text-sm">UUID, GUID, NanoID 등 고유 식별자 대량 생성</p>
+                    <h2 className="text-base font-bold text-slate-100">ID Master Studio</h2>
+                    <p className="text-xs text-slate-500">UUID, GUID, NanoID 등 고유 식별자 대량 생성</p>
                 </div>
             </div>
 
@@ -123,7 +123,7 @@ const IdStudio = () => {
                 
                 {/* 좌측: 설정 패널 (Col 4) */}
                 <div className="lg:col-span-4 flex flex-col h-full min-h-0">
-                    <div className="bg-slate-800 rounded-xl p-5 flex flex-col h-full shadow-inner border border-slate-700/50 overflow-y-auto custom-scrollbar">
+                    <div className="rounded-xl p-5 flex flex-col h-full overflow-y-auto custom-scrollbar">
                         <h3 className="text-xs font-bold text-slate-400 uppercase mb-4">Configuration</h3>
                         
                         {/* ID 타입 선택 */}
@@ -226,7 +226,7 @@ const IdStudio = () => {
 
                 {/* 우측: 결과 출력 (Col 8) */}
                 <div className="lg:col-span-8 flex flex-col h-full min-h-0">
-                    <div className="bg-slate-800 rounded-xl p-5 flex flex-col h-full shadow-inner border border-slate-700/50 relative">
+                    <div className="rounded-xl p-5 flex flex-col h-full relative">
                         {/* 툴바 */}
                         <div className="flex justify-between items-center mb-4">
                             <div className="flex bg-slate-900 rounded-lg p-1 border border-slate-700">

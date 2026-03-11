@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 
-const DataGrid = ({ data, columns, onUpdate, readOnly = false, watermarkEnabled = false, watermarkText = 'CONFIDENTIAL', watermarkDesign = 'single', onZoomChange }) => {
+const DataGrid = ({ data, columns, onUpdate, readOnly = false, watermarkEnabled = false, watermarkText = 'CONFIDENTIAL', watermarkDesign = 'single', onZoomChange, onRequestZoom, hideToolbar = false }) => {
     const [scroll, setScroll] = useState({ top: 0, left: 0 });
     const [edit, setEdit] = useState(null);
     const [colWidths, setColWidths] = useState({});
@@ -10,9 +10,22 @@ const DataGrid = ({ data, columns, onUpdate, readOnly = false, watermarkEnabled 
     const [selectedRow, setSelectedRow] = useState(null);
     const [copyNotification, setCopyNotification] = useState(false);
     const [isZoomed, setIsZoomed] = useState(false);
+    const [exportMenuOpen, setExportMenuOpen] = useState(false);
+    const exportMenuRef = useRef(null);
     const gridContainerRef = useRef(null);
 
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (exportMenuRef.current && !exportMenuRef.current.contains(e.target)) {
+                setExportMenuOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     const toggleZoom = () => {
+        if (onRequestZoom) { onRequestZoom(); return; }
         if (!gridContainerRef.current) return;
         if (!isZoomed) {
             // 확대: 현재 div 박스를 확장 (화면 전체 100%)
@@ -240,7 +253,7 @@ ${columns.map(c => `<Cell><Data ss:Type="String">${String(row[c] ?? '').replace(
     return (
         <div ref={gridContainerRef} className="flex-1 flex flex-col bg-slate-900/50 border border-slate-800 rounded-lg overflow-hidden h-full">
             {/* Toolbar */}
-            <div className="flex items-center gap-3 p-3 bg-slate-800/50 border-b border-slate-700 shrink-0 flex-wrap">
+            {!hideToolbar && <div className="flex items-center gap-3 p-3 bg-slate-800/50 border-b border-slate-700 shrink-0 flex-wrap">
                 <div className="relative flex-1 max-w-xs">
                     <input
                         type="text"
@@ -281,58 +294,70 @@ ${columns.map(c => `<Cell><Data ss:Type="String">${String(row[c] ?? '').replace(
                     </button>
                 )}
                 
-                {/* Export Buttons */}
+                {/* Export Hamburger + Zoom */}
                 <div className="flex items-center gap-2 ml-auto">
-                    <button
-                        onClick={exportAsHTML}
-                        className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs rounded-lg font-medium transition-colors flex items-center gap-1"
-                    >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                        </svg>
-                        HTML
-                    </button>
-                    <button
-                        onClick={exportAsJSON}
-                        className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-xs rounded-lg font-medium transition-colors flex items-center gap-1"
-                    >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        JSON
-                    </button>
-                    <button
-                        onClick={exportAsExcel}
-                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs rounded-lg font-medium transition-colors flex items-center gap-1"
-                    >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        Excel
-                    </button>
-                    {/* 🆕 확대/축소 버튼 */}
+                    {/* 내보내기 드롭다운 */}
+                    <div className="relative" ref={exportMenuRef}>
+                        <button
+                            onClick={() => setExportMenuOpen(v => !v)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-semibold transition-all hover:scale-105 active:scale-95"
+                            style={{
+                                background: exportMenuOpen ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.04)',
+                                border: `1px solid ${exportMenuOpen ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                                color: exportMenuOpen ? '#a5b4fc' : '#94a3b8'
+                            }}
+                        >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            내보내기
+                            <svg className={`w-3 h-3 transition-transform ${exportMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        {exportMenuOpen && (
+                            <div className="absolute right-0 top-full mt-1.5 w-48 rounded-xl shadow-2xl z-50 overflow-hidden py-1"
+                                style={{ background: 'rgba(6,12,26,0.98)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)' }}>
+                                <div className="px-3 py-1.5 text-[10px] text-slate-600 font-bold uppercase tracking-widest border-b border-white/5 mb-1">포맷 선택</div>
+                                {[
+                                    { label: 'HTML 파일', icon: '🌐', desc: '웹 테이블 형식', action: exportAsHTML, color: '#a78bfa' },
+                                    { label: 'JSON 파일', icon: '📄', desc: 'JSON 배열', action: exportAsJSON, color: '#fbbf24' },
+                                    { label: 'Excel (TSV)', icon: '📊', desc: '엑셀 호환', action: exportAsExcel, color: '#34d399' },
+                                ].map(item => (
+                                    <button key={item.label} onClick={() => { item.action(); setExportMenuOpen(false); }}
+                                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/5 transition-colors text-left group">
+                                        <span className="text-lg">{item.icon}</span>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-xs font-semibold" style={{ color: item.color }}>{item.label}</div>
+                                            <div className="text-[10px] text-slate-600">{item.desc}</div>
+                                        </div>
+                                        <svg className="w-3 h-3 text-slate-700 group-hover:text-slate-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    {/* 전체화면 버튼 */}
                     <button
                         onClick={toggleZoom}
-                        className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs rounded-lg font-medium transition-colors flex items-center gap-1"
+                        className="p-1.5 rounded-lg transition-all hover:scale-105 active:scale-95"
+                        style={{ background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.2)', color: '#22d3ee' }}
+                        title={isZoomed ? '원래 크기로' : '전체화면'}
                     >
                         {isZoomed ? (
-                            <>
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                                닫기
-                            </>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                         ) : (
-                            <>
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                                </svg>
-                                확대
-                            </>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                            </svg>
                         )}
                     </button>
                 </div>
-            </div>
+            </div>}
 
             {/* Copy Notification */}
             {copyNotification && (

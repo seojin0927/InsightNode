@@ -105,11 +105,45 @@ const RegexStudio = () => {
     };
 
     const presets = [
-        { label: 'Email', regex: '[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}', sample: 'contact@vaultsheet.com' },
-        { label: 'URL', regex: 'https?:\\/\\/[\\w\\-._~:/?#[\\]@!$&\'()*+,;=%]+', sample: 'https://www.google.com' },
-        { label: 'Phone (KR)', regex: '\\d{2,3}-\\d{3,4}-\\d{4}', sample: '010-1234-5678' },
-        { label: 'Date (YYYY-MM-DD)', regex: '\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])', sample: '2023-12-25' },
-        { label: 'IPv4', regex: '((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}', sample: '192.168.0.1' },
+        // 연락처
+        { label: '📧 이메일', regex: '[\\w.+%-]+@[\\w.-]+\\.[a-zA-Z]{2,}', sample: 'user@example.com, admin+test@company.co.kr', flags: 'gi' },
+        { label: '📞 전화 (한국)', regex: '\\d{2,3}-\\d{3,4}-\\d{4}', sample: '010-1234-5678, 02-987-6543', flags: 'g' },
+        { label: '📞 전화 (국제)', regex: '\\+?[1-9]\\d{1,14}', sample: '+821012345678, +14155552671', flags: 'g' },
+        // 웹
+        { label: '🔗 URL', regex: 'https?:\\/\\/[\\w\\-._~:/?#[\\]@!$&\'()*+,;=%]+', sample: 'https://www.google.com/search?q=hello', flags: 'gi' },
+        { label: '🌐 도메인', regex: '(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,}', sample: 'google.com, sub.example.co.kr', flags: 'gi' },
+        { label: '🖥️ IPv4', regex: '\\b(?:(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\b', sample: '192.168.0.1, 10.0.0.255', flags: 'g' },
+        { label: '🖥️ IPv6', regex: '(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}', sample: '2001:0db8:85a3:0000:0000:8a2e:0370:7334', flags: 'g' },
+        // 날짜/시간
+        { label: '📅 날짜 YYYY-MM-DD', regex: '\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])', sample: '2024-01-15, 2023-12-31', flags: 'g' },
+        { label: '📅 날짜 YYYY/MM/DD', regex: '\\d{4}\\/(0[1-9]|1[0-2])\\/(0[1-9]|[12]\\d|3[01])', sample: '2024/01/15', flags: 'g' },
+        { label: '⏰ 시간 HH:MM:SS', regex: '([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?', sample: '09:30:00, 23:59', flags: 'g' },
+        // 금융
+        { label: '💳 신용카드', regex: '\\b(?:\\d[ -]?){13,16}\\b', sample: '4111-1111-1111-1111', flags: 'g' },
+        { label: '💰 통화 (USD)', regex: '\\$\\s?\\d{1,3}(?:,\\d{3})*(?:\\.\\d{2})?', sample: '$1,234.56, $99.99', flags: 'g' },
+        { label: '💰 통화 (KRW)', regex: '\\d{1,3}(?:,\\d{3})*원', sample: '1,234,000원, 99원', flags: 'g' },
+        // 보안
+        { label: '🔑 비밀번호 강도', regex: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$', sample: 'Abc@1234, weakpw', flags: 'gm' },
+        { label: '🔐 JWT 토큰', regex: 'eyJ[a-zA-Z0-9_-]+\\.eyJ[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+', sample: 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyIn0.sig123', flags: 'g' },
+        // 한국 고유
+        { label: '🪪 주민등록번호', regex: '\\d{6}-[1-4]\\d{6}', sample: '901201-1234567', flags: 'g' },
+        { label: '🚗 자동차 번호', regex: '[가-힣]{2}\\s?\\d{2}\\s?[가-힣]\\s?\\d{4}', sample: '서울 12 가 3456', flags: 'g' },
+        { label: '📮 우편번호 (5자리)', regex: '\\b\\d{5}\\b', sample: '06235, 03920', flags: 'g' },
+        // 데이터
+        { label: '📄 JSON 키', regex: '"([^"]+)"\\s*:', sample: '{"name": "John", "age": 30}', flags: 'g' },
+        { label: '#️⃣ 해시태그', regex: '#[\\w가-힣]+', sample: '#coding #React #자바스크립트', flags: 'g' },
+        { label: '@️ 멘션', regex: '@[\\w]+', sample: '@user1 @admin_team', flags: 'g' },
+        // 코드
+        { label: '💬 HTML 태그', regex: '<\\/?[a-zA-Z][^>]*>', sample: '<div class="test">Hello</div>', flags: 'gi' },
+        { label: '🎨 CSS 색상 HEX', regex: '#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})\\b', sample: 'color: #FF5733; background: #abc', flags: 'gi' },
+        { label: '📝 마크다운 헤더', regex: '^#{1,6}\\s+.+$', sample: '# Title\n## Sub\n### Section', flags: 'gm' },
+        { label: '🔢 정수', regex: '-?\\b\\d+\\b', sample: '100, -42, 3.14, 0', flags: 'g' },
+        { label: '🔢 소수', regex: '-?\\d+\\.\\d+', sample: '3.14, -0.5, 100.0', flags: 'g' },
+        // 파일
+        { label: '📁 파일 경로 (Unix)', regex: '(?:\\/[\\w.-]+)+', sample: '/home/user/documents/file.txt', flags: 'g' },
+        { label: '📁 파일 확장자', regex: '\\.[a-zA-Z0-9]{2,5}$', sample: 'document.pdf, image.PNG', flags: 'gm' },
+        { label: '🔗 Base64', regex: '[A-Za-z0-9+\\/]{20,}={0,2}', sample: 'SGVsbG8gV29ybGQ=', flags: 'g' },
+        { label: '📊 UUID', regex: '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', sample: '550e8400-e29b-41d4-a716-446655440000', flags: 'gi' },
     ];
 
     // === 코드 생성 ===
@@ -123,18 +157,18 @@ const RegexStudio = () => {
     };
 
     return (
-        <div className="w-full h-full min-h-[850px] bg-slate-900 rounded-2xl p-6 border border-slate-700 flex flex-col">
+        <div className="w-full h-full p-5 flex flex-col overflow-hidden" style={{ background: '#08101e' }}>
             {/* 1. 헤더 */}
-            <div className="flex items-center justify-between mb-6 flex-shrink-0">
+            <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/[0.06] flex-shrink-0">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/[0.08]">
                         <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                         </svg>
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-100">Regex Master Studio</h2>
-                        <p className="text-slate-400 text-sm">정규표현식 테스트, 치환, 코드 생성 및 디버깅</p>
+                        <h2 className="text-base font-bold text-slate-100">Regex Master Studio</h2>
+                        <p className="text-xs text-slate-500">정규표현식 테스트, 치환, 코드 생성 및 디버깅</p>
                     </div>
                 </div>
                 
@@ -194,7 +228,7 @@ const RegexStudio = () => {
                 
                 {/* 좌측: 사이드바 (도구 모음) (Col 3) */}
                 <div className="lg:col-span-3 flex flex-col h-full min-h-0">
-                    <div className="bg-slate-800 rounded-xl p-2 flex flex-col h-full shadow-inner border border-slate-700/50">
+                    <div className="bg-slate-800 rounded-xl p-2 flex flex-col h-full shadow-inner border border-white/[0.07]">
                         {/* 사이드바 탭 */}
                         <div className="flex gap-1 mb-2 p-1">
                             {['cheatsheet', 'library', 'code'].map(t => (
@@ -325,7 +359,7 @@ const RegexStudio = () => {
                                             </thead>
                                             <tbody className="font-mono text-xs">
                                                 {matches.map((m, i) => (
-                                                    <tr key={i} className="hover:bg-slate-800/50 border-b border-slate-800 last:border-0">
+                                                    <tr key={i} className="hover:bg-slate-800/50 border-b border-white/[0.05] last:border-0">
                                                         <td className="p-2 text-slate-500">{i+1}</td>
                                                         <td className="p-2 text-emerald-300 break-all">{m[0]}</td>
                                                         <td className="p-2 text-slate-300">

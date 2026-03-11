@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+﻿import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 const MarkdownStudio = () => {
     // === 상태 관리 ===
@@ -8,7 +8,19 @@ const MarkdownStudio = () => {
     const [historyIndex, setHistoryIndex] = useState(-1);
     const [stats, setStats] = useState({ chars: 0, words: 0, readTime: 0 });
     const [lastSaved, setLastSaved] = useState(null);
+    const [showToc, setShowToc] = useState(false);
     const editorRef = useRef(null);
+
+    // === 실시간 목차(TOC) 추출 ===
+    const toc = React.useMemo(() => {
+        const lines = markdown.split('\n');
+        const items = [];
+        lines.forEach(line => {
+            const m = line.match(/^(#{1,6})\s+(.*)/);
+            if (m) items.push({ level: m[1].length, text: m[2].replace(/\*\*/g, '').replace(/\*/g, '') });
+        });
+        return items;
+    }, [markdown]);
 
     // === 초기화 및 자동 저장 ===
     useEffect(() => {
@@ -122,13 +134,18 @@ const MarkdownStudio = () => {
         html = html.replace(/^## (.*$)/gim, '<h2 class="text-2xl font-bold text-violet-400 mt-6 mb-3 border-b border-slate-700 pb-1">$1</h2>');
         html = html.replace(/^# (.*$)/gim, '<h1 class="text-3xl font-bold text-violet-500 mt-2 mb-4">$1</h1>');
 
-        // 2. Bold & Italic & Strikethrough
-        html = html.replace(/\*\*(.*)\*\*/gim, '<strong class="text-violet-200">$1</strong>');
-        html = html.replace(/\*(.*)\*/gim, '<em class="text-slate-300">$1</em>');
-        html = html.replace(/~~(.*)~~/gim, '<del class="text-slate-500">$1</del>');
+        // 2. Bold & Italic & Strikethrough (non-greedy)
+        html = html.replace(/\*\*(.*?)\*\*/gim, '<strong class="text-violet-200">$1</strong>');
+        html = html.replace(/\*(.*?)\*/gim, '<em class="text-slate-300">$1</em>');
+        html = html.replace(/~~(.*?)~~/gim, '<del class="text-slate-500">$1</del>');
 
-        // 3. Code Blocks
-        html = html.replace(/```([\s\S]*?)```/gim, '<pre class="bg-slate-950 p-4 rounded-lg my-4 overflow-x-auto border border-slate-800"><code class="text-sm font-mono text-emerald-400">$1</code></pre>');
+        // 3. Code Blocks (먼저 처리하여 내부 줄바꿈 보호)
+        const codeBlocks = [];
+        html = html.replace(/```([\s\S]*?)```/gim, (_, code) => {
+            const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
+            codeBlocks.push(`<pre class="bg-slate-950 p-4 rounded-lg my-4 overflow-x-auto border border-white/[0.05]"><code class="text-sm font-mono text-emerald-400">${code.replace(/^[\n]/, '')}</code></pre>`);
+            return placeholder;
+        });
         html = html.replace(/`([^`]+)`/gim, '<code class="bg-slate-700 px-1.5 py-0.5 rounded text-sm font-mono text-emerald-300">$1</code>');
 
         // 4. Blockquotes
@@ -149,10 +166,13 @@ const MarkdownStudio = () => {
         html = html.replace(/^\- (.*$)/gim, '<li class="ml-4 list-disc marker:text-violet-500">$1</li>');
         html = html.replace(/^\d+\. (.*$)/gim, '<li class="ml-4 list-decimal marker:text-violet-500">$1</li>');
 
-        // 9. Tables (Simple regex - requires strict formatting)
-        // | Header | Header | -> Table logic is complex for regex, skipping for simplicity in this demo or using simple replacement
-        // Just handling simple new lines to <br> for non-block elements
+        // 9. 줄바꿈을 <br />로 (코드 블록 외부만)
         html = html.replace(/\n/gim, '<br />');
+
+        // 10. 코드 블록 플레이스홀더 복원
+        codeBlocks.forEach((block, i) => {
+            html = html.replace(`__CODE_BLOCK_${i}__`, block);
+        });
 
         return html;
     };
@@ -179,19 +199,19 @@ const MarkdownStudio = () => {
     };
 
     return (
-        <div className="w-full h-full min-h-[850px] bg-slate-900 rounded-2xl p-6 border border-slate-700 flex flex-col">
+        <div className="w-full h-full p-5 flex flex-col overflow-hidden" style={{ background: '#08101e' }}>
             {/* 1. 헤더 & 툴바 */}
-            <div className="flex flex-col gap-4 mb-4 flex-shrink-0">
+            <div className="flex flex-col gap-4 mb-4 pb-4 border-b border-white/[0.06] flex-shrink-0">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/20">
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/[0.08]">
                             <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                             </svg>
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-slate-100">Pro Markdown Studio</h2>
-                            <p className="text-slate-400 text-sm">작성, 미리보기, 변환을 한 곳에서</p>
+                            <h2 className="text-base font-bold text-slate-100">Pro Markdown Studio</h2>
+                            <p className="text-xs text-slate-500">작성, 미리보기, 변환을 한 곳에서</p>
                         </div>
                     </div>
                     
@@ -202,6 +222,12 @@ const MarkdownStudio = () => {
                             <option value="blog">블로그 포스트</option>
                             <option value="todo">할 일 목록</option>
                         </select>
+                        <button
+                            onClick={() => setShowToc(v => !v)}
+                            className={`px-3 py-2 rounded-lg border text-sm font-bold transition-all ${showToc ? 'bg-violet-600/20 border-violet-500/40 text-violet-400' : 'bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700'}`}
+                        >
+                            📋 TOC {toc.length > 0 && `(${toc.length})`}
+                        </button>
                         <button onClick={() => exportFile('md')} className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-lg border border-slate-600 text-sm">MD 저장</button>
                         <button onClick={() => exportFile('html')} className="bg-violet-600 hover:bg-violet-500 text-white px-3 py-2 rounded-lg text-sm font-bold shadow-lg shadow-violet-500/20">HTML 내보내기</button>
                     </div>
@@ -254,10 +280,43 @@ const MarkdownStudio = () => {
             </div>
 
             {/* 2. 메인 에디터 영역 (Full Height Grid) */}
-            <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className={`flex-1 min-h-0 grid gap-4 ${showToc ? 'grid-cols-1 lg:grid-cols-[200px_1fr_1fr]' : 'grid-cols-1 lg:grid-cols-2'}`}>
+                {/* TOC 패널 */}
+                {showToc && (
+                    <div className="flex flex-col h-full min-h-0 lg:col-span-1">
+                        <div className="bg-slate-800 rounded-t-xl p-2 border-b border-slate-700 px-4">
+                            <span className="text-xs text-slate-400 font-bold uppercase">목차 (TOC)</span>
+                        </div>
+                        <div className="flex-1 bg-slate-900/80 rounded-b-xl border border-slate-700 border-t-0 overflow-y-auto custom-scrollbar p-3">
+                            {toc.length === 0 ? (
+                                <p className="text-xs text-slate-600 text-center pt-4">헤더(#)를 작성하면<br/>목차가 자동으로 생성됩니다</p>
+                            ) : (
+                                <div className="space-y-1">
+                                    {toc.map((item, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => {
+                                                const textarea = editorRef.current;
+                                                if (!textarea) return;
+                                                const idx = markdown.indexOf('#'.repeat(item.level) + ' ' + item.text);
+                                                if (idx !== -1) { textarea.focus(); textarea.setSelectionRange(idx, idx); }
+                                            }}
+                                            className="w-full text-left text-xs hover:bg-slate-800 rounded px-2 py-1.5 text-slate-400 hover:text-slate-200 transition-colors truncate"
+                                            style={{ paddingLeft: `${(item.level - 1) * 12 + 8}px` }}
+                                        >
+                                            <span className="text-violet-500 mr-1">{'#'.repeat(item.level)}</span>
+                                            {item.text}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+                {/* 아래 기존 div를 닫는 } 전에 삽입 */}
                 {/* 왼쪽: 에디터 */}
                 {(viewMode === 'editor' || viewMode === 'split') && (
-                    <div className={`flex flex-col h-full ${viewMode === 'editor' ? 'lg:col-span-2' : ''}`}>
+                    <div className={`flex flex-col h-full ${viewMode === 'editor' && !showToc ? 'lg:col-span-2' : ''}`}>
                         <div className="bg-slate-800 rounded-t-xl p-2 border-b border-slate-700 flex justify-between items-center px-4">
                             <span className="text-xs text-slate-400 font-bold uppercase">Editor</span>
                             <span className="text-[10px] text-slate-500">{lastSaved ? `저장됨: ${lastSaved}` : '작성 중...'}</span>
@@ -275,7 +334,7 @@ const MarkdownStudio = () => {
 
                 {/* 오른쪽: 미리보기 */}
                 {(viewMode === 'preview' || viewMode === 'split') && (
-                    <div className={`flex flex-col h-full ${viewMode === 'preview' ? 'lg:col-span-2' : ''}`}>
+                    <div className={`flex flex-col h-full ${viewMode === 'preview' && !showToc ? 'lg:col-span-2' : ''}`}>
                         <div className="bg-slate-800 rounded-t-xl p-2 border-b border-slate-700 flex justify-between items-center px-4">
                             <span className="text-xs text-slate-400 font-bold uppercase">Preview</span>
                             <button 

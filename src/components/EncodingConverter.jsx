@@ -175,16 +175,16 @@ const EncodingStudio = () => {
     };
 
     return (
-        <div className="w-full h-full min-h-[850px] bg-slate-900 rounded-2xl p-6 border border-slate-700 flex flex-col">
+        <div className="w-full h-full p-5 flex flex-col overflow-hidden" style={{ background: '#08101e' }}>
             {/* 1. 헤더 */}
-            <div className="flex items-center justify-between mb-6 flex-shrink-0">
+            <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/[0.06] flex-shrink-0">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/[0.08]">
                         <Icon path="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-100">Encoding Master Studio</h2>
-                        <p className="text-slate-400 text-sm">한글 깨짐 복구 및 인코딩 변환기</p>
+                        <h2 className="text-base font-bold text-slate-100">Encoding Master Studio</h2>
+                        <p className="text-xs text-slate-500">한글 깨짐 복구 및 인코딩 변환기</p>
                     </div>
                 </div>
                 
@@ -214,11 +214,11 @@ const EncodingStudio = () => {
                 
                 {/* 좌측: 설정 */}
                 <div className="lg:col-span-4 flex flex-col h-full min-h-0">
-                    <div className="bg-slate-800 rounded-xl p-5 flex flex-col h-full shadow-inner border border-slate-700/50 overflow-y-auto custom-scrollbar">
+                    <div className="rounded-xl p-5 flex flex-col h-full overflow-y-auto custom-scrollbar">
                         
                         {/* 파일 정보 */}
                         <div className="mb-6">
-                            <h3 className="text-xs font-bold text-slate-400 uppercase mb-3">File Input</h3>
+                            <h3 className="text-xs font-bold text-slate-300 uppercase mb-3 tracking-wider">File Input</h3>
                             {!file ? (
                                 <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-600 rounded-xl cursor-pointer hover:bg-slate-700/30 transition-colors">
                                     <Icon path="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -253,7 +253,7 @@ const EncodingStudio = () => {
                                 </p>
                             </div>
 
-                            <h3 className="text-xs font-bold text-slate-400 uppercase mb-3">Encoding Settings</h3>
+                            <h3 className="text-xs font-bold text-slate-300 uppercase mb-3 tracking-wider">Encoding Settings</h3>
                             <div className="space-y-4">
                                 <div>
                                     <label className="text-xs text-amber-400 mb-1 block font-bold">1. 원본 인코딩 (깨짐 수정)</label>
@@ -287,7 +287,7 @@ const EncodingStudio = () => {
 
                         {/* 부가 옵션 */}
                         <div className="mb-6">
-                            <h3 className="text-xs font-bold text-slate-400 uppercase mb-3">Export Options</h3>
+                            <h3 className="text-xs font-bold text-slate-300 uppercase mb-3 tracking-wider">Export Options</h3>
                             <div className="space-y-2">
                                 <label className="flex items-center justify-between text-xs text-slate-300 cursor-pointer p-2 bg-slate-700/30 rounded hover:bg-slate-700/50 transition-colors">
                                     <span>BOM (Byte Order Mark) 추가</span>
@@ -369,7 +369,7 @@ const EncodingStudio = () => {
 
                 {/* 우측: 인코딩별 미리보기 (Grid Layout) */}
                 <div className="lg:col-span-8 flex flex-col h-full min-h-0">
-                    <div className="bg-slate-800 rounded-xl p-5 flex flex-col h-full shadow-inner border border-slate-700/50">
+                    <div className="rounded-xl p-5 flex flex-col h-full" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}>
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-sm font-bold text-slate-300 uppercase flex items-center gap-2">
                                 <span className={`w-2 h-2 rounded-full ${status.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}></span>

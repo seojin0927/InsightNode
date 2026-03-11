@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 
 // 아이콘 컴포넌트
 const Icon = ({ path }) => (
@@ -176,16 +176,16 @@ IP: 192.168.0.1`;
     };
 
     return (
-        <div className="w-full h-full min-h-[850px] bg-slate-900 rounded-2xl p-6 border border-slate-700 flex flex-col">
+        <div className="w-full h-full p-5 flex flex-col overflow-hidden" style={{ background: '#08101e' }}>
             {/* 1. 헤더 */}
-            <div className="flex items-center justify-between mb-6 flex-shrink-0">
+            <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/[0.06] flex-shrink-0">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/[0.08]">
                         <Icon path="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-100">Privacy Master Studio</h2>
-                        <p className="text-slate-400 text-sm">개인정보 자동 감지 및 지능형 마스킹 솔루션</p>
+                        <h2 className="text-base font-bold text-slate-100">Privacy Master Studio</h2>
+                        <p className="text-xs text-slate-500">개인정보 자동 감지 및 지능형 마스킹 솔루션</p>
                     </div>
                 </div>
                 
@@ -210,7 +210,7 @@ IP: 192.168.0.1`;
                 
                 {/* 좌측: 설정 패널 (Col 3) */}
                 <div className="lg:col-span-3 flex flex-col h-full min-h-0">
-                    <div className="bg-slate-800 rounded-xl p-5 flex flex-col h-full shadow-inner border border-slate-700/50 overflow-y-auto custom-scrollbar">
+                    <div className="rounded-xl p-5 flex flex-col h-full overflow-y-auto custom-scrollbar">
                         <h3 className="text-xs font-bold text-slate-400 uppercase mb-4">Detection Settings</h3>
                         
                         {/* 마스킹 대상 선택 */}
@@ -293,7 +293,7 @@ IP: 192.168.0.1`;
                         {/* 입력창 */}
                         <div className="flex flex-col h-full bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
                             <div className="bg-slate-900/50 p-3 border-b border-slate-700 flex justify-between items-center">
-                                <span className="text-xs font-bold text-slate-400 uppercase">Input Data</span>
+                                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Input Data</span>
                                 <button onClick={() => setInput('')} className="text-xs text-red-400 hover:underline">Clear</button>
                             </div>
                             <textarea
@@ -325,7 +325,7 @@ IP: 192.168.0.1`;
                     {/* 하단: 분석 리포트 */}
                     <div className="h-32 bg-slate-800 rounded-xl p-4 border border-slate-700 flex flex-col justify-center">
                         <div className="flex justify-between items-center mb-2">
-                            <h3 className="text-xs font-bold text-slate-400 uppercase">Privacy Detection Report</h3>
+                            <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Privacy Detection Report</h3>
                             <span className="text-xs bg-slate-700 px-2 py-1 rounded text-slate-300">총 {stats.total}개 항목 마스킹됨</span>
                         </div>
                         <div className="flex gap-4 overflow-x-auto scrollbar-hide">

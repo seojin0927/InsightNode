@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+﻿import React, { useState, useRef, useCallback } from 'react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
@@ -120,7 +120,7 @@ const ZipTools = () => {
     };
 
     return (
-        <div className="w-full h-full min-h-[850px] bg-slate-900 rounded-2xl p-6 border border-slate-700 flex flex-col">
+        <div className="w-full h-full p-5 flex flex-col overflow-hidden" style={{ background: '#08101e' }}>
             {/* 헤더 */}
             <div className="flex items-center justify-between mb-6 flex-shrink-0">
                 <div className="flex items-center gap-3">
@@ -273,11 +273,11 @@ const ZipTools = () => {
                         
                         {activeTab === 'compress' ? (
                             <div className="space-y-6">
-                                <h3 className="text-xs font-bold text-slate-400 uppercase mb-3">Compression Options</h3>
+                                <h3 className="text-xs font-bold text-slate-300 uppercase mb-3 tracking-wider">Compression Options</h3>
                                 
                                 <div>
                                     <label className="text-sm text-slate-300 mb-2 block">파일 이름</label>
-                                    <div className="flex items-center bg-slate-900 border border-slate-600 rounded-lg overflow-hidden">
+                                    <div className="flex items-center rounded-lg overflow-hidden">
                                         <input 
                                             type="text" 
                                             value={zipName} 
@@ -333,7 +333,7 @@ const ZipTools = () => {
                             </div>
                         ) : (
                             <div className="space-y-6">
-                                <h3 className="text-xs font-bold text-slate-400 uppercase mb-3">Extraction Info</h3>
+                                <h3 className="text-xs font-bold text-slate-300 uppercase mb-3 tracking-wider">Extraction Info</h3>
                                 <div className="bg-slate-900 rounded-lg p-4 space-y-3">
                                     <div className="flex justify-between text-xs">
                                         <span className="text-slate-500">파일명</span>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 // 아이콘 컴포넌트
 const Icon = ({ path }) => (
@@ -245,15 +245,15 @@ const ColorStudio = () => {
     };
 
     return (
-        <div className="w-full h-full min-h-[850px] bg-slate-900 rounded-2xl p-6 border border-slate-700 flex flex-col">
+        <div className="w-full h-full p-5 flex flex-col overflow-hidden" style={{ background: '#08101e' }}>
             {/* 1. 헤더 */}
-            <div className="flex items-center gap-3 mb-6 flex-shrink-0">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <div className="flex items-center gap-3 mb-5 pb-4 border-b border-white/[0.06] flex-shrink-0">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/[0.08]">
                     <Icon path="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
                 </div>
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-100">컬러 마스터 스튜디오</h2>
-                    <p className="text-slate-400 text-sm">색상 변환, 팔레트 생성, 이미지 색상 추출 통합 툴</p>
+                    <h2 className="text-base font-bold text-slate-100">컬러 마스터 스튜디오</h2>
+                    <p className="text-xs text-slate-500">색상 변환, 팔레트 생성, 이미지 색상 추출 통합 툴</p>
                 </div>
             </div>
 
@@ -322,9 +322,9 @@ const ColorStudio = () => {
                                     <div className="space-y-1">
                                         <label className="text-xs text-slate-400 font-bold">RGB</label>
                                         <div className="flex gap-2">
-                                            <input type="number" value={rgb.r} onChange={(e) => updateColor('rgb', { ...rgb, r: parseInt(e.target.value) })} className="w-full bg-slate-900 border border-slate-600 rounded-lg px-2 py-2 text-white text-center" />
-                                            <input type="number" value={rgb.g} onChange={(e) => updateColor('rgb', { ...rgb, g: parseInt(e.target.value) })} className="w-full bg-slate-900 border border-slate-600 rounded-lg px-2 py-2 text-white text-center" />
-                                            <input type="number" value={rgb.b} onChange={(e) => updateColor('rgb', { ...rgb, b: parseInt(e.target.value) })} className="w-full bg-slate-900 border border-slate-600 rounded-lg px-2 py-2 text-white text-center" />
+                                            <input type="number" value={rgb.r} onChange={(e) => updateColor('rgb', { ...rgb, r: parseInt(e.target.value) })} className="w-full rounded-lg px-2 py-2 text-white text-center" />
+                                            <input type="number" value={rgb.g} onChange={(e) => updateColor('rgb', { ...rgb, g: parseInt(e.target.value) })} className="w-full rounded-lg px-2 py-2 text-white text-center" />
+                                            <input type="number" value={rgb.b} onChange={(e) => updateColor('rgb', { ...rgb, b: parseInt(e.target.value) })} className="w-full rounded-lg px-2 py-2 text-white text-center" />
                                         </div>
                                     </div>
                                 </div>
@@ -378,9 +378,44 @@ const ColorStudio = () => {
                                                 <div className="text-sm font-bold text-slate-200">{harmonyLabels[key]}</div>
                                                 <div className="text-xs text-slate-400 font-mono">hsl({h.h}, {h.s}%, {h.l}%)</div>
                                             </div>
+                                            <button
+                                                onClick={() => navigator.clipboard.writeText(`hsl(${h.h}, ${h.s}%, ${h.l}%)`)}
+                                                className="ml-auto text-[10px] bg-slate-800 text-slate-400 hover:text-slate-200 px-2 py-1 rounded border border-slate-600"
+                                            >복사</button>
                                         </div>
                                     )
                                 })}
+
+                                {/* 🆕 팔레트 생성기 */}
+                                <div className="border-t border-slate-700 pt-5">
+                                    <h3 className="text-sm font-bold text-slate-300 uppercase mb-4">✨ 팔레트 생성기</h3>
+                                    {[
+                                        { label: '모노크롬 (5단계)', shades: [10, 25, 50, 75, 90].map(l => `hsl(${hsl.h}, ${hsl.s}%, ${l}%)`) },
+                                        { label: '파스텔 (채도 낮춤)', shades: [60, 90, 120, 150, 180].map(off => `hsl(${(hsl.h + off) % 360}, 60%, 75%)`) },
+                                        { label: '비비드 (채도 높임)', shades: [0, 30, 60, 180, 210].map(off => `hsl(${(hsl.h + off) % 360}, 90%, 55%)`) },
+                                        { label: '다크 팔레트', shades: [0, 30, 60, 90, 120].map(off => `hsl(${(hsl.h + off) % 360}, 70%, 30%)`) },
+                                    ].map((palette, pi) => (
+                                        <div key={pi} className="mb-4">
+                                            <div className="text-xs text-slate-500 mb-2 font-medium">{palette.label}</div>
+                                            <div className="flex gap-1 rounded-xl overflow-hidden h-12">
+                                                {palette.shades.map((color, si) => (
+                                                    <div
+                                                        key={si}
+                                                        title={color}
+                                                        onClick={() => navigator.clipboard.writeText(color)}
+                                                        className="flex-1 cursor-pointer hover:scale-y-110 transition-transform origin-bottom"
+                                                        style={{ backgroundColor: color }}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <div className="flex gap-1 mt-1">
+                                                {palette.shades.map((color, si) => (
+                                                    <div key={si} className="flex-1 text-center text-[9px] text-slate-600 truncate">{color.slice(0, 15)}</div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
 
@@ -474,7 +509,7 @@ const ColorStudio = () => {
                                     className="h-40 rounded-xl shadow-lg border border-slate-600" 
                                     style={{ background: `linear-gradient(90deg, ${hex}, #000000)` }}
                                 ></div>
-                                <div className="text-center text-slate-400 text-sm py-4">
+                                <div className="text-center text-xs text-slate-500 py-4">
                                     (그라디언트 생성기 기능 준비 중)
                                 </div>
                             </div>
@@ -487,7 +522,7 @@ const ColorStudio = () => {
                 <div className="lg:col-span-5 flex flex-col h-full min-h-0 gap-4">
                     
                     {/* 색상 정보 (Details) */}
-                    <div className="bg-slate-800 rounded-xl p-5 flex-1 shadow-inner border border-slate-700/50 flex flex-col min-h-0">
+                    <div className="bg-slate-900/60 backdrop-blur-sm rounded-xl p-5 flex-1 shadow-inner border border-white/[0.07] flex flex-col min-h-0">
                         <h3 className="text-sm font-bold text-slate-300 uppercase mb-4">색상 상세 정보</h3>
                         <div className="space-y-3 overflow-y-auto custom-scrollbar pr-2">
                             {[
@@ -507,7 +542,7 @@ const ColorStudio = () => {
                     </div>
 
                     {/* 저장된 팔레트 (Palette) */}
-                    <div className="bg-slate-800 rounded-xl p-5 h-1/3 min-h-[200px] border border-slate-700/50 flex flex-col">
+                    <div className="bg-slate-900/60 backdrop-blur-sm rounded-xl p-5 h-1/3 min-h-[200px] border border-white/[0.07] flex flex-col">
                         <div className="flex justify-between items-center mb-3">
                             <h3 className="text-sm font-bold text-slate-300 uppercase">저장된 팔레트</h3>
                             <button onClick={() => setSavedColors([...savedColors, hex])} className="text-xs bg-blue-600 px-2 py-1 rounded text-white hover:bg-blue-500">+ 현재 색상 저장</button>

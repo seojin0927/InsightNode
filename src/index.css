@@ -3,6 +3,104 @@
 @tailwind utilities;
 
 /* ============================================
+   VaultSheet 공통 디자인 토큰 v2 (Design System)
+   ============================================ */
+@layer components {
+    /* 도구 페이지 공통 래퍼 */
+    .tool-page {
+        @apply w-full h-full text-slate-100 overflow-hidden flex flex-col;
+        background: #08101e;
+    }
+
+    /* 메인 카드 (페이지 전체 컨테이너) */
+    .tool-card {
+        background: rgba(255,255,255,0.025);
+        border: 1px solid rgba(255,255,255,0.07);
+        @apply backdrop-blur-sm rounded-2xl;
+    }
+
+    /* 사이드패널 / 내부 패널 */
+    .tool-panel {
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.05);
+        @apply rounded-xl;
+    }
+
+    /* 섹션 구분 인풋 공통 */
+    .tool-input {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.12);
+        @apply rounded-xl text-slate-100 outline-none
+               focus:border-sky-500/60 focus:ring-1 focus:ring-sky-500/25
+               placeholder:text-slate-500 transition-all;
+    }
+
+    /* Primary 버튼 */
+    .btn-primary {
+        @apply flex items-center justify-center gap-2 px-5 py-2.5
+               text-white text-sm font-bold rounded-xl
+               shadow-lg transition-all hover:scale-[1.02] active:scale-95;
+        background: linear-gradient(135deg, #0ea5e9, #6366f1);
+        box-shadow: 0 4px 20px rgba(14,165,233,0.25);
+    }
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #38bdf8, #818cf8);
+    }
+
+    /* Danger 버튼 */
+    .btn-danger {
+        @apply flex items-center justify-center gap-2 px-5 py-2.5
+               text-red-400 text-sm font-bold rounded-xl transition-all;
+        background: rgba(239,68,68,0.08);
+        border: 1px solid rgba(239,68,68,0.2);
+    }
+    .btn-danger:hover {
+        background: rgba(239,68,68,0.15);
+    }
+
+    /* 탭 바 */
+    .tool-tabs {
+        @apply flex rounded-xl p-1 gap-0.5;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.06);
+    }
+    .tool-tab {
+        @apply px-4 py-2 text-sm font-semibold rounded-lg transition-all text-slate-500 hover:text-slate-300;
+    }
+    .tool-tab-active {
+        @apply text-white shadow-md;
+        background: rgba(255,255,255,0.08);
+    }
+}
+
+/* ============================================
+   🌙 다크 테마 전역 폼 요소 스타일
+   — 모든 변환 도구의 textarea/input/select 흰 배경 방지
+   ============================================ */
+textarea,
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="url"],
+input[type="password"],
+input[type="search"],
+input[type="tel"],
+select {
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    color: #f1f5f9 !important;
+}
+textarea::placeholder,
+input::placeholder {
+    color: #64748b !important;
+}
+select option {
+    background: #0f1a2e !important;
+    color: #f1f5f9 !important;
+}
+/* input[type="checkbox"], [type="radio"] 는 accent-color로만 */
+
+/* ============================================
    전체 화면 고정 레이아웃 (데스크탑 기본)
    ============================================ */
 html, body {
@@ -10,38 +108,34 @@ html, body {
     padding: 0;
     height: 100vh;
     width: 100vw;
-    /* 화면 전체 스크롤을 없애고 고정 */
     overflow: hidden;
-    /* 뒷배경이 잘리지 않도록 body에 전체 배경색 적용 */
-    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+    /* hash 라우팅 시 스크롤 점프 방지 */
+    scroll-behavior: auto;
+    /* 모든 배경색을 동일하게 통일 */
+    background: #060c1a;
     color: #f8fafc;
     font-family: 'Inter', sans-serif;
 }
 
 /* ============================================
-   최상단 래퍼 (Wrapper) - 🔥 80% 축소 매직
+   최상단 래퍼 (Wrapper) - 80% 축소 매직
    ============================================ */
 .app-wrapper {
-    /* 1. 화면을 실제 모니터보다 125% 크게 만듦 (공간 확보) */
     width: 125vw;
     height: 125vh;
-    
-    /* 2. 125%로 커진 화면을 0.8(80%) 비율로 축소 (1.25 * 0.8 = 100%) */
     transform: scale(0.8);
     transform-origin: top left;
-    
     display: flex;
     flex-direction: column;
-    padding-top: 20px;
-    
-    /* 모바일에서 좌우 스크롤 시 레이아웃이 깨지지 않도록 고정 */
+    /* 배경을 body와 동일하게 → 투명하게 유지 */
+    background: #060c1a;
     position: relative;
     min-width: 100vw;
     min-height: 100vh;
 }
 
 /* ============================================
-   아래부터는 원래 가지고 계시던 설정 그대로 사용 (px 수정 필요 없음)
+   레이아웃 구조
    ============================================ */
 .app-header {
     height: 60px;
@@ -51,23 +145,26 @@ html, body {
 .main-wrapper {
     flex: 1;
     display: flex;
-    height: 100%;
+    /* height: 100% 제거 → flex:1 으로만 높이 결정 (헤더 60px 초과 오버플로우 방지) */
+    min-height: 0;
     overflow: hidden;
-    padding-top: 20px;
-    padding-bottom: 80px; 
+    /* 패딩과 갭으로 숨통이 트이게 */
+    padding: 12px;
+    gap: 12px;
+    box-sizing: border-box;
 }
 
 .sidebar {
-    width: 380px;
-    height: 100%;
+    /* 너비는 JSX inline으로 제어, 여기서는 강제 스크롤 제거만 */
+    /* height: 100% 제거 → flex stretch로 자동 조절 */
     flex-shrink: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
+    align-self: stretch;
 }
 
 .main-content {
     flex: 1;
-    height: 100%;
+    min-height: 0;
     overflow: hidden;
     display: flex;
     flex-direction: column;

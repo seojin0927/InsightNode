@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+﻿import React, { useState, useCallback, useEffect } from 'react';
 
 const JsonStudio = () => {
     // === 상태 관리 ===
@@ -77,14 +77,35 @@ const JsonStudio = () => {
 
         let res = '';
         if (convertType === 'xml') {
-            // Simple XML Converter
-            const toXml = (obj) => Object.keys(obj).map(k => {
-                return `<${k}>${typeof obj[k] === 'object' ? toXml(obj[k]) : obj[k]}</${k}>`;
-            }).join('');
-            res = `<root>${toXml(parsed)}</root>`;
+            const toXml = (obj, tag = 'item') => {
+                if (obj === null || obj === undefined) return '';
+                if (Array.isArray(obj)) return obj.map(v => `<${tag}>${toXml(v)}</${tag}>`).join('');
+                if (typeof obj !== 'object') return String(obj);
+                return Object.keys(obj).map(k => {
+                    const val = obj[k];
+                    if (Array.isArray(val)) return `<${k}>${val.map(v => `<item>${toXml(v)}</item>`).join('')}</${k}>`;
+                    if (val !== null && typeof val === 'object') return `<${k}>${toXml(val)}</${k}>`;
+                    return `<${k}>${val ?? ''}</${k}>`;
+                }).join('');
+            };
+            res = `<?xml version="1.0" encoding="UTF-8"?>\n<root>${toXml(parsed)}</root>`;
         } else if (convertType === 'yaml') {
-            // Simple YAML Style
-            res = JSON.stringify(parsed, null, 2).replace(/[{},"]/g, '').replace(/:/g, ': ');
+            const toYaml = (obj, indent = 0) => {
+                const pad = '  '.repeat(indent);
+                if (obj === null) return 'null';
+                if (typeof obj !== 'object') return typeof obj === 'string' ? `"${obj}"` : String(obj);
+                if (Array.isArray(obj)) {
+                    if (obj.length === 0) return '[]';
+                    return obj.map(v => `${pad}- ${toYaml(v, indent + 1)}`).join('\n');
+                }
+                return Object.entries(obj).map(([k, v]) => {
+                    if (v !== null && typeof v === 'object') {
+                        return `${pad}${k}:\n${toYaml(v, indent + 1)}`;
+                    }
+                    return `${pad}${k}: ${toYaml(v, indent)}`;
+                }).join('\n');
+            };
+            res = toYaml(parsed);
         } else if (convertType === 'csv') {
             // Array of Objects only
             if (Array.isArray(parsed) && parsed.length > 0) {
@@ -98,17 +119,49 @@ const JsonStudio = () => {
         setMode('convert');
     }, [input, convertType]);
 
-    // 5. 타입 정의 생성 (TypeScript)
+    // 5. 타입 정의 생성 (TypeScript Interface + Zod Schema)
     const generateTypes = useCallback(() => {
         const parsed = safeParse(input);
         if (!parsed) return;
 
-        // 아주 간단한 TS Interface 생성기
-        const getType = (v) => Array.isArray(v) ? 'any[]' : typeof v;
-        const keys = Object.keys(parsed);
-        const types = keys.map(k => `  ${k}: ${getType(parsed[k])};`).join('\n');
-        setOutput(`interface GeneratedType {\n${types}\n}`);
-        setMode('convert'); // 출력창 사용
+        const getType = (v) => {
+            if (v === null) return 'null';
+            if (Array.isArray(v)) return v.length > 0 ? `${getType(v[0])}[]` : 'unknown[]';
+            if (typeof v === 'object') return 'Record<string, unknown>';
+            return typeof v;
+        };
+        const getZodType = (v) => {
+            if (v === null) return 'z.null()';
+            if (Array.isArray(v)) return v.length > 0 ? `z.array(${getZodType(v[0])})` : 'z.array(z.unknown())';
+            if (typeof v === 'object') return 'z.object({})';
+            if (typeof v === 'number') return Number.isInteger(v) ? 'z.number().int()' : 'z.number()';
+            if (typeof v === 'boolean') return 'z.boolean()';
+            return 'z.string()';
+        };
+
+        const target = Array.isArray(parsed) ? parsed[0] : parsed;
+        if (!target || typeof target !== 'object') {
+            setOutput('Object 타입의 JSON만 지원됩니다.');
+            return;
+        }
+
+        const entries = Object.entries(target);
+        const tsLines = entries.map(([k, v]) => `  ${k}: ${getType(v)};`).join('\n');
+        const zodLines = entries.map(([k, v]) => `  ${k}: ${getZodType(v)},`).join('\n');
+
+        setOutput(
+`// TypeScript Interface
+interface GeneratedType {
+${tsLines}
+}
+
+// Zod Schema (z from 'zod')
+const GeneratedSchema = z.object({
+${zodLines}
+});
+type GeneratedType = z.infer<typeof GeneratedSchema>;`
+        );
+        setMode('convert');
     }, [input]);
 
     // 6. JSONPath 필터링 (Mock)
@@ -145,11 +198,23 @@ const JsonStudio = () => {
         const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = (e) => {
-            setInput(e.target.result);
-            handleBeautify(); // 자동 포맷팅
+        reader.onload = (ev) => {
+            const text = ev.target.result;
+            setInput(text);
+            // stale closure 방지: 직접 파싱
+            try {
+                const parsed = JSON.parse(text);
+                setOutput(JSON.stringify(parsed, null, 4));
+                setIsValid(true);
+                setErrorMsg('');
+                analyzeJson(parsed);
+            } catch {
+                setIsValid(false);
+                setErrorMsg('Invalid JSON format');
+            }
         };
         reader.readAsText(file);
+        e.target.value = '';
     };
 
     // 초기화
@@ -175,18 +240,18 @@ const JsonStudio = () => {
     }, []);
 
     return (
-        <div className="w-full h-full min-h-[850px] bg-slate-900 rounded-2xl p-6 border border-slate-700 flex flex-col">
+        <div className="w-full h-full p-5 flex flex-col overflow-hidden" style={{ background: '#08101e' }}>
             {/* 1. 헤더 */}
-            <div className="flex items-center justify-between mb-6 flex-shrink-0">
+            <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/[0.06] flex-shrink-0">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/[0.08]">
                         <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                         </svg>
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-100">JSON Master Studio</h2>
-                        <p className="text-slate-400 text-sm">정렬, 검증, 변환, 타입 생성까지 완벽하게</p>
+                        <h2 className="text-base font-bold text-slate-100">JSON Master Studio</h2>
+                        <p className="text-xs text-slate-500">정렬, 검증, 변환, 타입 생성까지 완벽하게</p>
                     </div>
                 </div>
                 
@@ -276,7 +341,7 @@ const JsonStudio = () => {
                         value={output}
                         readOnly
                         placeholder="Result..."
-                        className="flex-1 w-full bg-slate-950 text-emerald-50 text-opacity-90 p-4 rounded-xl border border-slate-800 focus:outline-none font-mono text-sm resize-none shadow-inner custom-scrollbar"
+                        className="flex-1 w-full bg-slate-950 text-emerald-50 text-opacity-90 p-4 rounded-xl border border-white/[0.05] focus:outline-none font-mono text-sm resize-none shadow-inner custom-scrollbar"
                     />
                 </div>
             </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 
 // 아이콘 컴포넌트
 const Icon = ({ path }) => (
@@ -142,16 +142,16 @@ grape`;
     };
 
     return (
-        <div className="w-full h-full min-h-[850px] bg-slate-900 rounded-2xl p-6 border border-slate-700 flex flex-col">
+        <div className="w-full h-full p-5 flex flex-col overflow-hidden" style={{ background: '#08101e' }}>
             {/* 1. 헤더 */}
-            <div className="flex items-center justify-between mb-6 flex-shrink-0">
+            <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/[0.06] flex-shrink-0">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-sky-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/[0.08]">
                         <Icon path="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-100">Text Transform Studio</h2>
-                        <p className="text-slate-400 text-sm">리스트 변환, 정렬, 가공, 포맷팅 올인원 도구</p>
+                        <h2 className="text-base font-bold text-slate-100">Text Transform Studio</h2>
+                        <p className="text-xs text-slate-500">리스트 변환, 정렬, 가공, 포맷팅 올인원 도구</p>
                     </div>
                 </div>
                 
@@ -176,11 +176,11 @@ grape`;
                 
                 {/* 좌측: 설정 패널 (Col 3) */}
                 <div className="lg:col-span-3 flex flex-col h-full min-h-0">
-                    <div className="bg-slate-800 rounded-xl p-5 flex flex-col h-full shadow-inner border border-slate-700/50 overflow-y-auto custom-scrollbar">
+                    <div className="rounded-xl p-5 flex flex-col h-full overflow-y-auto custom-scrollbar">
                         
                         {/* 1. 입력 설정 */}
                         <div className="mb-6">
-                            <h3 className="text-xs font-bold text-slate-400 uppercase mb-3">Input Settings</h3>
+                            <h3 className="text-xs font-bold text-slate-300 uppercase mb-3 tracking-wider">Input Settings</h3>
                             <div className="space-y-3">
                                 <div>
                                     <label className="text-xs text-slate-500 mb-1 block">구분자 (Split by)</label>
@@ -211,7 +211,7 @@ grape`;
 
                         {/* 2. 가공 설정 */}
                         <div className="mb-6">
-                            <h3 className="text-xs font-bold text-slate-400 uppercase mb-3">Transform</h3>
+                            <h3 className="text-xs font-bold text-slate-300 uppercase mb-3 tracking-wider">Transform</h3>
                             <div className="space-y-3">
                                 <div>
                                     <label className="text-xs text-slate-500 mb-1 block">정렬 (Sort)</label>
@@ -236,7 +236,7 @@ grape`;
 
                         {/* 3. 출력 설정 */}
                         <div className="mb-6">
-                            <h3 className="text-xs font-bold text-slate-400 uppercase mb-3">Output Settings</h3>
+                            <h3 className="text-xs font-bold text-slate-300 uppercase mb-3 tracking-wider">Output Settings</h3>
                             <div className="space-y-3">
                                 <div>
                                     <label className="text-xs text-slate-500 mb-1 block">구분자 (Join by)</label>
@@ -284,7 +284,7 @@ grape`;
                         {/* 입력창 */}
                         <div className="flex flex-col h-full bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
                             <div className="bg-slate-900/50 p-3 border-b border-slate-700 flex justify-between items-center">
-                                <span className="text-xs font-bold text-slate-400 uppercase">Input</span>
+                                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Input</span>
                                 <div className="text-xs text-slate-500">
                                     {input ? `${input.split(separator === 'newline' ? '\n' : separator).length} Items` : '0 Items'}
                                 </div>

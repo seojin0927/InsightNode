@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 
 // 아이콘 컴포넌트
 const Icon = ({ path }) => (
@@ -114,15 +114,15 @@ const UnitStudio = () => {
     };
 
     return (
-        <div className="w-full h-full min-h-[850px] bg-slate-900 rounded-2xl p-6 border border-slate-700 flex flex-col">
+        <div className="w-full h-full p-5 flex flex-col overflow-hidden" style={{ background: '#08101e' }}>
             {/* 1. 헤더 */}
-            <div className="flex items-center gap-3 mb-6 flex-shrink-0">
-                <div className="w-12 h-12 bg-gradient-to-br from-lime-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-lime-500/20">
+            <div className="flex items-center gap-3 mb-5 pb-4 border-b border-white/[0.06] flex-shrink-0">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/[0.08]">
                     <Icon path="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                 </div>
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-100">Unit Master Studio</h2>
-                    <p className="text-slate-400 text-sm">길이, 무게, 환율 등 모든 단위 변환 솔루션</p>
+                    <h2 className="text-base font-bold text-slate-100">Unit Master Studio</h2>
+                    <p className="text-xs text-slate-500">길이, 무게, 환율 등 모든 단위 변환 솔루션</p>
                 </div>
             </div>
 
@@ -156,7 +156,7 @@ const UnitStudio = () => {
                             {/* FROM */}
                             <div className="bg-slate-900 p-6 rounded-xl border border-slate-700 transition-colors focus-within:border-lime-500">
                                 <div className="flex justify-between mb-2">
-                                    <label className="text-xs font-bold text-slate-400 uppercase">From</label>
+                                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">From</label>
                                     <select 
                                         value={fromUnit} 
                                         onChange={(e) => setFromUnit(e.target.value)}
@@ -181,7 +181,7 @@ const UnitStudio = () => {
                             <div className="flex justify-center -my-9 z-10">
                                 <button 
                                     onClick={swap}
-                                    className="w-12 h-12 bg-slate-700 hover:bg-lime-600 text-white rounded-full border-4 border-slate-800 flex items-center justify-center transition-all shadow-lg active:scale-95"
+                                    className="w-12 h-12 bg-slate-700 hover:bg-lime-600 text-white rounded-full border-4 border-white/[0.05] flex items-center justify-center transition-all shadow-lg active:scale-95"
                                 >
                                     <Icon path="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
                                 </button>
@@ -190,7 +190,7 @@ const UnitStudio = () => {
                             {/* TO */}
                             <div className="bg-slate-900 p-6 rounded-xl border border-slate-700 transition-colors focus-within:border-lime-500">
                                 <div className="flex justify-between mb-2">
-                                    <label className="text-xs font-bold text-slate-400 uppercase">To</label>
+                                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">To</label>
                                     <select 
                                         value={toUnit} 
                                         onChange={(e) => setToUnit(e.target.value)}
@@ -239,7 +239,7 @@ const UnitStudio = () => {
                 <div className="lg:col-span-5 flex flex-col h-full min-h-0 gap-4">
                     
                     {/* 히스토리 */}
-                    <div className="bg-slate-800 rounded-xl p-4 flex-1 shadow-inner border border-slate-700/50 flex flex-col min-h-0">
+                    <div className="bg-slate-800 rounded-xl p-4 flex-1 shadow-inner border border-white/[0.07] flex flex-col min-h-0">
                         <div className="flex justify-between items-center mb-3">
                             <h3 className="text-sm font-bold text-slate-300 uppercase">History</h3>
                             <button onClick={() => setHistory([])} className="text-xs text-slate-500 hover:text-red-400">Clear</button>
@@ -264,20 +264,43 @@ const UnitStudio = () => {
                         </div>
                     </div>
 
-                    {/* 빠른 참조표 */}
-                    <div className="bg-slate-800 rounded-xl p-4 h-1/3 min-h-[200px] border border-slate-700/50 flex flex-col">
-                        <h3 className="text-sm font-bold text-slate-300 uppercase mb-3">Quick Ref ({fromUnit.toUpperCase()})</h3>
-                        <div className="flex-1 overflow-y-auto custom-scrollbar grid grid-cols-2 gap-2">
-                            {Object.entries(unitsData[category].units).map(([u, factor]) => {
-                                if (u === fromUnit) return null;
-                                let refVal = 0;
-                                if (category === 'temperature') refVal = 'N/A'; // 복잡해서 생략
-                                else refVal = (1 / unitsData[category].units[fromUnit] * factor).toPrecision(4);
-                                
+                    {/* ✨ 멀티 단위 동시 변환 */}
+                    <div className="bg-slate-800 rounded-xl p-4 flex-1 border border-white/[0.07] flex flex-col min-h-0">
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-sm font-bold text-slate-300 uppercase">⚡ 모든 단위 동시 변환</h3>
+                            <span className="text-[10px] text-slate-600">{value || '1'} {fromUnit} 기준</span>
+                        </div>
+                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1.5">
+                            {Object.entries(unitsData[category].units).map(([u]) => {
+                                let converted = '—';
+                                const val = parseFloat(value) || 1;
+                                if (category === 'temperature') {
+                                    let celsius = val;
+                                    if (fromUnit === 'F') celsius = (val - 32) * 5/9;
+                                    if (fromUnit === 'K') celsius = val - 273.15;
+                                    if (u === 'C') converted = celsius.toFixed(precision);
+                                    else if (u === 'F') converted = (celsius * 9/5 + 32).toFixed(precision);
+                                    else if (u === 'K') converted = (celsius + 273.15).toFixed(precision);
+                                } else {
+                                    const rates = unitsData[category].units;
+                                    const base = val / rates[fromUnit];
+                                    const res = base * rates[u];
+                                    converted = Number.isInteger(res) ? res : res.toPrecision(4);
+                                }
+                                const isFrom = u === fromUnit;
                                 return (
-                                    <div key={u} className="bg-slate-700/50 p-2 rounded text-xs flex justify-between">
-                                        <span className="text-slate-400">1 {fromUnit}</span>
-                                        <span className="text-slate-200 font-mono">= {refVal} {u}</span>
+                                    <div
+                                        key={u}
+                                        onClick={() => !isFrom && navigator.clipboard.writeText(String(converted))}
+                                        className={`flex justify-between items-center px-3 py-2 rounded-lg text-xs transition-all ${
+                                            isFrom
+                                                ? 'bg-lime-600/20 border border-lime-500/30 text-lime-300'
+                                                : 'bg-slate-900/60 hover:bg-slate-700/60 cursor-pointer text-slate-300 border border-transparent hover:border-lime-500/20'
+                                        }`}
+                                    >
+                                        <span className="font-bold text-slate-500 w-10">{u}</span>
+                                        <span className="font-mono text-right flex-1">{converted}</span>
+                                        {!isFrom && <span className="text-lime-600 opacity-0 hover:opacity-100 ml-2 text-[10px]">복사</span>}
                                     </div>
                                 );
                             })}

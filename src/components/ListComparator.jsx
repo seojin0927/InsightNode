@@ -139,16 +139,16 @@ const ListDiffStudio = () => {
     ];
 
     return (
-        <div className="w-full h-full min-h-[850px] bg-slate-900 rounded-2xl p-6 border border-slate-700 flex flex-col">
+        <div className="w-full h-full p-5 flex flex-col overflow-hidden" style={{ background: '#08101e' }}>
             {/* 1. 헤더 */}
-            <div className="flex items-center justify-between mb-6 flex-shrink-0">
+            <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/[0.06] flex-shrink-0">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/[0.08]">
                         <Icon path="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-100">List Diff Master Studio</h2>
-                        <p className="text-slate-400 text-sm">목록 비교, 교집합/차집합 분석, 데이터 정제 도구</p>
+                        <h2 className="text-base font-bold text-slate-100">List Diff Master Studio</h2>
+                        <p className="text-xs text-slate-500">목록 비교, 교집합/차집합 분석, 데이터 정제 도구</p>
                     </div>
                 </div>
                 <div className="flex gap-2">
@@ -244,7 +244,7 @@ const ListDiffStudio = () => {
 
                 {/* 우측: 분석 결과 및 시각화 (Col 7) */}
                 <div className="lg:col-span-7 flex flex-col h-full min-h-0">
-                    <div className="bg-slate-800 rounded-xl p-5 flex flex-col h-full shadow-inner border border-slate-700/50">
+                    <div className="rounded-xl p-5 flex flex-col h-full" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}>
                         
                         {/* 상단: 시각화 (Venn Stats) */}
                         <div className="flex gap-4 mb-6">
@@ -254,7 +254,7 @@ const ListDiffStudio = () => {
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`flex-1 p-3 rounded-xl border transition-all ${
                                         activeTab === tab.id 
-                                        ? `bg-slate-700 border-${tab.color.split('-')[1]}-500/50` 
+                                        ? 'bg-slate-700 border-slate-500' 
                                         : 'bg-slate-900/50 border-transparent hover:bg-slate-700'
                                     }`}
                                 >
@@ -294,7 +294,7 @@ const ListDiffStudio = () => {
                             {getCurrentList().length > 0 ? (
                                 <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-2">
                                     {getCurrentList().map((item, idx) => (
-                                        <div key={idx} className="flex gap-3 py-1.5 px-2 hover:bg-slate-800 rounded group border-b border-slate-800/50 last:border-0">
+                                        <div key={idx} className="flex gap-3 py-1.5 px-2 hover:bg-slate-800 rounded group border-b border-white/[0.05]/50 last:border-0">
                                             <span className="text-slate-600 font-mono text-xs w-8 text-right select-none">{idx + 1}</span>
                                             <span className="text-slate-300 text-sm font-mono break-all">{item}</span>
                                         </div>
@@ -302,7 +302,7 @@ const ListDiffStudio = () => {
                                 </div>
                             ) : (
                                 <div className="h-full flex flex-col items-center justify-center text-slate-600">
-                                    <Icon path="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 00-2 2 0-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                    <Icon path="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                     <span className="text-xs mt-2">해당되는 데이터가 없습니다</span>
                                 </div>
                             )}

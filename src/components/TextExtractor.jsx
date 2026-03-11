@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+﻿import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Papa from 'papaparse';
 
 // 아이콘 컴포넌트
@@ -145,16 +145,16 @@ const ExtractStudio = () => {
     };
 
     return (
-        <div className="w-full h-full min-h-[850px] bg-slate-900 rounded-2xl p-6 border border-slate-700 flex flex-col">
+        <div className="w-full h-full p-5 flex flex-col overflow-hidden" style={{ background: '#08101e' }}>
             {/* 1. 헤더 */}
-            <div className="flex items-center justify-between mb-6 flex-shrink-0">
+            <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/[0.06] flex-shrink-0">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-pink-500/20">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/[0.08]">
                         <Icon path="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-100">Extract Master Studio</h2>
-                        <p className="text-slate-400 text-sm">텍스트 데이터 마이닝 및 정제 솔루션</p>
+                        <h2 className="text-base font-bold text-slate-100">Extract Master Studio</h2>
+                        <p className="text-xs text-slate-500">텍스트 데이터 마이닝 및 정제 솔루션</p>
                     </div>
                 </div>
                 
@@ -173,11 +173,11 @@ const ExtractStudio = () => {
                 
                 {/* 좌측: 입력 및 설정 (Col 4) */}
                 <div className="lg:col-span-4 flex flex-col h-full min-h-0">
-                    <div className="bg-slate-800 rounded-xl p-5 flex flex-col h-full shadow-inner border border-slate-700/50 overflow-y-auto custom-scrollbar">
+                    <div className="rounded-xl p-5 flex flex-col h-full overflow-y-auto custom-scrollbar">
                         
                         {/* 추출 대상 선택 */}
                         <div className="mb-6">
-                            <h3 className="text-xs font-bold text-slate-400 uppercase mb-3">Target</h3>
+                            <h3 className="text-xs font-bold text-slate-300 uppercase mb-3 tracking-wider">Target</h3>
                             <div className="grid grid-cols-2 gap-2">
                                 {Object.entries(patterns).map(([key, p]) => (
                                     <button
@@ -219,7 +219,7 @@ const ExtractStudio = () => {
 
                         {/* 옵션 설정 */}
                         <div className="mb-6">
-                            <h3 className="text-xs font-bold text-slate-400 uppercase mb-3">Filters & Format</h3>
+                            <h3 className="text-xs font-bold text-slate-300 uppercase mb-3 tracking-wider">Filters & Format</h3>
                             <div className="space-y-3">
                                 <label className="flex items-center justify-between text-xs text-slate-300 cursor-pointer p-2 bg-slate-700/50 rounded hover:bg-slate-700">
                                     <span>중복 제거 (Unique)</span>
@@ -266,7 +266,7 @@ const ExtractStudio = () => {
                 <div className="lg:col-span-4 flex flex-col h-full min-h-0">
                     <div className="bg-slate-800 rounded-xl flex flex-col h-full border border-slate-700 overflow-hidden">
                         <div className="p-3 bg-slate-900/50 border-b border-slate-700 flex justify-between items-center">
-                            <span className="text-xs font-bold text-slate-400 uppercase">Input Text</span>
+                            <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Input Text</span>
                             <span className="text-[10px] text-slate-500">{input.length} chars</span>
                         </div>
                         <textarea

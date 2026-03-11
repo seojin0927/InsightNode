@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+﻿import React, { useState, useCallback, useEffect, useRef } from 'react';
 import JSZip from 'jszip'; // jszip 라이브러리 필요 (npm install jszip)
 import { saveAs } from 'file-saver'; // file-saver 라이브러리 필요 (npm install file-saver)
 
@@ -208,18 +208,18 @@ const ImageStudio = () => {
     };
 
     return (
-        <div className="w-full h-full min-h-[850px] bg-slate-900 rounded-2xl p-6 border border-slate-700 flex flex-col">
+        <div className="w-full h-full p-5 flex flex-col overflow-hidden" style={{ background: '#08101e' }}>
             <canvas ref={canvasRef} className="hidden" />
             
             {/* 1. 헤더 */}
-            <div className="flex items-center justify-between mb-6 flex-shrink-0">
+            <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/[0.06] flex-shrink-0">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl flex items-center justify-center shadow-lg shadow-pink-500/20">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/[0.08]">
                         <Icon path="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-100">Pro Image Studio</h2>
-                        <p className="text-slate-400 text-sm">압축, 변환, 편집, 워터마크를 한 번에</p>
+                        <h2 className="text-base font-bold text-slate-100">Pro Image Studio</h2>
+                        <p className="text-xs text-slate-500">압축, 변환, 편집, 워터마크를 한 번에</p>
                     </div>
                 </div>
                 
@@ -244,7 +244,7 @@ const ImageStudio = () => {
                 
                 {/* 좌측: 파일 목록 및 미리보기 (Col 3) */}
                 <div className="lg:col-span-3 flex flex-col gap-4 min-h-0">
-                    <div className="bg-slate-800 rounded-xl p-4 flex flex-col h-full shadow-inner border border-slate-700/50">
+                    <div className="bg-slate-800 rounded-xl p-4 flex flex-col h-full shadow-inner border border-white/[0.07]">
                         <h3 className="text-sm font-semibold text-slate-300 mb-3 flex justify-between">
                             <span>파일 목록 ({files.length})</span>
                             <button onClick={()=>setFiles([])} className="text-xs text-rose-400 hover:underline">모두 삭제</button>
@@ -340,7 +340,7 @@ const ImageStudio = () => {
 
                 {/* 우측: 도구 패널 (Col 3) */}
                 <div className="lg:col-span-3 flex flex-col h-full min-h-0">
-                    <div className="bg-slate-800 rounded-xl p-5 flex flex-col h-full shadow-inner border border-slate-700/50 overflow-y-auto custom-scrollbar space-y-6">
+                    <div className="rounded-xl p-5 flex flex-col h-full overflow-y-auto custom-scrollbar space-y-6">
                         
                         {/* 1. 포맷 & 품질 */}
                         <div className="space-y-3">

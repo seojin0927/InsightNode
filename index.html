@@ -33,6 +33,12 @@
                 description: 'JSON 파일을 CSV로 쉽게 변환하세요. 한국어/영문 포함 모든 언어 지원. 파일 업로드만으로 즉시 변환. 보안을 위한 100% 브라우저 내 처리, 서버 전송 없음.',
                 keywords: 'JSON to CSV, JSON 변환, 파일 변환, 온라인 변환기, JSON CSV 변환, 무료 변환'
             },
+            // 현재 라우트 이름(#jsonCsvPage)에 맞춘 별칭
+            'jsonCsvPage': {
+                title: 'VaultSheet (볼트시트) - JSON ↔ CSV 변환 스튜디오 : JSON과 CSV 상호 변환',
+                description: 'JSON 배열을 CSV로, CSV를 JSON으로 양방향 즉시 변환하세요. 키 매핑, 헤더 행 지정, 한글(UTF-8) 완전 지원, 100% 브라우저 내 처리.',
+                keywords: 'JSON CSV 변환, JSON to CSV, CSV to JSON, JSON 변환기, CSV 변환기'
+            },
             'encoding': {
                 title: 'VaultSheet (볼트시트) - 한글 깨짐 복구 : CSV/텍스트 인코딩 변환 도구 (EUC-KR ↔ UTF-8)',
                 description: '한글 깨짐 파일을 빠르게 복구하세요. CSV, TXT 등 모든 텍스트 파일 지원. EUC-KR, UTF-8, MS949 인코딩 상호 변환. 엑셀에서 한글이 깨질 때最简单的 해결책.',
@@ -94,10 +100,16 @@
     keywords: '이미지 압축, 이미지 변환, WEBP 변환, 사진 용량 줄이기, 이미지 리사이즈, 워터마크 만들기, 사진 회전, EXIF 제거, 배치 작업'
 },
             'jsonFormatter': {
-    title: 'VaultSheet (볼트시트) - JSON 마스터 스튜디오 : 정렬, 검증, 변환, 타입 생성',
-    description: 'JSON 데이터의 정렬(Beautify) 및 검증(Validate)은 기본. XML/YAML 변환, TypeScript 타입 생성, JSONPath 검색, 키 정렬까지 개발자를 위한 올인원 JSON 도구.',
-    keywords: 'JSON 포맷터, JSON 뷰어, JSON to XML, JSON to YAML, JSON to CSV, JSONPath, TypeScript Interface 생성, JSON Validator, JSON 정렬'
-},
+                title: 'VaultSheet (볼트시트) - JSON 마스터 스튜디오 : 정렬, 검증, 변환, 타입 생성',
+                description: 'JSON 데이터의 정렬(Beautify) 및 검증(Validate)은 기본. XML/YAML 변환, TypeScript 타입 생성, JSONPath 검색, 키 정렬까지 개발자를 위한 올인원 JSON 도구.',
+                keywords: 'JSON 포맷터, JSON 뷰어, JSON to XML, JSON to YAML, JSON to CSV, JSONPath, TypeScript Interface 생성, JSON Validator, JSON 정렬'
+            },
+            // 실제 페이지 라우트 이름(#jsonFormatterPage)에 맞춘 항목
+            'jsonFormatterPage': {
+                title: 'VaultSheet (볼트시트) - JSON 포매터 & 변환기 : 검증·정렬·변환·타입 생성',
+                description: '들여쓰기/정렬, 유효성 검증, 키 정렬, JSONPath 검색은 물론 XML/YAML/CSV 변환과 TypeScript 타입 생성까지 지원하는 JSON 전용 스튜디오.',
+                keywords: 'JSON 포매터, JSON Formatter, JSON 검증, JSON 정렬, JSON 변환, JSONPath, TypeScript 타입 생성'
+            },
             'markdownEditor': {
     title: 'VaultSheet (볼트시트) - 프로 마크다운 스튜디오 : 템플릿, 내보내기, 실시간 미리보기',
     description: 'README, 블로그 등 템플릿 제공. Task List, 테이블 등 고급 문법 지원. HTML/PDF 변환 및 자동 저장 기능을 갖춘 전문가용 웹 마크다운 에디터.',
@@ -142,6 +154,176 @@
     title: 'VaultSheet (볼트시트) - 압축 변환 스튜디오 : ZIP, RAR, 7Z 변환 및 압축 해제',
     description: 'ZIP, RAR, 7Z 등 다양한 압축 포맷을 변환하고 압축을 해제하세요. 파일 크기 조절, 암호화, 배치 작업까지 지원하는 웹 압축 툴.',
     keywords: '압축 변환, ZIP 변환, RAR 변환, 7Z 변환, 압축 해제, 파일 압축, 압축 포맷 변환, 배치 압축'
+},
+            'insight': {
+    title: 'VaultSheet (볼트시트) - 인사이트 스튜디오 : AI 데이터 프로파일링 & 상관관계 분석',
+    description: '데이터를 불러오는 순간 자동으로 컬럼 프로파일링, 이상치 감지, 상관관계 분석, 품질 점수를 제공합니다. 피어슨 상관계수 매트릭스, 분포 히스토그램, 스마트 인사이트 자동 생성.',
+    keywords: '데이터 분석, 데이터 프로파일링, 상관관계 분석, 이상치 감지, 컬럼 통계, 피어슨 상관계수, 데이터 품질, 통계 분석'
+},
+            'tools': {
+    title: 'VaultSheet (볼트시트) - 변환 도구 전체 모음 : 100가지 무료 온라인 도구',
+    description: 'JSON 변환, 이미지 압축, QR 코드, PDF 변환, 정규식 테스터, 암호화, 색상 변환, Excel 변환, JWT 디코더, OTP 생성기 등 100가지 이상의 무료 온라인 변환 도구를 한 곳에서 검색하고 즉시 사용하세요.',
+    keywords: '무료 온라인 변환 도구, JSON CSV 변환, 이미지 압축, QR 코드 생성, PDF 변환, 암호화 도구, 색상 변환, 코드 압축, 개인정보 마스킹, 단위 변환기, JWT 디코더, OTP 생성, Excel JSON 변환, CSS 그림자 생성기'
+},
+            'colorStudio': {
+            title: 'VaultSheet (볼트시트) - 색상 스튜디오 : 색상 변환·팔레트·그라데이션·접근성 검사',
+            description: 'HEX/RGB/HSL/CMYK 색상 변환부터 팔레트 생성, CSS 그라데이션 코드, 색상 대비(접근성) 검사까지 한 번에 제공하는 디자이너/개발자용 올인원 색상 스튜디오.',
+            keywords: '색상 스튜디오, 색상 코드 변환, 컬러 팔레트, 색상 대비 검사, CSS 그라데이션, HEX RGB HSL CMYK, 컬러 피커'
+            },
+            'textStudio': {
+            title: 'VaultSheet (볼트시트) - 텍스트 스튜디오 : 통계·케이스 변환·인코딩·숫자 변환',
+            description: '텍스트 통계, 단어/문자 수 세기, 대소문자 케이스 변환, 인코딩 변경, 숫자 포맷 변환 등 문서/데이터 작업에 필요한 텍스트 도구를 한 곳에 모았습니다.',
+            keywords: '텍스트 스튜디오, 글자 수 세기, 텍스트 통계, 케이스 변환, 대소문자 변환, 텍스트 인코딩, 숫자 포맷 변환'
+            },
+            'cssStudio': {
+            title: 'VaultSheet (볼트시트) - CSS 스튜디오 : Shadow·Radius·Glass·Flexbox·Animation',
+            description: 'box-shadow/텍스트 그림자, border-radius, 글래스모피즘, Flexbox 레이아웃, CSS 애니메이션까지 시각적으로 조절하고 코드로 바로 복사할 수 있는 CSS 전용 스튜디오.',
+            keywords: 'CSS 스튜디오, box-shadow 생성기, border-radius, 글래스모피즘, flexbox 레이아웃, CSS 애니메이션 코드'
+            },
+            'timeStudio': {
+            title: 'VaultSheet (볼트시트) - 시간 스튜디오 : 세계 시계·타임스탬프·카운트다운·뽀모도로',
+            description: '세계 시계, 타임존 변환, Unix 타임스탬프 변환, 카운트다운 타이머, 뽀모도로 집중 타이머까지 시간 관련 도구를 통합 제공하는 생산성 스튜디오.',
+            keywords: '시간 스튜디오, 세계 시계, 타임존 변환, 타임스탬프 변환, 카운트다운, 포모도로 타이머'
+            },
+            'utilStudio': {
+            title: 'VaultSheet (볼트시트) - 유틸리티 스튜디오 : 해시·대출 계산·비밀번호·파일 해시',
+            description: '해시 계산, 파일 해시 체크, 대출 상환 계산기, 안전한 비밀번호 생성 등 실무에서 자주 쓰이는 유틸리티 도구 모음.',
+            keywords: '유틸리티 스튜디오, 해시 계산, 파일 해시, 대출 계산기, 비밀번호 생성기, 유틸 도구'
+            },
+            'securityStudio': {
+            title: 'VaultSheet (볼트시트) - 보안 스튜디오 : chmod·AES 암호화·TOTP 2FA·개인정보 분석',
+            description: 'chmod 권한 계산, AES 대칭키 암호화, JWT/토큰 디코딩, TOTP 기반 2단계 인증 코드, 개인정보 분석 등을 지원하는 보안 도구 스튜디오.',
+            keywords: '보안 스튜디오, chmod 계산기, AES 암호화, TOTP 2FA, JWT 디코더, 개인정보 분석'
+            },
+            'dataToolsStudio': {
+            title: 'VaultSheet (볼트시트) - 데이터 도구 스튜디오 : 스키마·CSV 비교·전치·데이터 검증',
+            description: 'JSON에서 JSON Schema 자동 생성, 두 CSV 파일의 차이 비교, 행/열 전치(Transpose), 이메일·빈값·타입 오류 검증 등 데이터 전처리 도구를 통합 제공.',
+            keywords: '데이터 도구, JSON Schema 생성, CSV 비교, 행열 전치, 데이터 검증, 데이터 품질 검사'
+            },
+            'excelJsonPage': {
+            title: 'VaultSheet (볼트시트) - Excel ↔ JSON 변환기 : .xlsx/.xls 파일과 JSON 배열 양방향 변환',
+            description: 'Excel(xlsx/xls) 파일을 JSON 배열로, JSON 배열을 엑셀 파일로 손쉽게 변환하세요. 시트 선택, 헤더 행 지정, 들여쓰기 설정 지원.',
+            keywords: 'Excel JSON 변환, xlsx to JSON, JSON to Excel, 엑셀 JSON 변환기'
+            },
+            'csvMergeSplitPage': {
+            title: 'VaultSheet (볼트시트) - CSV 병합/분할 스튜디오 : 여러 CSV 병합 및 조건 분할',
+            description: '여러 CSV 파일을 컬럼 정렬 후 하나로 병합하거나, 행 개수/컬럼 값 기준으로 여러 파일로 분할하는 고급 CSV 작업 스튜디오.',
+            keywords: 'CSV 병합, CSV 분할, CSV 합치기, CSV 스플릿, CSV 전처리'
+            },
+            'mediaStudio': {
+            title: 'VaultSheet (볼트시트) - 미디어 스튜디오 : 이미지 리사이즈·파비콘·SVG 최적화·워터마크',
+            description: '이미지 일괄 리사이즈, 파비콘 생성, SVG 코드 최적화, 이미지 워터마크 삽입 등을 한 곳에서 처리하는 웹 미디어 변환/편집 스튜디오.',
+            keywords: '미디어 스튜디오, 이미지 리사이즈, 파비콘 생성, SVG 최적화, 이미지 워터마크'
+            },
+            'cryptoEncoder': {
+            title: 'VaultSheet (볼트시트) - 암호화 & 인코더 스튜디오 : Base64·Hash·JWT·AES 변환',
+            description: '문자열을 Base64, URL, Hex 등으로 인코딩/디코딩하고, SHA/MD5 해시, JWT 디코딩, AES 암호화/복호화를 지원하는 개발자용 암호화 스튜디오.',
+            keywords: '암호화 도구, Base64 인코딩, 해시 계산, JWT 디코더, AES 암복호화, 인코더'
+            },
+            'home': {
+    title: 'VaultSheet (볼트시트) - 데이터 분석 & 변환 올인원 도구',
+    description: '브라우저에서 바로 실행되는 데이터 분석 & 변환 도구. CSV/JSON 파일로 SQL 쿼리, 피벗 테이블, 차트 생성, AI 인사이트 분석. 100가지 무료 변환 도구 제공. 100% 오프라인, 서버 전송 없음.',
+    keywords: '데이터 분석, 피벗 테이블, CSV 분석, SQL 쿼리, 차트 만들기, 무료 변환 도구, 오프라인 데이터 도구, 인사이트 스튜디오'
+},
+            'excelToJson': { title: 'VaultSheet - Excel → JSON 변환기 : xlsx 파일 즉시 변환', description: 'Excel(xlsx/xls) 파일을 JSON 배열로 즉시 변환. 시트 선택, 헤더 설정 지원.', keywords: 'Excel JSON 변환, xlsx to JSON, 엑셀 JSON 변환기' },
+            'csvMerger': { title: 'VaultSheet - CSV 파일 병합기 : 여러 CSV를 하나로', description: '여러 CSV 파일을 헤더 정렬하여 스마트하게 병합하세요.', keywords: 'CSV 병합, CSV 합치기, 다중 CSV 변환' },
+            'dataValidator': { title: 'VaultSheet - 데이터 유효성 검사기 : 컬럼 타입 & 범위 검사', description: '데이터 컬럼 타입, 범위, 필수값, 형식을 일괄 검사하는 도구.', keywords: '데이터 유효성 검사, 컬럼 검증, 데이터 품질 검사' },
+            'schemaBuilder': { title: 'VaultSheet - JSON Schema 빌더 : JSON에서 스키마 자동 생성', description: 'JSON 데이터를 입력하면 JSON Schema를 자동 생성하고 편집합니다.', keywords: 'JSON Schema 생성, 스키마 빌더, JSON 구조 분석' },
+            'diffChecker': { title: 'VaultSheet - 텍스트 차이 비교기 : 줄 단위 차이 분석', description: '두 텍스트를 줄 단위로 비교하고 추가/삭제된 내용을 하이라이트합니다.', keywords: '텍스트 비교, diff checker, 코드 비교, 차이 분석' },
+            'wordCounter': { title: 'VaultSheet - 단어·문자 카운터 PRO : 실시간 글자 수 세기', description: '글자수, 단어수, 문장수, 바이트, 읽기 시간을 실시간으로 계산합니다.', keywords: '글자수 세기, 단어 카운터, 문자 수 계산, 띄어쓰기 포함' },
+            'caseConverter': { title: 'VaultSheet - 케이스 변환기 : camelCase·snake_case·PascalCase 변환', description: '텍스트를 다양한 네이밍 컨벤션으로 즉시 변환합니다.', keywords: 'camelCase 변환, snake_case, PascalCase, 네이밍 변환기' },
+            'jwtDecoder': { title: 'VaultSheet - JWT 디코더 & 검증기 : 토큰 파싱 & 만료 확인', description: 'JWT 토큰을 디코드하고 헤더, 페이로드, 서명을 확인합니다.', keywords: 'JWT 디코더, JSON Web Token, JWT 파싱, 토큰 검증, JWT 만료' },
+            'httpStatus': { title: 'VaultSheet - HTTP 상태코드 백과사전 : 200·404·500 의미 설명', description: '모든 HTTP 상태코드의 의미와 사용 사례를 검색하고 학습합니다.', keywords: 'HTTP 상태코드, 404 의미, 500 에러, HTTP 코드 설명' },
+            'shadowGenerator': { title: 'VaultSheet - CSS Box-Shadow 생성기 : 그림자 효과 시각적 편집', description: 'box-shadow와 text-shadow를 슬라이더로 조절하고 CSS 코드를 생성합니다.', keywords: 'CSS shadow 생성기, box-shadow, 그림자 효과, CSS 그림자 코드' },
+            'glassmorphism': { title: 'VaultSheet - 글래스모피즘 CSS 생성기 : 유리 효과 코드', description: '배경 흐림, 투명도, 보더를 조절하여 글래스모피즘 CSS를 생성합니다.', keywords: '글래스모피즘, glass effect, backdrop-filter, CSS 유리 효과' },
+            'twoFactorAuth': { title: 'VaultSheet - OTP / 2FA 코드 생성기 : TOTP 기반 인증', description: 'TOTP 기반의 6자리 OTP 코드를 생성하고 QR 코드로 앱 등록 가능.', keywords: 'OTP 생성기, 2FA, TOTP, 구글 OTP, 이중 인증 코드' },
+            'pomodoro': { title: 'VaultSheet - 포모도로 타이머 : 25분 집중 생산성 타이머', description: '포모도로 기법으로 25분 집중, 5분 휴식 사이클을 관리하는 생산성 타이머.', keywords: '포모도로 타이머, 집중력 타이머, 뽀모도로, 생산성 도구' },
+            'calendarTool': { title: 'VaultSheet - 달력 & 날짜 계산기 PRO : D-Day & 근무일 계산', description: 'D-Day 계산, 두 날짜 사이 일수, 근무일(공휴일 제외) 계산 도구.', keywords: 'D-Day 계산기, 날짜 계산기, 근무일 계산, 공휴일 제외 날짜' },
+            'timestampConverter': {
+    title: 'VaultSheet (볼트시트) - 타임스탬프 변환기 : Unix Timestamp ↔ 날짜시간 변환',
+    description: 'Unix 타임스탬프를 날짜시간으로, 날짜시간을 Unix 타임스탬프로 변환하세요. 밀리초/초 단위 지원, 타임존 변환, 개발자를 위한 정밀 도구.',
+    keywords: '타임스탬프 변환, Unix timestamp, epoch 변환, 날짜 시간 변환, Unix 시간 계산기, JavaScript timestamp'
+},
+            'numberBase': {
+    title: 'VaultSheet (볼트시트) - 진법 변환기 : 2진수/8진수/10진수/16진수 상호 변환',
+    description: '이진수(2진법), 팔진수(8진법), 십진수(10진법), 십육진수(16진법) 등 다양한 진법을 즉시 변환하세요. 프로그래밍과 컴퓨터 공학 필수 도구.',
+    keywords: '진법 변환기, 이진수 변환, 16진수 변환, 8진수 변환, binary converter, hex decimal converter, 숫자 진법 계산기'
+},
+            'morseConverter': {
+    title: 'VaultSheet (볼트시트) - 모스 부호 변환기 : 텍스트 ↔ 모스 부호 양방향 변환',
+    description: '텍스트를 모스 부호로, 모스 부호를 텍스트로 즉시 변환하세요. 소리 재생 기능과 함께 모스 부호를 쉽게 배우고 사용하세요.',
+    keywords: '모스 부호 변환, Morse code translator, 모스 부호 해독, 텍스트 모스 변환, 모스 부호 생성기'
+},
+            'loremIpsum': {
+    title: 'VaultSheet (볼트시트) - Lorem Ipsum 생성기 : 더미 텍스트 무료 생성',
+    description: '웹/앱 디자인과 개발을 위한 Lorem Ipsum 더미 텍스트를 즉시 생성하세요. 단락 수, 단어 수 설정 가능. HTML 형식 출력 지원.',
+    keywords: 'Lorem Ipsum 생성, 더미 텍스트 생성, 임시 텍스트, placeholder text, 목업 텍스트, 디자인 더미 문장'
+},
+            'passwordGenerator': {
+    title: 'VaultSheet (볼트시트) - 비밀번호 생성기 : 안전한 랜덤 비밀번호 즉시 생성',
+    description: '강력한 랜덤 비밀번호를 즉시 생성하세요. 길이, 대소문자, 숫자, 특수문자 포함 여부를 설정하고 보안 강도를 확인하세요.',
+    keywords: '비밀번호 생성기, 랜덤 비밀번호, 안전한 비밀번호, password generator, 보안 비밀번호, 강력한 패스워드 생성'
+},
+            'sqlFormatter': {
+    title: 'VaultSheet (볼트시트) - SQL 포맷터 : SQL 코드 정렬, 압축, 가독성 향상',
+    description: 'SQL 코드를 보기 좋게 정렬(Beautify)하고 압축(Minify)하세요. 복잡한 SQL 쿼리를 읽기 쉽게 자동 포맷팅. MySQL, PostgreSQL, Oracle 지원.',
+    keywords: 'SQL 포맷터, SQL Beautifier, SQL 정렬, SQL 압축, SQL Formatter, 쿼리 포맷팅, SQL 코드 정리'
+},
+            'csvToSql': {
+    title: 'VaultSheet (볼트시트) - CSV to SQL 변환기 : CSV를 SQL INSERT 문으로 변환',
+    description: 'CSV 파일을 SQL INSERT 문으로 즉시 변환하세요. 테이블명 설정, 컬럼 타입 자동 감지, 배치 INSERT 지원. MySQL, PostgreSQL, SQLite 호환.',
+    keywords: 'CSV to SQL, CSV INSERT 변환, CSV SQL 변환기, 데이터 임포트, INSERT INTO 생성, 데이터베이스 임포트'
+},
+            'xmlJson': {
+                title: 'VaultSheet (볼트시트) - XML ↔ JSON 변환기 : 데이터 포맷 상호 변환',
+                description: 'XML과 JSON을 서로 변환하세요. 복잡한 XML 구조도 정확하게 JSON으로 변환하고 JSON을 올바른 XML로 변환합니다.',
+                keywords: 'XML to JSON, JSON to XML, XML JSON 변환, 데이터 포맷 변환, XML 파서, JSON 변환기'
+            },
+            // JsonFormatConvertPage (JSON ↔ YAML/TOML/XML) 전용 SEO
+            'jsonFormatConvertPage': {
+                title: 'VaultSheet (볼트시트) - JSON 포맷 변환기 : JSON↔YAML·TOML·XML 상호 변환',
+                description: 'JSON을 YAML, TOML, XML로, 혹은 그 반대로 상호 변환하세요. 들여쓰기, 키 정렬, 주석 보존 옵션을 지원하는 개발자용 포맷 변환 도구.',
+                keywords: 'JSON YAML 변환, JSON TOML 변환, JSON XML 변환, 데이터 포맷 변환기, YAML JSON, TOML JSON'
+            },
+            'gradientGenerator': {
+    title: 'VaultSheet (볼트시트) - CSS 그라데이션 생성기 : 아름다운 그라데이션 코드 즉시 생성',
+    description: '다양한 방향과 색상의 CSS 그라데이션을 비주얼 에디터로 쉽게 만드세요. Linear, Radial, Conic 그라데이션 지원. CSS 코드 즉시 복사.',
+    keywords: 'CSS 그라데이션 생성기, gradient generator, 배경 그라데이션, CSS background gradient, 색상 그라데이션 코드'
+},
+            'romanNumeral': {
+    title: 'VaultSheet (볼트시트) - 로마 숫자 변환기 : 아라비아 숫자 ↔ 로마 숫자 변환',
+    description: '아라비아 숫자를 로마 숫자로, 로마 숫자를 아라비아 숫자로 즉시 변환하세요. 1부터 3999까지 지원. 대소문자 옵션 제공.',
+    keywords: '로마 숫자 변환, Roman numeral converter, 로마자 변환기, 아라비아 로마 숫자, 로마 숫자 계산기'
+},
+            'cronParser': {
+    title: 'VaultSheet (볼트시트) - Cron 표현식 파서 : Cron 스케줄 분석 및 한글 설명',
+    description: 'Cron 표현식을 한글로 분석하고 다음 실행 시간을 확인하세요. 스케줄 유효성 검사와 사람이 읽기 쉬운 설명을 제공하는 개발자 도구.',
+    keywords: 'Cron 파서, Cron expression, 크론 표현식, 스케줄 분석, Cron job, 크론 스케줄러, Cron syntax checker'
+},
+            'ogTagGenerator': {
+    title: 'VaultSheet (볼트시트) - OG 태그 생성기 : Open Graph 메타태그 자동 생성',
+    description: 'SNS 공유를 위한 Open Graph (OG) 메타태그와 Twitter Card 태그를 자동으로 생성하세요. 미리보기 확인 가능.',
+    keywords: 'OG 태그 생성기, Open Graph 태그, 오픈 그래프, SNS 공유 태그, og:title og:description og:image, 메타태그 생성'
+},
+            'yamlJson': {
+    title: 'VaultSheet (볼트시트) - YAML ↔ JSON 변환기 : YAML과 JSON 상호 변환',
+    description: 'YAML 파일을 JSON으로, JSON 파일을 YAML로 즉시 변환하세요. 들여쓰기 설정과 문법 강조를 지원하는 개발자 필수 도구.',
+    keywords: 'YAML to JSON, JSON to YAML, YAML JSON 변환, YAML 파서, 설정 파일 변환, 데이터 포맷 변환'
+},
+            'htmlToJsx': {
+    title: 'VaultSheet (볼트시트) - HTML to JSX 변환기 : HTML을 React JSX 코드로 변환',
+    description: 'HTML 코드를 React JSX 문법으로 즉시 변환하세요. class→className, style 변환, 이벤트 핸들러 변환 등 React 개발에 필요한 모든 변환을 지원합니다.',
+    keywords: 'HTML to JSX, HTML JSX 변환, React 컴포넌트 변환, HTML 리액트 변환, className 변환, JSX 변환기'
+},
+            'colorPalette': {
+    title: 'VaultSheet (볼트시트) - 컬러 팔레트 생성기 : 조화로운 배색 및 팔레트 자동 생성',
+    description: '아름다운 색상 팔레트를 자동으로 생성하세요. 보색, 유사색, 삼각 배색 등 색채 이론에 기반한 배색 추천. HEX/RGB 코드 복사.',
+    keywords: '컬러 팔레트 생성기, 색상 팔레트, 배색 추천, 보색 찾기, color palette generator, 색 조합 도구, 컬러 스킴'
+},
+            'serviceCenter': {
+    title: 'VaultSheet (볼트시트) - 고객센터 : 서비스 소개, 문의, 이용 가이드',
+    description: 'VaultSheet 서비스 소개, 개인정보 처리방침, 1:1 문의, 버그 리포트, 기능 제안을 위한 고객센터 페이지입니다.',
+    keywords: 'VaultSheet 고객센터, 서비스 문의, 개인정보 처리방침, 이용약관, 버그 신고, 기능 제안'
 }
 };
         function updateSEO(page) {

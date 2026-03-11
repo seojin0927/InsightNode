@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+﻿import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { saveAs } from 'file-saver';
 
 // 아이콘 컴포넌트
@@ -294,16 +294,16 @@ const StampSignStudio = () => {
     };
 
     return (
-        <div className="w-full h-full min-h-[850px] bg-slate-900 rounded-2xl p-6 border border-slate-700 flex flex-col">
+        <div className="w-full h-full p-5 flex flex-col overflow-hidden" style={{ background: '#08101e' }}>
             {/* 헤더 */}
-            <div className="flex items-center justify-between mb-6 flex-shrink-0">
+            <div className="flex items-center justify-between mb-5 pb-4 border-b border-white/[0.06] flex-shrink-0">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-500/20">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/[0.08]">
                         <Icon path="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-100">Stamp & Sign Master</h2>
-                        <p className="text-slate-400 text-sm">전자 도장 · 결재인 · 디지털 서명</p>
+                        <h2 className="text-base font-bold text-slate-100">Stamp & Sign Master</h2>
+                        <p className="text-xs text-slate-500">전자 도장 · 결재인 · 디지털 서명</p>
                     </div>
                 </div>
                 
@@ -331,7 +331,7 @@ const StampSignStudio = () => {
                 
                 {/* 좌측: 설정 패널 */}
                 <div className="lg:col-span-4 flex flex-col h-full min-h-0">
-                    <div className="bg-slate-800 rounded-xl p-5 flex flex-col h-full shadow-inner border border-slate-700/50 overflow-y-auto custom-scrollbar">
+                    <div className="rounded-xl p-5 flex flex-col h-full overflow-y-auto custom-scrollbar">
                         
                         {(mode === 'stamp' || mode === 'dateStamp') && (
                             <div className="space-y-6">
@@ -452,7 +452,7 @@ const StampSignStudio = () => {
 
                         {mode === 'sign' && (
                             <div className="space-y-6">
-                                <h3 className="text-xs font-bold text-slate-400 uppercase mb-3">Signature Settings</h3>
+                                <h3 className="text-xs font-bold text-slate-300 uppercase mb-3 tracking-wider">Signature Settings</h3>
                                 <div>
                                     <label className="text-sm text-slate-300 mb-2 block">펜 색상</label>
                                     <div className="flex gap-3">
@@ -504,7 +504,7 @@ const StampSignStudio = () => {
 
                 {/* 우측: 캔버스 영역 */}
                 <div className="lg:col-span-8 flex flex-col h-full min-h-0">
-                    <div className="bg-slate-800 rounded-xl p-8 flex flex-col h-full shadow-inner border border-slate-700/50 items-center justify-center relative overflow-hidden">
+                    <div className="bg-slate-800 rounded-xl p-8 flex flex-col h-full shadow-inner border border-white/[0.07] items-center justify-center relative overflow-hidden">
                         
                         {/* 문서 배경 (격자) */}
                         <div className="absolute inset-0 opacity-5 pointer-events-none" 
@@ -531,7 +531,7 @@ const StampSignStudio = () => {
                         {/* 서명 모드 캔버스 */}
                         {mode === 'sign' && (
                             <div className="w-full h-full max-w-2xl bg-white rounded-xl shadow-2xl relative cursor-crosshair overflow-hidden border border-slate-300 animate-in fade-in duration-300">
-                                <div className="absolute top-4 left-4 text-slate-400 text-sm font-bold pointer-events-none select-none flex items-center gap-2">
+                                <div className="absolute top-4 left-4 text-xs text-slate-500 font-bold pointer-events-none select-none flex items-center gap-2">
                                     <Icon path="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                     이곳에 서명하세요
                                 </div>

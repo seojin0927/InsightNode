@@ -31,11 +31,11 @@ const PdfStudio = () => {
 
     // === 도구 목록 ===
     const tools = [
-        { id: 'img-to-pdf', label: '이미지 to PDF', icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z' },
+        { id: 'img-to-pdf', label: '이미지 → PDF', icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z' },
         { id: 'merge', label: 'PDF 병합', icon: 'M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2' },
         { id: 'split', label: 'PDF 분할', icon: 'M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z' },
         { id: 'compress', label: 'PDF 압축', icon: 'M19 14l-7 7m0 0l-7-7m7 7V3' }, // Alternative icon needed for compress concept
-        { id: 'pdf-to-img', label: 'PDF to 이미지', icon: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4' },
+        { id: 'pdf-to-img', label: 'PDF → 이미지', icon: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4' },
         { id: 'rotate', label: '회전', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' },
         { id: 'watermark', label: '워터마크', icon: 'M7 20l4-16m2 16l4-16M6 9h14M4 15h14' },
         { id: 'protect', label: '보안 설정', icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z' },
@@ -45,12 +45,14 @@ const PdfStudio = () => {
     const handleFileSelect = (e) => {
         const selected = Array.from(e.target.files);
         const newFiles = selected.map(file => ({
+            file, // 원본 File 객체 보존
             name: file.name,
             size: file.size,
             type: file.type,
-            preview: tool === 'img-to-pdf' ? URL.createObjectURL(file) : null // 이미지일 때만 미리보기
+            preview: tool === 'img-to-pdf' ? URL.createObjectURL(file) : null
         }));
         setFiles(prev => [...prev, ...newFiles]);
+        e.target.value = '';
     };
 
     const removeFile = (index) => {
@@ -93,7 +95,7 @@ const PdfStudio = () => {
                     <div className="space-y-4">
                         <div>
                             <label className="text-xs text-slate-400 mb-1 block">페이지 크기</label>
-                            <select className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white outline-none">
+                            <select value={options.pageSize} onChange={(e)=>setOptions({...options, pageSize: e.target.value})} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white outline-none">
                                 <option value="a4">A4</option>
                                 <option value="letter">Letter</option>
                                 <option value="fit">이미지 크기에 맞춤</option>
@@ -108,7 +110,7 @@ const PdfStudio = () => {
                         </div>
                         <div>
                             <label className="text-xs text-slate-400 mb-1 block">여백</label>
-                            <select className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white outline-none">
+                            <select value={options.margin} onChange={(e)=>setOptions({...options, margin: e.target.value})} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white outline-none">
                                 <option value="none">없음</option>
                                 <option value="small">좁게</option>
                                 <option value="normal">보통</option>
@@ -121,10 +123,14 @@ const PdfStudio = () => {
                     <div className="space-y-4">
                         <label className="text-xs text-slate-400 mb-1 block">압축 수준</label>
                         <div className="space-y-2">
-                            {['low', 'medium', 'high'].map(level => (
-                                <label key={level} className="flex items-center gap-2 p-3 rounded bg-slate-900 border border-slate-700 cursor-pointer hover:border-slate-500">
-                                    <input type="radio" name="compression" checked={options.compressionLevel === level} onChange={()=>setOptions({...options, compressionLevel: level})} className="accent-red-500" />
-                                    <span className="text-sm text-slate-200 capitalize">{level} Compression</span>
+                            {[
+                                { id: 'low', label: '낮음' },
+                                { id: 'medium', label: '보통' },
+                                { id: 'high', label: '높음' },
+                            ].map(({ id, label }) => (
+                                <label key={id} className="flex items-center gap-2 p-3 rounded bg-slate-900 border border-slate-700 cursor-pointer hover:border-slate-500">
+                                    <input type="radio" name="compression" checked={options.compressionLevel === id} onChange={()=>setOptions({...options, compressionLevel: id})} className="accent-red-500" />
+                                    <span className="text-sm text-slate-200">{label} 압축</span>
                                 </label>
                             ))}
                         </div>
@@ -134,7 +140,7 @@ const PdfStudio = () => {
                 return (
                     <div className="space-y-4">
                         <label className="text-xs text-slate-400 mb-1 block">분할 범위 (예: 1-5, 8, 11-13)</label>
-                        <input type="text" placeholder="1-3, 5" className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white outline-none focus:border-red-500" />
+                        <input type="text" value={options.splitRange} onChange={(e)=>setOptions({...options, splitRange: e.target.value})} placeholder="1-3, 5" className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white outline-none focus:border-red-500" />
                         <div className="text-xs text-slate-500">입력하지 않으면 모든 페이지가 낱장으로 분할됩니다.</div>
                     </div>
                 );
@@ -143,11 +149,11 @@ const PdfStudio = () => {
                     <div className="space-y-4">
                         <div>
                             <label className="text-xs text-slate-400 mb-1 block">텍스트</label>
-                            <input type="text" placeholder="Confidential" className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white outline-none focus:border-red-500" />
+                            <input type="text" value={options.watermarkText} onChange={(e)=>setOptions({...options, watermarkText: e.target.value})} placeholder="Confidential" className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white outline-none focus:border-red-500" />
                         </div>
                         <div>
                             <label className="text-xs text-slate-400 mb-1 block">투명도 ({options.watermarkOpacity}%)</label>
-                            <input type="range" min="10" max="100" value={options.watermarkOpacity} onChange={(e)=>setOptions({...options, watermarkOpacity: e.target.value})} className="w-full accent-red-500" />
+                            <input type="range" min="10" max="100" value={options.watermarkOpacity} onChange={(e)=>setOptions({...options, watermarkOpacity: Number(e.target.value)})} className="w-full accent-red-500" />
                         </div>
                     </div>
                 );
@@ -156,11 +162,11 @@ const PdfStudio = () => {
                     <div className="space-y-4">
                         <div>
                             <label className="text-xs text-slate-400 mb-1 block">비밀번호 설정</label>
-                            <input type="password" placeholder="비밀번호 입력" className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white outline-none focus:border-red-500" />
+                            <input type="password" value={options.password} onChange={(e)=>setOptions({...options, password: e.target.value})} placeholder="비밀번호 입력" className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white outline-none focus:border-red-500" />
                         </div>
                         <div>
                             <label className="text-xs text-slate-400 mb-1 block">비밀번호 확인</label>
-                            <input type="password" placeholder="비밀번호 재입력" className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white outline-none focus:border-red-500" />
+                            <input type="password" value={options.passwordConfirm || ''} onChange={(e)=>setOptions({...options, passwordConfirm: e.target.value})} placeholder="비밀번호 재입력" className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white outline-none focus:border-red-500" />
                         </div>
                     </div>
                 );
@@ -170,15 +176,15 @@ const PdfStudio = () => {
     };
 
     return (
-        <div className="w-full h-full min-h-[850px] bg-slate-900 rounded-2xl p-6 border border-slate-700 flex flex-col">
+        <div className="w-full h-full p-5 flex flex-col overflow-hidden" style={{ background: '#08101e' }}>
             {/* 1. 헤더 */}
-            <div className="flex items-center gap-3 mb-6 flex-shrink-0">
-                <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-rose-700 rounded-xl flex items-center justify-center shadow-lg shadow-red-600/20">
+            <div className="flex items-center gap-3 mb-5 pb-4 border-b border-white/[0.06] flex-shrink-0">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center border border-white/[0.08]">
                     <Icon path="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </div>
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-100">PDF Master Studio</h2>
-                    <p className="text-slate-400 text-sm">변환, 병합, 분할, 보안 설정을 한 곳에서</p>
+                    <h2 className="text-base font-bold text-slate-100">PDF Master Studio</h2>
+                    <p className="text-xs text-slate-500">변환, 병합, 분할, 보안 설정을 한 곳에서</p>
                 </div>
             </div>
 
@@ -187,8 +193,8 @@ const PdfStudio = () => {
                 
                 {/* 좌측: 도구 메뉴 (Col 3) */}
                 <div className="lg:col-span-3 flex flex-col h-full min-h-0">
-                    <div className="bg-slate-800 rounded-xl p-3 flex flex-col h-full shadow-inner border border-slate-700/50 overflow-y-auto custom-scrollbar">
-                        <h3 className="text-xs font-bold text-slate-400 uppercase mb-3 px-2">Tools</h3>
+                    <div className="bg-slate-800 rounded-xl p-3 flex flex-col h-full shadow-inner border border-white/[0.07] overflow-y-auto custom-scrollbar">
+                        <h3 className="text-xs font-bold text-slate-400 uppercase mb-3 px-2">도구</h3>
                         <div className="space-y-1">
                             {tools.map((t) => (
                                 <button
@@ -289,9 +295,9 @@ const PdfStudio = () => {
 
                 {/* 우측: 설정 패널 (Col 3) */}
                 <div className="lg:col-span-3 flex flex-col h-full min-h-0">
-                    <div className="bg-slate-800 rounded-xl p-5 flex flex-col h-full shadow-inner border border-slate-700/50">
+                    <div className="rounded-xl p-5 flex flex-col h-full" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}>
                         <h3 className="text-sm font-bold text-slate-400 uppercase mb-4 border-b border-slate-700 pb-2">
-                            Settings
+                            설정
                         </h3>
                         <div className="flex-1 overflow-y-auto custom-scrollbar">
                             {renderOptions()}
