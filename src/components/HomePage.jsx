@@ -175,7 +175,7 @@ export default function HomePage({ navigateTo, showAllTools = false }) {
                                 데이터셋 열기
                             </button>
                             <button
-                                onClick={scrollToTools}
+                                onClick={() => navigateTo('tools')}
                                 className="flex items-center gap-2 px-7 py-3 rounded-xl text-sm font-bold text-slate-300 border border-white/10 hover:border-white/20 hover:text-white transition-all hover:scale-105"
                                 style={{ background: 'rgba(255,255,255,0.04)' }}
                             >

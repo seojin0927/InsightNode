@@ -256,6 +256,8 @@ function App() {
     
     // 🆕 확인/취소 모달
     const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null });
+
+    // 차트 디자인 페이지에서 선택한 템플릿 상태
     
     const showConfirm = (message, onConfirm, title = '확인') => {
         setConfirmModal({ show: true, title, message, onConfirm });
@@ -1337,8 +1339,15 @@ function App() {
                                                 <PivotTable data={data} columns={columns} colTypes={colTypes} hideToolbar={true} />
                                             )}
                                             {viewMode === 'chart' && (
-                                                <ChartViewer data={data} columns={columns}
-                                                    watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} hideToolbar={true} />
+                                                <ChartViewer
+                                                    data={data}
+                                                    columns={columns}
+                                                    watermarkEnabled={watermarkEnabled}
+                                                    watermarkText={watermarkText}
+                                                    watermarkDesign={watermarkDesign}
+                                                    hideToolbar={true}
+                                                    syncId="mainChart"
+                                                />
                                             )}
                                         </Suspense>
                                     </div>
@@ -1885,7 +1894,18 @@ function App() {
                                         {viewMode === 'insight' && <InsightStudio data={data} columns={columns} colTypes={colTypes} />}
                                         <Suspense fallback={<div className="flex items-center justify-center h-full text-slate-500 text-sm">로딩 중...</div>}>
                                             {viewMode === 'pivot' && <PivotTable data={data} columns={columns} colTypes={colTypes} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} onRequestZoom={() => navigateTo('mainZoom')} />}
-                                            {viewMode === 'chart' && <ChartViewer data={data} columns={columns} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} onRequestZoom={() => navigateTo('mainZoom')} />}
+                                            {viewMode === 'chart' && (
+                                                <ChartViewer
+                                                    data={data}
+                                                    columns={columns}
+                                                    watermarkEnabled={watermarkEnabled}
+                                                    watermarkText={watermarkText}
+                                                    watermarkDesign={watermarkDesign}
+                                                    onZoomChange={setIsZoomed}
+                                                    onRequestZoom={() => navigateTo('mainZoom')}
+                                                    syncId="mainChart"
+                                                />
+                                            )}
                                         </Suspense>
                                     </div>
                                 </div>
