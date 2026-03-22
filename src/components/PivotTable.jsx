@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 
-const PivotTable = ({ data, columns, colTypes, onZoomChange, onRequestZoom, hideToolbar = false }) => {
+const PivotTable = ({ data, columns, colTypes, hideToolbar = false }) => {
     // 피벗 테이블 설정 상태
     const [rowField, setRowField] = useState('');
     const [colField, setColField] = useState('');
@@ -19,8 +19,6 @@ const PivotTable = ({ data, columns, colTypes, onZoomChange, onRequestZoom, hide
     const [containerRef, setContainerRef] = useState(null);
     const [drillDownData, setDrillDownData] = useState(null); // 드릴다운 데이터
     const [drillDownTitle, setDrillDownTitle] = useState('');
-    const [isFullscreen, setIsFullscreen] = useState(false);
-    
     // 디자인 상태
     const [activeDesignTab, setActiveDesignTab] = useState('display'); // display, design
     const [showDataSettings, setShowDataSettings] = useState(false);
@@ -451,37 +449,6 @@ const PivotTable = ({ data, columns, colTypes, onZoomChange, onRequestZoom, hide
         
         return { minVal: min, maxVal: max };
     }, [pivotData, showHeatmap, displayMode]);
-
-    // 확대/축소 토글
-    const toggleZoom = () => {
-        if (onRequestZoom) { onRequestZoom(); return; }
-        if (!containerRef) return;
-        if (!isFullscreen) {
-            containerRef.style.position = 'fixed';
-            containerRef.style.top = '0';
-            containerRef.style.left = '0';
-            containerRef.style.right = '0';
-            containerRef.style.bottom = '0';
-            containerRef.style.width = '100%';
-            containerRef.style.height = '100%';
-            containerRef.style.zIndex = '9999';
-            containerRef.style.background = '#0f172a';
-            containerRef.style.padding = '20px';
-        } else {
-            containerRef.style.position = '';
-            containerRef.style.top = '';
-            containerRef.style.left = '';
-            containerRef.style.right = '';
-            containerRef.style.bottom = '';
-            containerRef.style.width = '';
-            containerRef.style.height = '';
-            containerRef.style.zIndex = '';
-            containerRef.style.background = '';
-            containerRef.style.padding = '';
-        }
-        setIsFullscreen(!isFullscreen);
-        if (onZoomChange) onZoomChange(!isFullscreen);
-    };
 
     // 드릴다운 핸들러
     const handleCellDoubleClick = (rowVal, colVal) => {
@@ -950,12 +917,9 @@ const PivotTable = ({ data, columns, colTypes, onZoomChange, onRequestZoom, hide
                     디자인
                 </button>
                 {/* 내보내기 버튼들 */}
-                <button onClick={copyToClipboard} className="px-2.5 py-1.5 text-xs rounded-lg font-semibold hover:scale-105 transition-all" style={{ background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.22)', color: '#fbbf24' }}>복사</button>
+                <button onClick={copyToClipboard} className="px-2.5 py-1.5 text-xs rounded-lg font-semibold hover:scale-105 transition-all" style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.22)', color: 'rgba(167, 139, 250, 1)' }}>복사</button>
                 <button onClick={exportAsPNG} className="px-2.5 py-1.5 text-xs rounded-lg font-semibold hover:scale-105 transition-all" style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.22)', color: '#a78bfa' }}>PNG</button>
                 <button onClick={exportAsCSV} className="px-2.5 py-1.5 text-xs rounded-lg font-semibold hover:scale-105 transition-all" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.22)', color: '#34d399' }}>CSV</button>
-                <button onClick={toggleZoom} className="p-1.5 rounded-lg transition-all hover:scale-105" style={{ background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.2)', color: '#22d3ee' }} title={isFullscreen ? '원래 크기로' : '전체화면'}>
-                    {isFullscreen ? <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>}
-                </button>
             </div>}
 
             {/* ── Portal: 플로팅 설정 패널 ── */}

@@ -100,12 +100,18 @@ function App() {
         colorConverter:'colorStudio', colorPalette:'colorStudio', gradientGenerator:'colorStudio',
         twoFactorAuth:'securityStudio', permissionCalc:'securityStudio', secureNote:'securityStudio',
         excelToJson:'dataToolsStudio', csvMerger:'dataToolsStudio', dataValidator:'dataToolsStudio', schemaBuilder:'dataToolsStudio', csvDiff:'dataToolsStudio', dataTranspose:'dataToolsStudio',
-        svgOptimizer:'mediaStudio', faviconGenerator:'mediaStudio', imageResizer:'mediaStudio', colorExtractor:'mediaStudio', watermarkTool:'mediaStudio',
+        svgOptimizer:'mediaStudio', faviconGenerator:'mediaStudio', imageResizer:'mediaStudio', colorExtractor:'mediaStudio',         watermarkTool:'mediaStudio',
+        mainZoom: 'main',
     };
     const STUB_TOOL_PAGES = ['jsonToExcel','csvPivot','csvColumnMapper','barcodeGenerator'];
-    const VALID_PAGES = ['home', 'tools', 'mobile', 'main', 'mainZoom', 'fileNotice', 'insight', 'encoding', 'htmlTable', 'textExtractor', 'listToComma', 'listComparator', 'personalDataMasker', 'mockDataGenerator', 'qrCode', 'calculator', 'codeMinifier', 'imageCompressor', 'markdownEditor', 'pdfConverter', 'regexTester', 'unitConverter', 'uuidGenerator','digitalStampSignStudio','imageTools','videoTools','zipTools','serviceCenter','cryptoEncoder','numberBase','morseConverter','loremIpsum','sqlFormatter','csvToSql','romanNumeral','ogTagGenerator','htmlToJsx','jsonFormatterPage','jsonCsvPage','jsonFormatConvertPage','jsonPathPage','jsonToSqlPage','excelJsonPage','csvMergeSplitPage', ...STUDIO_PAGES, ...Object.keys(PAGE_REDIRECTS), ...STUB_TOOL_PAGES];
+    const VALID_PAGES = ['home', 'tools', 'mobile', 'main', 'fileNotice', 'insight', 'encoding', 'htmlTable', 'textExtractor', 'listToComma', 'listComparator', 'personalDataMasker', 'mockDataGenerator', 'qrCode', 'calculator', 'codeMinifier', 'imageCompressor', 'markdownEditor', 'pdfConverter', 'regexTester', 'unitConverter', 'uuidGenerator','digitalStampSignStudio','imageTools','videoTools','zipTools','serviceCenter','cryptoEncoder','numberBase','morseConverter','loremIpsum','sqlFormatter','csvToSql','romanNumeral','ogTagGenerator','htmlToJsx','jsonFormatterPage','jsonCsvPage','jsonFormatConvertPage','jsonPathPage','jsonToSqlPage','excelJsonPage','csvMergeSplitPage', ...STUDIO_PAGES, ...Object.keys(PAGE_REDIRECTS), ...STUB_TOOL_PAGES];
     const getInitialPage = () => {
         const hash = window.location.hash.replace('#', '');
+        const redirected = PAGE_REDIRECTS[hash];
+        if (redirected) {
+            window.location.hash = redirected;
+            return redirected;
+        }
         return VALID_PAGES.includes(hash) ? hash : 'home';
     };
     const [currentPage, setCurrentPage] = useState(getInitialPage());
@@ -268,8 +274,6 @@ function App() {
     const [watermarkText, setWatermarkText] = useState('CONFIDENTIAL');
     const [watermarkDesign, setWatermarkDesign] = useState('single'); // single, multiple, corner
     
-    // 🆕 확대/전체화면 모드 상태 (좌측 사이드바 숨김용)
-    const [isZoomed, setIsZoomed] = useState(false);
 
     // 결과 기록 관리 (이전 결과로 되돌리기 기능)
     const [resultHistory, setResultHistory] = useState([]);
@@ -1317,44 +1321,6 @@ function App() {
                     <div className="main-wrapper flex flex-col overflow-hidden"><ExcelJsonPage /></div>
                 ) : currentPage === 'csvMergeSplitPage' ? (
                     <div className="main-wrapper flex flex-col overflow-hidden"><CsvMergeSplitPage /></div>
-                ) : currentPage === 'mainZoom' ? (
-                    <div className="main-wrapper flex flex-col overflow-hidden">
-                        <div className="flex-1 flex flex-col min-h-0 p-4">
-                            <div className="flex-1 flex flex-col min-h-0">
-                                <div className="flex-1 rounded-2xl border border-slate-700 bg-slate-900/80 p-3 overflow-hidden">
-                                    <div className="w-full h-full">
-                                        {viewMode === 'raw' && (
-                                            <DataGrid data={originalData} columns={Object.keys(originalData[0] || {})} readOnly={true}
-                                                watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} hideToolbar={true} />
-                                        )}
-                                        {viewMode === 'grid' && (
-                                            <DataGrid data={data} columns={columns} onUpdate={handleCellUpdate}
-                                                watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} hideToolbar={true} />
-                                        )}
-                                        {viewMode === 'insight' && (
-                                            <InsightStudio data={data} columns={columns} colTypes={colTypes} />
-                                        )}
-                                        <Suspense fallback={<div className="flex items-center justify-center h-full text-slate-500 text-sm">로딩 중...</div>}>
-                                            {viewMode === 'pivot' && (
-                                                <PivotTable data={data} columns={columns} colTypes={colTypes} hideToolbar={true} />
-                                            )}
-                                            {viewMode === 'chart' && (
-                                                <ChartViewer
-                                                    data={data}
-                                                    columns={columns}
-                                                    watermarkEnabled={watermarkEnabled}
-                                                    watermarkText={watermarkText}
-                                                    watermarkDesign={watermarkDesign}
-                                                    hideToolbar={true}
-                                                    syncId="mainChart"
-                                                />
-                                            )}
-                                        </Suspense>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 ) : currentPage === 'fileNotice' ? (
                     <div className="main-wrapper">
                         <FileNoticePage
@@ -1450,7 +1416,7 @@ function App() {
                         {/* ── 오른쪽 Tools 패널 (노코드 빌더 + SQL) ── */}
                         <div className={`h-full shrink-0 order-2 ${isMobileMenuOpen ? 'fixed right-0 inset-y-0 z-[150] md:relative' : 'hidden md:flex md:flex-col'}`}>
                             {isMobileMenuOpen && <div className="fixed inset-0 bg-black/60 md:hidden" style={{ backdropFilter: 'blur(4px)' }} onClick={() => setIsMobileMenuOpen(false)} />}
-                            <div className={`flex flex-col z-10 overflow-hidden transition-all duration-300 rounded-2xl h-full ${isZoomed ? 'hidden' : 'w-[380px] max-w-[90vw]'}`}
+                            <div className="flex flex-col z-10 overflow-hidden transition-all duration-300 rounded-2xl h-full w-[380px] max-w-[90vw]"
                                 style={{ background: 'rgba(8,14,28,0.97)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '-4px 0 24px rgba(0,0,0,0.3), inset 1px 0 0 rgba(255,255,255,0.04)', position: 'relative' }}>
                                 <div className="flex shrink-0 p-2 gap-1" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                                     <button
@@ -1889,11 +1855,11 @@ function App() {
                                     </div>
 
                                     <div className="flex-1 overflow-hidden relative p-3">
-                                        {viewMode === 'raw' && <DataGrid data={originalData} columns={Object.keys(originalData[0] || {})} readOnly={true} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} onRequestZoom={() => navigateTo('mainZoom')} />}
-                                        {viewMode === 'grid' && <DataGrid data={data} columns={columns} onUpdate={handleCellUpdate} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} onRequestZoom={() => navigateTo('mainZoom')} />}
+                                        {viewMode === 'raw' && <DataGrid data={originalData} columns={Object.keys(originalData[0] || {})} readOnly={true} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} />}
+                                        {viewMode === 'grid' && <DataGrid data={data} columns={columns} onUpdate={handleCellUpdate} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} />}
                                         {viewMode === 'insight' && <InsightStudio data={data} columns={columns} colTypes={colTypes} />}
                                         <Suspense fallback={<div className="flex items-center justify-center h-full text-slate-500 text-sm">로딩 중...</div>}>
-                                            {viewMode === 'pivot' && <PivotTable data={data} columns={columns} colTypes={colTypes} watermarkEnabled={watermarkEnabled} watermarkText={watermarkText} watermarkDesign={watermarkDesign} onZoomChange={setIsZoomed} onRequestZoom={() => navigateTo('mainZoom')} />}
+                                            {viewMode === 'pivot' && <PivotTable data={data} columns={columns} colTypes={colTypes} />}
                                             {viewMode === 'chart' && (
                                                 <ChartViewer
                                                     data={data}
@@ -1901,8 +1867,6 @@ function App() {
                                                     watermarkEnabled={watermarkEnabled}
                                                     watermarkText={watermarkText}
                                                     watermarkDesign={watermarkDesign}
-                                                    onZoomChange={setIsZoomed}
-                                                    onRequestZoom={() => navigateTo('mainZoom')}
                                                     syncId="mainChart"
                                                 />
                                             )}

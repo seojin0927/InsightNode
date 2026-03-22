@@ -1,0 +1,15 @@
+# VaultSheet — 배포 전 실제 도메인으로 Sitemap URL을 바꾸세요.
+# Google Search Console에 이 파일과 sitemap.xml을 제출하세요.
+
+User-agent: *
+Allow: /
+
+# (선택) 관리자·API·스테이징이 있다면 여기서 차단
+# Disallow: /api/
+# Disallow: /admin/
+
+# 크롤 예산 낭비를 줄이고 싶은 빈 페이지·중복만 있다면 Disallow 또는 noindex로 처리
+# Disallow: /tag/
+# Disallow: /search?
+
+Sitemap: https://vaultsheet.com/sitemap.xml

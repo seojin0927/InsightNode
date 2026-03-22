@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+  vaultsheet.com 기준 사이트맵. 정적 페이지 추가 시 url 항목을 늘리세요.
+  해시 라우팅(#main)만 쓰는 SPA는 검색엔진이 대부분 동일 URL로만 인덱싱합니다.
+  SEO·AdSense를 강화하려면 History API 기반 경로(/tools/json-to-csv 등) + SSR/SSG 권장.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://vaultsheet.com/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <!-- 정적 페이지나 블로그 글 URL을 추가할 때마다 <url> 블록을 늘리세요. -->
+</urlset>

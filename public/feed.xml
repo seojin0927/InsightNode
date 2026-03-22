@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>VaultSheet (볼트시트)</title>
+    <link>https://vaultsheet.com/</link>
+    <description>브라우저 기반 데이터 분석·변환 도구 모음. CSV, JSON, 피벗, 차트, 100가지 이상 무료 유틸리티.</description>
+    <language>ko-KR</language>
+    <atom:link href="https://vaultsheet.com/feed.xml" rel="self" type="application/rss+xml"/>
+    <item>
+      <title>VaultSheet — 무료 온라인 데이터 분석 &amp; 변환 도구</title>
+      <link>https://vaultsheet.com/</link>
+      <guid isPermaLink="true">https://vaultsheet.com/#home</guid>
+      <pubDate>Mon, 01 Jan 2024 00:00:00 GMT</pubDate>
+      <description>서비스 소개 및 주요 기능 안내. 실제 블로그·공지 글이 있으면 item을 추가하세요.</description>
+    </item>
+  </channel>
+</rss>

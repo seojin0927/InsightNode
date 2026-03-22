@@ -20,6 +20,9 @@
     <meta property="og:description" content="복잡한 엑셀 수식은 이제 그만! 검색하듯 자연어로 데이터를 필터링하고, 클릭 한 번으로 피벗과 고퀄리티 PPT 차트를 무료로 완성하세요.">
     <meta property="og:type" content="website">
     
+    <!-- 실제 배포 도메인으로 교체하세요. 해시(#) 단일 페이지일 때 대표 URL 통일에 유리합니다. -->
+    <link rel="canonical" href="https://vaultsheet.com/" />
+    <link rel="alternate" type="application/rss+xml" title="VaultSheet RSS" href="https://vaultsheet.com/feed.xml" />
     <link rel="icon" type="image/svg" href="/logo.svg">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
@@ -328,7 +331,12 @@
     title: 'VaultSheet (볼트시트) - 고객센터 : 서비스 소개, 문의, 이용 가이드',
     description: 'VaultSheet 서비스 소개, 개인정보 처리방침, 1:1 문의, 버그 리포트, 기능 제안을 위한 고객센터 페이지입니다.',
     keywords: 'VaultSheet 고객센터, 서비스 문의, 개인정보 처리방침, 이용약관, 버그 신고, 기능 제안'
-}
+},
+            'fileNotice': {
+                title: 'VaultSheet (볼트시트) - 파일 형식 안내 : JSON·CSV 변환 및 지원 형식 | vaultsheet.com',
+                description: '업로드한 파일이 JSON만 있거나 지원되지 않는 형식일 때 표시되는 안내입니다. vaultsheet.com에서 JSON을 CSV로 변환한 뒤 피벗·차트·SQL 분석을 이용하는 방법, CSV·Excel 권장 형식, 변환 도구로 이동하는 절차를 안내합니다.',
+                keywords: 'JSON CSV 변환 안내, 지원 파일 형식, VaultSheet 파일 업로드, vaultsheet.com, 데이터셋 CSV'
+            }
 };
         function updateSEO(page) {
             const data = SEO_DATA[page] || SEO_DATA['main'];
@@ -355,6 +363,18 @@
     </script>
 </head>
 <body>
+    <!--
+      CSR(SPA)만 있을 때 크롤러·스크립트 비활성 환경에서도 본문이 인식되도록 noscript에 실질 텍스트를 둡니다.
+      Google은 JS 렌더링도 하지만, 초기 HTML에 의미 있는 콘텐츠가 있으면 Content-less 판정 완화에 도움이 됩니다.
+    -->
+    <noscript>
+        <main style="max-width:42rem;margin:2rem auto;padding:1rem;font-family:system-ui,sans-serif;line-height:1.6;color:#1e293b;">
+            <h1>VaultSheet (볼트시트) — 무료 온라인 데이터 분석·변환 도구</h1>
+            <p>VaultSheet는 브라우저에서 바로 사용하는 데이터 작업 도구입니다. 엑셀 파일과 CSV, JSON을 불러와 자연어에 가까운 방식으로 필터링하고, 피벗 테이블과 차트로 시각화할 수 있습니다. 서버로 원본 데이터를 보내지 않고 처리하는 구조를 지향하며, JSON·CSV 상호 변환, 인코딩 복구, HTML 테이블 추출, 개인정보 마스킹, QR 코드, 이미지·PDF 유틸 등 100가지에 가까운 무료 변환·계산 도구를 한 사이트에서 검색해 쓸 수 있습니다.</p>
+            <p>직장인·개발자·마케터가 보고서와 프로토타입을 빠르게 만들 때 활용할 수 있도록, 사용법 안내와 도구별 설명을 페이지마다 제공하는 것을 권장합니다. JavaScript를 켜면 전체 기능을 사용할 수 있습니다.</p>
+            <p><a href="https://vaultsheet.com/">홈으로 이동</a> · <a href="https://vaultsheet.com/sitemap.xml">사이트맵</a> · <a href="https://vaultsheet.com/feed.xml">RSS</a></p>
+        </main>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
 </body>

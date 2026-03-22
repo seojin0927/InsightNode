@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 
-const DataGrid = ({ data, columns, onUpdate, readOnly = false, watermarkEnabled = false, watermarkText = 'CONFIDENTIAL', watermarkDesign = 'single', onZoomChange, onRequestZoom, hideToolbar = false }) => {
+const DataGrid = ({ data, columns, onUpdate, readOnly = false, watermarkEnabled = false, watermarkText = 'CONFIDENTIAL', watermarkDesign = 'single', hideToolbar = false }) => {
     const [scroll, setScroll] = useState({ top: 0, left: 0 });
     const [edit, setEdit] = useState(null);
     const [colWidths, setColWidths] = useState({});
@@ -9,7 +9,6 @@ const DataGrid = ({ data, columns, onUpdate, readOnly = false, watermarkEnabled 
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedRow, setSelectedRow] = useState(null);
     const [copyNotification, setCopyNotification] = useState(false);
-    const [isZoomed, setIsZoomed] = useState(false);
     const [exportMenuOpen, setExportMenuOpen] = useState(false);
     const exportMenuRef = useRef(null);
     const gridContainerRef = useRef(null);
@@ -23,36 +22,6 @@ const DataGrid = ({ data, columns, onUpdate, readOnly = false, watermarkEnabled 
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
-
-    const toggleZoom = () => {
-        if (onRequestZoom) { onRequestZoom(); return; }
-        if (!gridContainerRef.current) return;
-        if (!isZoomed) {
-            // 확대: 현재 div 박스를 확장 (화면 전체 100%)
-            gridContainerRef.current.style.position = 'fixed';
-            gridContainerRef.current.style.top = '0';
-            gridContainerRef.current.style.left = '0';
-            gridContainerRef.current.style.right = '0';
-            gridContainerRef.current.style.bottom = '0';
-            gridContainerRef.current.style.width = '100%';
-            gridContainerRef.current.style.height = '100%';
-            gridContainerRef.current.style.zIndex = '9999';
-            gridContainerRef.current.style.background = '#0f172a';
-        } else {
-            // 축소: 원래 상태로 복원
-            gridContainerRef.current.style.position = '';
-            gridContainerRef.current.style.top = '';
-            gridContainerRef.current.style.left = '';
-            gridContainerRef.current.style.right = '';
-            gridContainerRef.current.style.bottom = '';
-            gridContainerRef.current.style.width = '';
-            gridContainerRef.current.style.height = '';
-            gridContainerRef.current.style.zIndex = '';
-            gridContainerRef.current.style.background = '';
-        }
-        setIsZoomed(!isZoomed);
-        if (onZoomChange) onZoomChange(!isZoomed);
-    };
 
     const rowH = 42;
     const rowNumW = 60;
@@ -294,9 +263,8 @@ ${columns.map(c => `<Cell><Data ss:Type="String">${String(row[c] ?? '').replace(
                     </button>
                 )}
                 
-                {/* Export Hamburger + Zoom */}
+                {/* 내보내기 */}
                 <div className="flex items-center gap-2 ml-auto">
-                    {/* 내보내기 드롭다운 */}
                     <div className="relative" ref={exportMenuRef}>
                         <button
                             onClick={() => setExportMenuOpen(v => !v)}
@@ -339,23 +307,6 @@ ${columns.map(c => `<Cell><Data ss:Type="String">${String(row[c] ?? '').replace(
                             </div>
                         )}
                     </div>
-                    {/* 전체화면 버튼 */}
-                    <button
-                        onClick={toggleZoom}
-                        className="p-1.5 rounded-lg transition-all hover:scale-105 active:scale-95"
-                        style={{ background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.2)', color: '#22d3ee' }}
-                        title={isZoomed ? '원래 크기로' : '전체화면'}
-                    >
-                        {isZoomed ? (
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        ) : (
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                            </svg>
-                        )}
-                    </button>
                 </div>
             </div>}
 

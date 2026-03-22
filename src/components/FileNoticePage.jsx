@@ -1,14 +1,37 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 export default function FileNoticePage({ fileInfo, noticeType, onBack, onContinueJson, onGoTools }) {
     const isJson = noticeType === 'json';
     const isInvalid = noticeType === 'invalid';
-    const [openFaq, setOpenFaq] = useState(null);
 
     return (
         <div className="w-full h-full flex flex-col overflow-y-auto custom-scrollbar" style={{ background: '#060c1a' }}>
             <div className="flex-1 flex items-center justify-center">
                 <div className="w-full max-w-8xl mx-auto px-6 lg:px-10 py-10 flex flex-col gap-10">
+
+                {/* 공통: vaultsheet.com 파일 안내 — 직접 주소로 들어온 경우에도 본문이 풍부하도록 */}
+                <article className="rounded-2xl border border-violet-500/25 bg-slate-900/70 p-6 md:p-8 space-y-4 shadow-lg shadow-black/20" itemScope itemType="https://schema.org/WebPage">
+                    <meta itemProp="name" content="VaultSheet 파일 형식 안내" />
+                    <h2 className="text-lg md:text-xl font-bold text-white leading-snug">
+                        VaultSheet(<span className="text-violet-300">vaultsheet.com</span>) 파일 처리 안내
+                    </h2>
+                    <p className="text-sm md:text-[15px] text-slate-300 leading-relaxed">
+                        이 화면은 <strong className="text-slate-100">업로드한 파일이 바로 데이터셋으로 열리기 어려울 때</strong> 안내를 드리는 경유 페이지입니다.
+                        <strong className="text-slate-100"> JSON만 선택한 경우</strong>에는 표 형태 CSV로 바꾼 뒤 피벗·차트·SQL 분석을 쓰는 것이 가장 빠르고,
+                        <strong className="text-slate-100"> 지원하지 않는 확장자</strong>인 경우에는 PDF·이미지·엑셀 등 <strong className="text-emerald-300">변환 도구로 먼저 CSV 또는 JSON 배열</strong>을 만든 후
+                        메인(<code className="text-sky-300 bg-slate-800/80 px-1 rounded">#main</code>)에서 다시 열어 주세요. 모든 변환·분석은 가능한 한 <strong className="text-slate-100">브라우저 안에서만</strong> 처리되도록 설계되어 있어 외부 서버로 원본이 전송되지 않습니다.
+                    </p>
+                    <p className="text-sm text-slate-400 leading-relaxed">
+                        vaultsheet.com은 직장인·개발자·마케터가 <strong className="text-slate-300">CSV·JSON 기반 데이터를 업로드하고 자연어에 가깝게 필터링</strong>한 뒤,
+                        피벗 테이블·고품질 차트·AI 인사이트까지 한 워크스페이스에서 다루도록 만든 <strong className="text-slate-300">무료 온라인 데이터 도구</strong>입니다.
+                        아래에서 파일 유형별 안내를 확인하거나, 변환 도구 모음으로 이동해 형식을 맞춘 뒤 다시 시도해 주세요.
+                    </p>
+                    <ul className="text-sm text-slate-400 space-y-2 list-disc pl-5 marker:text-violet-400">
+                        <li><strong className="text-slate-300">권장 형식:</strong> 첫 행에 헤더가 있는 UTF-8 CSV, 또는 <code className="text-xs text-sky-300">객체를 담은 JSON 배열</code> (예: 표로 풀 수 있는 행 단위 데이터)</li>
+                        <li><strong className="text-slate-300">JSON만 있는 경우:</strong> 아래 &quot;JSON → CSV 변환&quot;으로 이동해 표 데이터를 만든 다음 메인에서 데이터셋으로 열기</li>
+                        <li><strong className="text-slate-300">형식을 모르겠을 때:</strong> 변환 도구 전체 보기에서 PDF, 이미지, Excel, ZIP 등 입맞에 맞는 도구를 선택</li>
+                    </ul>
+                </article>
 
                 {/* ── JSON 안내 ── */}
                 {isJson && (
@@ -92,50 +115,6 @@ export default function FileNoticePage({ fileInfo, noticeType, onBack, onContinu
                                 </div>
                             </div>
                         </div>
-
-                        {/* 하단: 관련 변환 도구 & FAQ를 좌우 배치 */}
-                        <div className="grid gap-4 md:grid-cols-2">
-                            {/* 변환 도구 홍보 */}
-                            <div className="flex flex-col gap-3">
-                                <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider">관련 변환 도구</div>
-                                <div className="grid sm:grid-cols-2 gap-3">
-                                    <ToolPromo icon="🔄" title="JSON ↔ CSV 변환" desc="JSON 배열을 CSV로, CSV를 JSON으로 양방향 변환" accent="emerald" onClick={onContinueJson} />
-                                    <ToolPromo icon="🧹" title="JSON 포매터" desc="JSON 구조 확인, 들여쓰기·압축·유효성 검사" accent="sky" onClick={onGoTools} />
-                                    <ToolPromo icon="📊" title="Excel ↔ JSON 변환" desc=".xlsx/.xls 파일과 JSON 배열을 양방향 변환" accent="violet" onClick={onGoTools} />
-                                    <ToolPromo icon="🗂️" title="CSV 병합·분할" desc="여러 CSV 합치기 또는 조건에 따라 분할" accent="amber" onClick={onGoTools} />
-                                </div>
-                                <button onClick={onGoTools} className="w-full px-4 py-3 rounded-xl text-sm font-bold text-violet-200 border border-violet-500/40 bg-violet-600/20 hover:bg-violet-600/30 transition-all">
-                                    변환 도구 전체 보기 →
-                                </button>
-                            </div>
-
-                            {/* FAQ */}
-                            <div className="rounded-2xl border border-slate-700 bg-slate-900/60 p-5 flex flex-col gap-3">
-                                <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-                                    <span className="text-base">❓</span> 자주 묻는 질문
-                                </h2>
-                                <div className="space-y-2">
-                                    {[
-                                        { q: 'JSON 파일이 배열 형태가 아니면 변환이 가능한가요?', a: '객체 배열([{...},{...}]) 형태만 CSV로 자동 변환됩니다. 중첩 구조나 단일 객체인 경우 JSON 포매터로 구조를 먼저 확인하세요.' },
-                                        { q: '변환 시 데이터가 손실되지 않나요?', a: '중첩 값이나 배열 타입 필드는 문자열로 직렬화될 수 있습니다. 숫자·문자열·불리언 값은 그대로 유지됩니다.' },
-                                        { q: '한글(UTF-8) 데이터도 정상 변환되나요?', a: '네, BOM(UTF-8) 인코딩으로 출력되어 Excel에서 한글이 깨지지 않습니다.' },
-                                    ].map((item, i) => (
-                                        <div key={i} className="border border-slate-700/70 rounded-xl overflow-hidden">
-                                            <button onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                                                className="w-full flex items-center justify-between px-4 py-3 text-xs font-semibold text-slate-300 hover:bg-slate-800/50 transition-colors text-left gap-3">
-                                                <span>{item.q}</span>
-                                                <span className="text-slate-500 shrink-0">{openFaq === i ? '▲' : '▼'}</span>
-                                            </button>
-                                            {openFaq === i && (
-                                                <div className="px-4 pb-3 text-xs text-slate-400 leading-relaxed border-t border-slate-700/50 pt-3 bg-slate-900/30">
-                                                    {item.a}
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
                     </>
                 )}
 
@@ -176,58 +155,39 @@ export default function FileNoticePage({ fileInfo, noticeType, onBack, onContinu
                                 <SupportedFormat ext=".json" desc="JSON 배열 형태의 데이터 (CSV 변환 후 사용)" color="sky" />
                             </div>
                             <div className="text-xs text-slate-500 bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
-                                💡 <span className="text-slate-400">Excel(.xlsx), 텍스트(.txt), PDF 등은 아래 변환 도구를 이용해 먼저 CSV로 변환하세요.</span>
-                            </div>
-                        </div>
-
-                        <div className="rounded-2xl border border-slate-700 bg-slate-900/60 p-5 flex flex-col gap-3">
-                            <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-                                <span className="text-base">🛠️</span> 내 파일에 맞는 변환 도구
-                            </h2>
-                            <div className="space-y-2 text-xs">
-                                <WorkflowStep n="1" label="파일 형식 파악" desc="어떤 형식인지 확인 후 적합한 변환 도구 선택" />
-                                <WorkflowStep n="2" label="변환 도구에서 변환" desc="PDF·이미지·Excel → CSV 등으로 변환" />
-                                <WorkflowStep n="3" label="데이터셋으로 불러오기" desc="변환된 CSV 파일을 #main 페이지에서 열기" />
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col gap-3">
-                            <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider">추천 변환 도구</div>
-                            <div className="grid sm:grid-cols-2 gap-3">
-                                <ToolPromo icon="📑" title="PDF 변환 스튜디오" desc="PDF 병합·분할·이미지 추출" accent="rose" onClick={onGoTools} />
-                                <ToolPromo icon="🖼️" title="이미지 변환 스튜디오" desc="포맷 변환·리사이즈·워터마크" accent="sky" onClick={onGoTools} />
-                                <ToolPromo icon="📊" title="Excel ↔ JSON" desc=".xlsx/.xls와 JSON 배열 양방향 변환" accent="emerald" onClick={onGoTools} />
-                                <ToolPromo icon="🔄" title="JSON ↔ CSV" desc="JSON 배열을 CSV로 즉시 변환" accent="violet" onClick={onGoTools} />
-                                <ToolPromo icon="🔍" title="텍스트 정제 도구" desc="문서/텍스트에서 이메일·전화 추출" accent="amber" onClick={onGoTools} />
-                                <ToolPromo icon="🗜️" title="ZIP 도구" desc="파일 압축·해제·내부 파일 추출" accent="teal" onClick={onGoTools} />
-                            </div>
-                            <button onClick={onGoTools} className="w-full px-4 py-3 rounded-xl text-sm font-bold text-violet-200 border border-violet-500/40 bg-violet-600/20 hover:bg-violet-600/30 transition-all">
-                                변환 도구 전체 보기 →
-                            </button>
-                        </div>
-
-                        <div className="rounded-2xl border border-slate-700 bg-slate-900/60 p-5 flex flex-col gap-3">
-                            <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-                                <span className="text-base">💎</span> 데이터 분석 꿀팁
-                            </h2>
-                            <div className="space-y-2">
-                                {[
-                                    { icon: '📌', tip: '헤더 행 포함', desc: 'CSV 첫 번째 행에 열 이름이 있어야 피벗·차트를 제대로 활용할 수 있습니다.' },
-                                    { icon: '🔢', tip: '숫자 형식 통일', desc: '천 단위 쉼표(1,000)나 통화 기호($)가 있으면 자동 타입 인식이 안 될 수 있습니다.' },
-                                    { icon: '📅', tip: '날짜 형식 통일', desc: 'YYYY-MM-DD 형식이 가장 인식률이 높습니다. 분석 전 통일하세요.' },
-                                    { icon: '🧹', tip: '공백·특수문자 정리', desc: '열 이름에 공백이나 특수문자가 있으면 SQL 쿼리 작성 시 오류가 생길 수 있습니다.' },
-                                ].map((item, i) => (
-                                    <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-slate-800/50 border border-slate-700/50">
-                                        <span className="text-base shrink-0">{item.icon}</span>
-                                        <div className="min-w-0">
-                                            <div className="text-xs font-semibold text-slate-200">{item.tip}</div>
-                                            <div className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{item.desc}</div>
-                                        </div>
-                                    </div>
-                                ))}
+                                💡 <span className="text-slate-400">Excel(.xlsx), 텍스트(.txt), PDF 등은 변환 도구 전체 보기에서 먼저 CSV로 변환하세요.</span>
                             </div>
                         </div>
                     </>
+                )}
+
+                {/* ── 유형 미지정: 직접 #fileNotice 로 들어온 경우 등 ── */}
+                {!isJson && !isInvalid && (
+                    <div className="rounded-2xl border border-slate-600 bg-slate-900/70 p-6 md:p-8 space-y-5">
+                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                            <span className="text-xl">📂</span> 파일 안내 화면 (일반)
+                        </h2>
+                        <p className="text-sm text-slate-300 leading-relaxed">
+                            지금은 <strong className="text-amber-300">업로드 직후 자동으로 구분된 안내(JSON 전용·미지원 형식)</strong>가 아닌 상태입니다. 주소창에 <code className="text-sky-300 bg-slate-800 px-1 rounded">#fileNotice</code>만 입력해 들어오셨거나, 세션이 초기화된 경우일 수 있습니다.
+                            <strong className="text-slate-100"> vaultsheet.com</strong> 메인에서 <strong className="text-slate-100">CSV 또는 지원 형식의 파일</strong>을 다시 선택하시거나, 아래 버튼으로 변환 도구·메인 화면으로 이동해 주세요.
+                        </p>
+                        <ul className="text-sm text-slate-400 space-y-2 list-disc pl-5">
+                            <li>데이터 분석을 시작하려면: 메인에서 표 형식 CSV 또는 변환된 JSON 배열을 불러오기</li>
+                            <li>JSON만 있는 경우: JSON → CSV 변환 후 메인에서 열기</li>
+                            <li>형식이 맞지 않으면: PDF·이미지·엑셀 등은 전용 변환 도구 이용</li>
+                        </ul>
+                        <div className="flex flex-wrap gap-3 pt-2">
+                            <button type="button" onClick={onBack} className="px-5 py-3 rounded-xl text-sm font-bold text-white bg-violet-600 hover:bg-violet-500 transition-colors">
+                                메인에서 파일 다시 선택
+                            </button>
+                            <button type="button" onClick={onContinueJson} className="px-5 py-3 rounded-xl text-sm font-bold text-slate-200 border border-slate-600 bg-slate-800 hover:bg-slate-700 transition-colors">
+                                JSON ↔ CSV 변환 도구
+                            </button>
+                            <button type="button" onClick={onGoTools} className="px-5 py-3 rounded-xl text-sm font-bold text-emerald-200 border border-emerald-500/40 bg-emerald-900/30 hover:bg-emerald-900/50 transition-colors">
+                                변환 도구 모음
+                            </button>
+                        </div>
+                    </div>
                 )}
 
                 {/* 하단 VaultSheet 브랜드 섹션 */}
@@ -299,36 +259,3 @@ function SupportedFormat({ ext, desc, color }) {
     );
 }
 
-function WorkflowStep({ n, label, desc }) {
-    return (
-        <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-800/40 border border-slate-700/50">
-            <div className="w-6 h-6 rounded-full bg-violet-600/30 border border-violet-500/40 flex items-center justify-center text-[10px] font-black text-violet-300 shrink-0">{n}</div>
-            <div className="min-w-0">
-                <div className="text-[11px] font-semibold text-slate-200">{label}</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">{desc}</div>
-            </div>
-        </div>
-    );
-}
-
-const accentMap = {
-    emerald: { border: 'border-emerald-500/30', bg: 'bg-emerald-500/5', icon: 'bg-emerald-500/15 text-emerald-400', title: 'text-emerald-300' },
-    sky:     { border: 'border-sky-500/30',     bg: 'bg-sky-500/5',     icon: 'bg-sky-500/15 text-sky-400',         title: 'text-sky-300' },
-    violet:  { border: 'border-violet-500/30',  bg: 'bg-violet-500/5',  icon: 'bg-violet-500/15 text-violet-400',   title: 'text-violet-300' },
-    amber:   { border: 'border-amber-500/30',   bg: 'bg-amber-500/5',   icon: 'bg-amber-500/15 text-amber-400',     title: 'text-amber-300' },
-    rose:    { border: 'border-rose-500/30',    bg: 'bg-rose-500/5',    icon: 'bg-rose-500/15 text-rose-400',       title: 'text-rose-300' },
-    teal:    { border: 'border-teal-500/30',    bg: 'bg-teal-500/5',    icon: 'bg-teal-500/15 text-teal-400',       title: 'text-teal-300' },
-};
-
-function ToolPromo({ icon, title, desc, accent = 'sky', onClick }) {
-    const c = accentMap[accent] || accentMap.sky;
-    return (
-        <button onClick={onClick} className={`rounded-xl border ${c.border} ${c.bg} p-4 flex items-start gap-3 hover:opacity-80 transition-opacity text-left w-full`}>
-            <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 text-base ${c.icon}`}>{icon}</div>
-            <div className="min-w-0">
-                <div className={`text-[12px] font-semibold truncate ${c.title}`}>{title}</div>
-                <div className="text-[11px] text-slate-500 mt-0.5 leading-snug">{desc}</div>
-            </div>
-        </button>
-    );
-}

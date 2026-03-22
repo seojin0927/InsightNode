@@ -434,12 +434,10 @@ const ChartViewer = ({
     watermarkEnabled: propWatermarkEnabled = false,
     watermarkText: propWatermarkText = 'CONFIDENTIAL',
     watermarkDesign: propWatermarkDesign = 'single',
-    onZoomChange,
-    onRequestZoom,
     hideToolbar = false,
     designTemplate = null,
     onDesignTemplateApplied,
-    // 메인 ↔ 확대(mainZoom) 등 여러 ChartViewer 인스턴스 간 상태 동기화를 위한 키
+    // 여러 ChartViewer 인스턴스 간 상태 동기화를 위한 키
     syncId = null,
 }) => {
     
@@ -454,7 +452,6 @@ const ChartViewer = ({
     const [watermarkPosition, setWatermarkPosition] = useState('center');
     const [watermarkAngle, setWatermarkAngle] = useState(-45);
 
-    // 메인 ↔ 확대(mainZoom) 동기화가 실제로 한 번이라도 복원되었는지 여부
     const [isSyncRestored, setIsSyncRestored] = useState(false);
     
     useEffect(() => { setLocalWatermarkEnabled(Boolean(propWatermarkEnabled)); }, [propWatermarkEnabled]);
@@ -515,7 +512,6 @@ const ChartViewer = ({
     const [lineWidth, setLineWidth] = useState(3);
     const [cutoutPercent, setCutoutPercent] = useState(60);
     const [chartPadding, setChartPadding] = useState(20);
-    const [isFullscreen, setIsFullscreen] = useState(false);
     
     const [showLegend, setShowLegend] = useState(true);
     const [legendPosition, setLegendPosition] = useState('bottom');
@@ -666,9 +662,9 @@ const ChartViewer = ({
         return num;
     };
 
-    // ================= 메인 ↔ 확대(mainZoom) 등 ChartViewer 인스턴스 간 상태 동기화 =================
-    // 1) 메인 인스턴스가 window 전역에 현재 설정을 저장
-    // 2) 확대(mainZoom) 인스턴스가 이를 한 번 복원한 뒤, 이후부터만 자신의 변경사항을 다시 저장
+    // ================= ChartViewer 인스턴스 간 상태 동기화 (syncId) =================
+    // 1) 첫 인스턴스가 window 전역에 현재 설정을 저장
+    // 2) 동일 syncId를 가진 인스턴스가 저장값을 복원한 뒤, 이후 변경을 다시 저장
     useEffect(() => {
         if (!syncId || typeof window === 'undefined') return;
         const store = window.__insightnodeCharts || {};
@@ -2002,7 +1998,7 @@ const ChartViewer = ({
                         </svg>
                         디자인
                     </button>
-                    <button onClick={copyToClipboard} disabled={!chartDataObj.labels.length} className="px-2.5 py-1.5 text-xs rounded-lg font-semibold hover:scale-105 transition-all disabled:opacity-30" style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.22)', color: '#a78bfa' }}>복사</button>
+                    <button onClick={copyToClipboard} disabled={!chartDataObj.labels.length} className="px-2.5 py-1.5 text-xs rounded-lg font-semibold hover:scale-105 transition-all disabled:opacity-30" style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.22)', color: 'rgba(167, 139, 250, 1)' }}>복사</button>
                     <button onClick={exportAsPNG} disabled={!chartDataObj.labels.length} className="px-2.5 py-1.5 text-xs rounded-lg font-semibold hover:scale-105 transition-all disabled:opacity-30" style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.22)', color: '#c4b5fd' }}>PNG</button>
                     <button onClick={() => {
                         if (!chartDataObj.labels.length) return;
@@ -2011,15 +2007,6 @@ const ChartViewer = ({
                         const blob = new Blob(['\uFEFF'+rows.map(r=>r.join(',')).join('\n')],{type:'text/csv;charset=utf-8;'});
                         const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`chart_${Date.now()}.csv`; a.click();
                     }} disabled={!chartDataObj.labels.length} className="px-2.5 py-1.5 text-xs rounded-lg font-semibold hover:scale-105 transition-all disabled:opacity-30" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.22)', color: '#34d399' }}>CSV</button>
-                    <button onClick={() => {
-                        if (onRequestZoom) { onRequestZoom(); return; }
-                        if (!containerRef.current) return;
-                        if (!isFullscreen) { ['position','top','left','right','bottom','width','height','zIndex','background'].forEach((k,i) => { containerRef.current.style[k] = ['fixed','0','0','0','0','100%','100%','9999','#0f172a'][i]; }); }
-                        else { ['position','top','left','right','bottom','width','height','zIndex','background'].forEach(k => { containerRef.current.style[k] = ''; }); }
-                        setIsFullscreen(!isFullscreen); if (onZoomChange) onZoomChange(!isFullscreen);
-                    }} className="p-1.5 rounded-lg transition-all hover:scale-105" style={{ background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.2)', color: '#22d3ee' }} title={isFullscreen ? '원래 크기로' : '전체화면'}>
-                        {isFullscreen ? <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg> : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>}
-                    </button>
                 </div>
             </div>}
 
