@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 const SITE_URL = 'https://vaultsheet.com';
-const CONTACT_EMAIL = 'aairavoxx@gmail.com';
+const CONTACT_EMAIL = 'qquest.board@gmail.com';
 
 const Icon = ({ path, className = 'w-5 h-5' }) => (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
